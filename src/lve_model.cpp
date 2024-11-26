@@ -1,5 +1,5 @@
 #include "lve_model.hpp"
-#include "lve_mesh_builder.hpp"
+#include "graphics/mesh_builder.hpp"
 
 // std
 #include <cassert>
@@ -21,7 +21,7 @@ LveModel::~LveModel() {}
 
 std::unique_ptr<LveModel> LveModel::createModelFromFile(
     LveDevice &device, const std::string &filepath) {
-  Builder builder{};
+  MeshBuilder builder{};
   Mesh mesh = builder.loadMesh(ENGINE_DIR + filepath);
   return std::make_unique<LveModel>(device, mesh);
 }

@@ -3,6 +3,8 @@
 #include "keyboard_movement_controller.hpp"
 #include "lve_buffer.hpp"
 #include "lve_camera.hpp"
+#include "data/chunk.hpp"
+#include "graphics/face_culling_chunk_mesher.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
 
@@ -120,6 +122,33 @@ void FirstApp::run() {
 }
 
 void FirstApp::loadGameObjects() {
+  std::vector<uint32_t> chunkData;
+  int chunkSize = 16;
+  for (int i = 0; i < chunkSize; i++) {
+    for (int j = 0; j < chunkSize; j++) {
+      for (int k = 0; k < chunkSize; k++) {
+        int x = i - chunkSize / 2;
+        int y = j - chunkSize / 2;
+        int z = k - chunkSize / 2;
+        // unsigned int distance = pow(x, 2) + pow(y, 2) + pow(z, 2);
+        // unsigned int blockValue= distance < 64 ? 1 : 0;  //rand() % 2;
+        uint32_t blockValue = rand() % 2;
+        chunkData.push_back(blockValue);
+      }
+    }
+  }
+
+  Chunk chunk{chunkSize, chunkData};
+  FaceCullingChunkMesher chunkMesher;
+  Mesh chunkMesh = chunkMesher.create(chunk);
+  std::shared_ptr<LveModel> chunkModel = std::make_shared<LveModel>(lveDevice, chunkMesh);
+  auto chunkGameObject = LveGameObject::createGameObject();
+  chunkGameObject.model = chunkModel;
+  chunkGameObject.transform.translation = {-.5f, -5.0f, 0.f};
+  chunkGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
+  gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
+
+  /*
   std::shared_ptr<LveModel> lveModel = LveModel::createModelFromFile(
       lveDevice, "models/cube.obj");
   auto cube = LveGameObject::createGameObject();
@@ -127,8 +156,9 @@ void FirstApp::loadGameObjects() {
   cube.transform.translation = {-.5f, -2.0f, 0.f};
   cube.transform.scale = {0.2f, 0.2f, 0.2f};
   gameObjects.emplace(cube.getId(), std::move(cube));
+  */
 
-  lveModel =
+  std::shared_ptr<LveModel> lveModel =
       LveModel::createModelFromFile(lveDevice, "models/flat_vase.obj");
   auto flatVase = LveGameObject::createGameObject();
   flatVase.model = lveModel;

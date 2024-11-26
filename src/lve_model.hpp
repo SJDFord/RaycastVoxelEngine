@@ -2,8 +2,8 @@
 
 #include "lve_buffer.hpp"
 #include "lve_device.hpp"
-#include "lve_vertex.hpp"
-#include "lve_mesh.hpp"
+#include "graphics/vertex.hpp"
+#include "graphics/mesh.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
