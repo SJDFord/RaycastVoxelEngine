@@ -1,6 +1,6 @@
-#include "lve_pipeline.hpp"
+#include "pipeline.hpp"
 
-#include "lve_model.hpp"
+#include "model.hpp"
 
 // std
 #include <cassert>
@@ -12,24 +12,22 @@
 #define ENGINE_DIR "../"
 #endif
 
-namespace lve {
-
-LvePipeline::LvePipeline(
-    LveDevice& device,
+Pipeline::Pipeline(
+    Device& device,
     const std::string& vertFilepath,
     const std::string& fragFilepath,
     const PipelineConfigInfo& configInfo)
-    : lveDevice{device} {
+    : Device{device} {
   createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 
-LvePipeline::~LvePipeline() {
-  vkDestroyShaderModule(lveDevice.device(), vertShaderModule, nullptr);
-  vkDestroyShaderModule(lveDevice.device(), fragShaderModule, nullptr);
-  vkDestroyPipeline(lveDevice.device(), graphicsPipeline, nullptr);
+Pipeline::~Pipeline() {
+  vkDestroyShaderModule(Device.device(), vertShaderModule, nullptr);
+  vkDestroyShaderModule(Device.device(), fragShaderModule, nullptr);
+  vkDestroyPipeline(Device.device(), graphicsPipeline, nullptr);
 }
 
-std::vector<char> LvePipeline::readFile(const std::string& filepath) {
+std::vector<char> Pipeline::readFile(const std::string& filepath) {
   std::string enginePath = ENGINE_DIR + filepath;
   std::ifstream file{enginePath, std::ios::ate | std::ios::binary};
 
@@ -47,7 +45,7 @@ std::vector<char> LvePipeline::readFile(const std::string& filepath) {
   return buffer;
 }
 
-void LvePipeline::createGraphicsPipeline(
+void Pipeline::createGraphicsPipeline(
     const std::string& vertFilepath,
     const std::string& fragFilepath,
     const PipelineConfigInfo& configInfo) {
@@ -111,7 +109,7 @@ void LvePipeline::createGraphicsPipeline(
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
   if (vkCreateGraphicsPipelines(
-          lveDevice.device(),
+          Device.device(),
           VK_NULL_HANDLE,
           1,
           &pipelineInfo,
@@ -121,22 +119,22 @@ void LvePipeline::createGraphicsPipeline(
   }
 }
 
-void LvePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
+void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-  if (vkCreateShaderModule(lveDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
+  if (vkCreateShaderModule(Device.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module");
   }
 }
 
-void LvePipeline::bind(VkCommandBuffer commandBuffer) {
+void Pipeline::bind(VkCommandBuffer commandBuffer) {
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
 
-void LvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
+void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
   configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
   configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -206,11 +204,11 @@ void LvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
       static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
   configInfo.dynamicStateInfo.flags = 0;
 
-  configInfo.bindingDescriptions = lve::Vertex::getBindingDescriptions();
-  configInfo.attributeDescriptions = lve::Vertex::getAttributeDescriptions();
+  configInfo.bindingDescriptions = LveModel::Vertex::getBindingDescriptions();
+  configInfo.attributeDescriptions = LveModel::Vertex::getAttributeDescriptions();
 }
 
-void LvePipeline::enableAlphaBlending(PipelineConfigInfo& configInfo) {
+void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo) {
   configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
   configInfo.colorBlendAttachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
@@ -222,5 +220,3 @@ void LvePipeline::enableAlphaBlending(PipelineConfigInfo& configInfo) {
   configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
   configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
-
-}  // namespace lve

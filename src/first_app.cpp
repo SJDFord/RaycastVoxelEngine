@@ -120,7 +120,15 @@ void FirstApp::run() {
 }
 
 void FirstApp::loadGameObjects() {
-  std::shared_ptr<LveModel> lveModel =
+  std::shared_ptr<LveModel> lveModel = LveModel::createModelFromFile(
+      lveDevice, "models/cube.obj");
+  auto cube = LveGameObject::createGameObject();
+  cube.model = lveModel;
+  cube.transform.translation = {-.5f, -2.0f, 0.f};
+  cube.transform.scale = {0.2f, 0.2f, 0.2f};
+  gameObjects.emplace(cube.getId(), std::move(cube));
+
+  lveModel =
       LveModel::createModelFromFile(lveDevice, "models/flat_vase.obj");
   auto flatVase = LveGameObject::createGameObject();
   flatVase.model = lveModel;
