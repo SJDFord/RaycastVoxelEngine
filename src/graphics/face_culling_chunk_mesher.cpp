@@ -2,9 +2,15 @@
 
 #include "graphics_util.hpp"
 
+#include <cstdlib>
+
 Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
     unsigned int size = chunk.Size;
     std::vector<Vertex> vertices;
+    unsigned int blockCount = 0;
+    glm::vec3 chunkPosition = chunk.Position;
+    glm::vec3 chunkFillColour = {1.0f, 1.0f, 1.0f};
+    glm::vec3 chunkLineColor = {0.5f, 0.5f, 1.0f};
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
             for (int z = 0; z < size; z++) {
@@ -14,7 +20,11 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
                 if (isBlockInvisible) {
                     continue;
                 }
+                blockCount++;
 
+                bool xEdge = x == 0 || x == size - 1;
+                bool yEdge = y == 0 || y == size - 1;
+                bool zEdge = z == 0 || z == size - 1;
                 bool back = z == 0 || !isBlock(chunk, position + glm::vec3(0, 0, -1));
                 bool front = z == size - 1 || !isBlock(chunk, position + glm::vec3(0, 0, 1));
                 bool left = x == 0 || !isBlock(chunk, position + glm::vec3(-1, 0, 0));
@@ -22,12 +32,37 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
                 bool top = y == size - 1 || !isBlock(chunk, position + glm::vec3(0, 1, 0));
                 bool bottom = y == 0 || !isBlock(chunk, position + glm::vec3(0, -1, 0));
                 // TODO: Improve this by pregenerating all 64 cube face combinations, put them in an array and use bit flags to access them
-                Mesh cubeMesh = createCubeMesh(position, back, front, left, right, bottom, top);
+                /*
+                glm::vec3 colour = {
+                    float(rand()) / RAND_MAX,
+                    float(rand()) / RAND_MAX,
+                    float(rand()) / RAND_MAX};
+                */
+                bool isEdge = xEdge && yEdge && zEdge;
+
+                glm::vec3 colour = isEdge ? chunkLineColor : chunkFillColour;
+                Mesh cubeMesh =
+                    createCubeMesh(position, colour, back, front, left, right, bottom, top);
                 vertices.insert(vertices.end(), cubeMesh.Vertices.begin(), cubeMesh.Vertices.end());
             }
         }
     }
-    fprintf(stdout, "Face culling vertices (%i)\n", vertices.size());
+    unsigned int maxFaceCount = 6 * blockCount;
+    unsigned int maxVertexCount = 4 * maxFaceCount;
+    unsigned int vertexCount = vertices.size();
+    unsigned int faceCount = vertexCount / 4; 
+    float percentage = (1.0f-((float)vertexCount / (float)maxVertexCount)) * 100;
+    /*
+    fprintf(
+        stdout, 
+        "Generated %i faces (%i vertices) from a maximum of %i (%i) - (%.2f%% saving)\n", 
+        faceCount,
+        vertexCount,
+        maxFaceCount,
+        maxVertexCount, 
+        percentage
+    );
+    */
 
     Mesh mesh = {vertices, {}};
 	return mesh;

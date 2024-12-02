@@ -5,6 +5,8 @@
 #include "lve_game_object.hpp"
 #include "lve_renderer.hpp"
 #include "lve_window.hpp"
+#include "data/world.hpp"
+#include "graphics/world_renderer.hpp"
 
 // std
 #include <memory>
@@ -30,6 +32,8 @@ class FirstApp {
   LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Tutorial"};
   LveDevice lveDevice{lveWindow};
   LveRenderer lveRenderer{lveWindow, lveDevice};
+  std::shared_ptr<World> _world;
+  std::unique_ptr<WorldRenderer> _worldRenderer;
 
   // note: order of declarations matters
   std::unique_ptr<LveDescriptorPool> globalPool{};

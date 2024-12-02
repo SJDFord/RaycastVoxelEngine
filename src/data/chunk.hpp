@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 struct Chunk {
+    glm::vec3 Position;
     uint32_t Size; // Cube side length
     std::vector<uint32_t> Data; // Data inside of chunk
 

@@ -134,72 +134,70 @@ Mesh Meshes::Skybox = {
 };
 
 
-Mesh createCubeMesh(glm::vec3 position, bool back, bool front, bool left, bool right, bool bottom, bool top) {
-  Mesh mesh = {{}, {}};
-
-    
+Mesh createCubeMesh(glm::vec3 position, glm::vec3 colour, bool back, bool front, bool left, bool right, bool bottom, bool top) {
+    Mesh mesh = {{}, {}};
 
     if (back) {
         std::vector<Vertex> backVertices = {
-                {CubeCoords::BackBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::BottomRight},
-                {CubeCoords::BackTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::TopLeft},
-                {CubeCoords::BackBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::BottomLeft},
+                {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Back, TextureCoords::BottomRight},
+                {CubeCoords::BackTopRight + position, colour, CubeNormals::Back, TextureCoords::TopLeft},
+                {CubeCoords::BackBottomRight + position, colour, CubeNormals::Back, TextureCoords::BottomLeft},
 
-                {CubeCoords::BackTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::TopLeft},
-                {CubeCoords::BackBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::BottomRight},
-                {CubeCoords::BackTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Back, TextureCoords::TopRight}
+                {CubeCoords::BackTopRight + position, colour, CubeNormals::Back, TextureCoords::TopLeft},
+                {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Back, TextureCoords::BottomRight},
+                {CubeCoords::BackTopLeft + position, colour, CubeNormals::Back, TextureCoords::TopRight}
         };
         mesh.Vertices.insert(mesh.Vertices.end(), backVertices.begin(), backVertices.end());
     }
 
     if (front) {
         std::vector<Vertex> frontVertices = {
-            {CubeCoords::FrontBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front, TextureCoords::BottomLeft},
-            {CubeCoords::FrontBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front, TextureCoords::BottomRight},
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front, TextureCoords::TopRight},
+            {CubeCoords::FrontBottomLeft + position, colour, CubeNormals::Front, TextureCoords::BottomLeft},
+            {CubeCoords::FrontBottomRight + position, colour, CubeNormals::Front, TextureCoords::BottomRight},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Front, TextureCoords::TopRight},
 
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front, TextureCoords::TopRight},
-            {CubeCoords::FrontTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front, TextureCoords::TopLeft},
-            {CubeCoords::FrontBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Front,TextureCoords::BottomLeft},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Front, TextureCoords::TopRight},
+            {CubeCoords::FrontTopLeft + position, colour, CubeNormals::Front, TextureCoords::TopLeft},
+            {CubeCoords::FrontBottomLeft + position, colour, CubeNormals::Front,TextureCoords::BottomLeft},
         };
         mesh.Vertices.insert(mesh.Vertices.end(), frontVertices.begin(), frontVertices.end());
     }
 
     if (left) {
         std::vector<Vertex> leftVertices = {
-            {CubeCoords::FrontTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::TopRight},
-            {CubeCoords::BackTopLeft + position,  {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::TopLeft},
-            {CubeCoords::BackBottomLeft + position,  {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::BottomLeft},
+            {CubeCoords::FrontTopLeft + position, colour, CubeNormals::Left, TextureCoords::TopRight},
+            {CubeCoords::BackTopLeft + position,  colour, CubeNormals::Left, TextureCoords::TopLeft},
+            {CubeCoords::BackBottomLeft + position,  colour, CubeNormals::Left, TextureCoords::BottomLeft},
 
-            {CubeCoords::BackBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::BottomLeft},
-            {CubeCoords::FrontBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::BottomRight},
-            {CubeCoords::FrontTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Left, TextureCoords::TopRight},
+            {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Left, TextureCoords::BottomLeft},
+            {CubeCoords::FrontBottomLeft + position, colour, CubeNormals::Left, TextureCoords::BottomRight},
+            {CubeCoords::FrontTopLeft + position, colour, CubeNormals::Left, TextureCoords::TopRight},
         };
         mesh.Vertices.insert(mesh.Vertices.end(), leftVertices.begin(), leftVertices.end());
     }
 
     if (right) {
         std::vector<Vertex> rightVertices = {
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::TopLeft},
-            {CubeCoords::BackBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::BottomRight},
-            {CubeCoords::BackTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::TopRight},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Right, TextureCoords::TopLeft},
+            {CubeCoords::BackBottomRight + position, colour, CubeNormals::Right, TextureCoords::BottomRight},
+            {CubeCoords::BackTopRight + position, colour, CubeNormals::Right, TextureCoords::TopRight},
 
-            {CubeCoords::BackBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::BottomRight},
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::TopLeft},
-            {CubeCoords::FrontBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Right, TextureCoords::BottomLeft},
+            {CubeCoords::BackBottomRight + position, colour, CubeNormals::Right, TextureCoords::BottomRight},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Right, TextureCoords::TopLeft},
+            {CubeCoords::FrontBottomRight + position, colour, CubeNormals::Right, TextureCoords::BottomLeft},
         };
         mesh.Vertices.insert(mesh.Vertices.end(), rightVertices.begin(), rightVertices.end());
     }
 
     if (bottom) {
         std::vector<Vertex> bottomVertices = {
-            {CubeCoords::BackBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom, TextureCoords::BottomLeft},
-            {CubeCoords::BackBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom, TextureCoords::BottomRight},
-            {CubeCoords::FrontBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom, TextureCoords::TopRight},
+            {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Bottom, TextureCoords::BottomLeft},
+            {CubeCoords::BackBottomRight + position, colour, CubeNormals::Bottom, TextureCoords::BottomRight},
+            {CubeCoords::FrontBottomRight + position, colour, CubeNormals::Bottom, TextureCoords::TopRight},
 
-            {CubeCoords::FrontBottomRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom, TextureCoords::TopRight},
-            {CubeCoords::FrontBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom, TextureCoords::TopLeft},
-            {CubeCoords::BackBottomLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Bottom,TextureCoords::BottomLeft},
+            {CubeCoords::FrontBottomRight + position, colour, CubeNormals::Bottom, TextureCoords::TopRight},
+            {CubeCoords::FrontBottomLeft + position, colour, CubeNormals::Bottom, TextureCoords::TopLeft},
+            {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Bottom,TextureCoords::BottomLeft},
         };
         mesh.Vertices.insert(mesh.Vertices.end(), bottomVertices.begin(), bottomVertices.end());
     }
@@ -230,13 +228,13 @@ Mesh createCubeMesh(glm::vec3 position, bool back, bool front, bool left, bool r
         };
 
         std::vector<Vertex> topVertices = {
-            {CubeCoords::BackTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][0]},
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][1]},
-            {CubeCoords::BackTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][2]},
+            {CubeCoords::BackTopLeft + position, colour, CubeNormals::Top, textureCoords[index][0]},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Top, textureCoords[index][1]},
+            {CubeCoords::BackTopRight + position, colour, CubeNormals::Top, textureCoords[index][2]},
 
-            {CubeCoords::FrontTopRight + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][1]},
-            {CubeCoords::BackTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][0]},
-            {CubeCoords::FrontTopLeft + position, {1.0f, 1.0f, 1.0f}, CubeNormals::Top, textureCoords[index][3]},
+            {CubeCoords::FrontTopRight + position, colour, CubeNormals::Top, textureCoords[index][1]},
+            {CubeCoords::BackTopLeft + position, colour, CubeNormals::Top, textureCoords[index][0]},
+            {CubeCoords::FrontTopLeft + position, colour, CubeNormals::Top, textureCoords[index][3]},
         };
 
         mesh.Vertices.insert(mesh.Vertices.end(), topVertices.begin(), topVertices.end());

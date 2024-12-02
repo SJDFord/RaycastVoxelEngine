@@ -4,6 +4,7 @@
 #include "lve_buffer.hpp"
 #include "lve_camera.hpp"
 #include "data/chunk.hpp"
+#include "data/world.hpp"
 #include "graphics/face_culling_chunk_mesher.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
@@ -28,6 +29,9 @@ FirstApp::FirstApp() {
           .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
+  _world = std::make_shared<World>();
+  _worldRenderer = std::make_unique<WorldRenderer>(lveDevice, _world);
+
   loadGameObjects();
 }
 
@@ -82,6 +86,7 @@ void FirstApp::run() {
     currentTime = newTime;
 
     cameraController.moveInPlaneXZ(lveWindow.getGLFWwindow(), frameTime, viewerObject);
+    _worldRenderer->update(lveDevice, viewerObject.transform.translation);
     camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
     float aspect = lveRenderer.getAspectRatio();
@@ -89,13 +94,37 @@ void FirstApp::run() {
 
     if (auto commandBuffer = lveRenderer.beginFrame()) {
       int frameIndex = lveRenderer.getFrameIndex();
+      std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> models = _worldRenderer->getModels();
+      LveGameObject::Map chunkGameObjects;
+      for (auto positionModel : models) {
+        //std::cout << "Processing game object" << std::endl;
+        glm::vec3 position = positionModel.first;
+        std::shared_ptr<lve::LveModel> model = positionModel.second;
+        // gameObjects.emplace()
+
+        auto chunkGameObject = LveGameObject::createGameObject();
+        chunkGameObject.model = model;
+        chunkGameObject.transform.translation = position * (float)16;
+        chunkGameObject.transform.scale = {1.0f, 1.0f, 1.0f};
+        //gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
+        chunkGameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject)); 
+      }
+
+      auto mainLight = LveGameObject::makePointLight(10.0f);
+      mainLight.color = {1.0f, 1.0f, 1.0f};
+
+      glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};
+      mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
+      mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
+      chunkGameObjects.emplace(mainLight.getId(), std::move(mainLight));
+
       FrameInfo frameInfo{
           frameIndex,
           frameTime,
           commandBuffer,
           camera,
           globalDescriptorSets[frameIndex],
-          gameObjects};
+          chunkGameObjects};
 
       // update
       GlobalUbo ubo{};
@@ -122,6 +151,34 @@ void FirstApp::run() {
 }
 
 void FirstApp::loadGameObjects() {
+
+  /*
+  _worldRenderer->update(lveDevice, {0, 0, 0});
+  auto gameObjectList = _worldRenderer->getModels();
+  for (auto gameObject : gameObjectList) {
+    std::cout << "Processing game object" << std::endl;
+    glm::vec3 position = gameObject.first;
+    std::shared_ptr<lve::LveModel> model = gameObject.second;
+    // gameObjects.emplace()
+
+    auto chunkGameObject = LveGameObject::createGameObject();
+    chunkGameObject.model = model;
+    chunkGameObject.transform.translation = position * (float)16;
+    chunkGameObject.transform.scale = {1.0f, 1.0f, 1.0f};
+    gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
+  }
+
+  auto mainLight = LveGameObject::makePointLight(10.0f);
+  mainLight.color = {1.0f, 1.0f, 1.0f};
+
+  mainLight.transform.translation = {0.0f, -5.0f, 0.0f};
+  mainLight.transform.scale = {1.0f, 1.0f, 1.0f};
+  gameObjects.emplace(mainLight.getId(), std::move(mainLight));
+  */
+  return;
+
+  /*
+  srand(10);
   std::vector<uint32_t> chunkData;
   int chunkSize = 16;
   for (int i = 0; i < chunkSize; i++) {
@@ -138,25 +195,31 @@ void FirstApp::loadGameObjects() {
     }
   }
 
-  Chunk chunk{chunkSize, chunkData};
-  FaceCullingChunkMesher chunkMesher;
-  Mesh chunkMesh = chunkMesher.create(chunk);
-  std::shared_ptr<LveModel> chunkModel = std::make_shared<LveModel>(lveDevice, chunkMesh);
-  auto chunkGameObject = LveGameObject::createGameObject();
-  chunkGameObject.model = chunkModel;
-  chunkGameObject.transform.translation = {-.5f, -5.0f, 0.f};
-  chunkGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
-  gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
+  Chunk chunk1{{0.0f, 0.0f, 0.0f}, chunkSize, chunkData};
+  Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
+  World world{{chunk1, chunk2}};
 
-  /*
-  std::shared_ptr<LveModel> lveModel = LveModel::createModelFromFile(
-      lveDevice, "models/cube.obj");
-  auto cube = LveGameObject::createGameObject();
-  cube.model = lveModel;
-  cube.transform.translation = {-.5f, -2.0f, 0.f};
-  cube.transform.scale = {0.2f, 0.2f, 0.2f};
-  gameObjects.emplace(cube.getId(), std::move(cube));
-  */
+  for (const Chunk& chunk : world.Chunks) {
+    FaceCullingChunkMesher chunkMesher;
+    Mesh chunkMesh = chunkMesher.create(chunk);
+    std::shared_ptr<LveModel> chunkModel = std::make_shared<LveModel>(lveDevice, chunkMesh);
+    auto chunkGameObject = LveGameObject::createGameObject();
+    chunkGameObject.model = chunkModel;
+    chunkGameObject.transform.translation = chunk.Position * (float) chunk.Size;
+    chunkGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
+    gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
+  }
+
+  auto mainLight = LveGameObject::makePointLight(10.0f);
+  mainLight.color = {
+      1.0f,
+      1.0f,
+      1.0f
+  };
+
+  mainLight.transform.translation = {0.0f, -5.0f, 0.0f};
+  mainLight.transform.scale = {1.0f, 1.0f, 1.0f};
+  gameObjects.emplace(mainLight.getId(), std::move(mainLight));
 
   std::shared_ptr<LveModel> lveModel =
       LveModel::createModelFromFile(lveDevice, "models/flat_vase.obj");
@@ -199,6 +262,7 @@ void FirstApp::loadGameObjects() {
     pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
     gameObjects.emplace(pointLight.getId(), std::move(pointLight));
   }
+  */
 }
 
 }  // namespace lve

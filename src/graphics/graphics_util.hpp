@@ -43,7 +43,7 @@ struct Meshes {
     static Mesh Skybox;
 };
 
-Mesh createCubeMesh(glm::vec3 position, bool back, bool front, bool left, bool right, bool bottom, bool top);
+Mesh createCubeMesh(glm::vec3 position, glm::vec3 colour, bool back, bool front, bool left, bool right, bool bottom, bool top);
 /*
 Mesh createCubeMeshOptimised(glm::vec3 position, bool back, bool front, bool left, bool right, bool bottom, bool top);
 */
