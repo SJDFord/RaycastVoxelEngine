@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include "../util/perlin_noise.hpp"
 
 WorldRenderer::WorldRenderer(lve::LveDevice& lveDevice, std::shared_ptr<World> world) {
     _world = world;
@@ -33,7 +34,7 @@ void WorldRenderer::update(lve::LveDevice& lveDevice, const glm::vec3& playerPos
       return;
     }
 
-    int r = 1;
+    int r = 3;
     std::cout << "WorldRenderer::update() " << std::to_string(position.x) << ", "
               << std::to_string(position.z) << std::endl;
     //         *        
@@ -114,19 +115,56 @@ std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> WorldRenderer::get
 
 
 Chunk WorldRenderer::createChunk(const glm::vec3& position) {
+  const siv::PerlinNoise::seed_type seed = 123456u;
+
+  const siv::PerlinNoise perlin{seed};
+    
   srand(10);
-  std::vector<uint32_t> chunkData;
   int chunkSize = 16;
+  double scale = 0.01;
+
+  std::vector<uint32_t> heightMap;
+  for (int x = 0; x < chunkSize; x++) {
+    for (int y = 0; y < chunkSize; y++) {
+        double noise = perlin.octave2D_01(
+                ((position.x * chunkSize) + x) * scale,
+                ((position.z * chunkSize) + y) * scale,
+            /*
+            (position.x * chunkSize) + x / scale, 
+            (position.z * chunkSize) + y / scale,
+            */
+            4
+        ); // 0 to 1
+
+        uint32_t height = round((noise * chunkSize) + 1);
+        heightMap.push_back(height);
+
+        // 1 to 16
+        // v * chunkSize + 1
+    }
+  }
+  
+  std::vector<uint32_t> chunkData;
   for (int i = 0; i < chunkSize; i++) {
     for (int j = 0; j < chunkSize; j++) {
       for (int k = 0; k < chunkSize; k++) {
+        uint32_t height = heightMap[i + k * chunkSize];
+
+        if (j >= height) {
+            chunkData.push_back(1);
+        } else {
+            chunkData.push_back(0);
+        }
+
+        /*
         int x = i - chunkSize / 2;
         int y = j - chunkSize / 2;
         int z = k - chunkSize / 2;
-        
+        */
+
         //uint32_t blockValue = rand() % 2;
         //chunkData.push_back(blockValue);
-        chunkData.push_back(1);
+        //chunkData.push_back(1);
       }
     }
   }
