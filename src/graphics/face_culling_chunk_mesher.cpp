@@ -15,7 +15,8 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
         for (int y = 0; y < size; y++) {
             for (int z = 0; z < size; z++) {
                 glm::vec3 position = {x, y, z};
-                bool isBlockInvisible = !isBlock(chunk, position);
+                uint32_t blockId = chunk.getBlock(position);
+                bool isBlockInvisible = blockId < 1;
                 
                 if (isBlockInvisible) {
                     continue;
@@ -40,7 +41,23 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
                 */
                 bool isEdge = xEdge && yEdge && zEdge;
 
-                glm::vec3 colour = isEdge ? chunkLineColor : chunkFillColour;
+                glm::vec3 colour;
+                switch (blockId) { 
+                case 1: // Grass
+                    colour = {0.11f, 0.49f, 0.122f};
+                    break;
+                case 2: // Sand
+                    colour = {0.961f, 0.918f, 0.698f};
+                    break;
+                case 3: // Water
+                    colour = {0.392f, 0.588f, 0.969f};
+                    break;
+                default:
+                    colour = {1.0f, 0.0f, 0.0f};
+                    break;
+                }
+
+                //glm::vec3 colour = isEdge ? chunkLineColor : chunkFillColour;
                 Mesh cubeMesh =
                     createCubeMesh(position, colour, back, front, left, right, bottom, top);
                 vertices.insert(vertices.end(), cubeMesh.Vertices.begin(), cubeMesh.Vertices.end());

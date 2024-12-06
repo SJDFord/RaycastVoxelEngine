@@ -121,7 +121,7 @@ Chunk WorldRenderer::createChunk(const glm::vec3& position) {
     
   srand(10);
   int chunkSize = 16;
-  double scale = 0.01;
+  double scale = 0.03;
 
   std::vector<uint32_t> heightMap;
   for (int x = 0; x < chunkSize; x++) {
@@ -151,7 +151,27 @@ Chunk WorldRenderer::createChunk(const glm::vec3& position) {
         uint32_t height = heightMap[i + k * chunkSize];
 
         if (j >= height) {
-            chunkData.push_back(1);
+            if (j >= 13) {
+                chunkData.push_back(3);
+            }
+            else if (j >= 12) {
+                chunkData.push_back(2);
+            } else {
+                chunkData.push_back(1);
+            }
+
+
+            /*
+            if (j >= 8) {
+               chunkData.push_back(1);
+            }
+            else if (j >= 3) {
+               chunkData.push_back(2);
+            } 
+            else if (j >= 0) {
+               chunkData.push_back(3);
+            }
+            */
         } else {
             chunkData.push_back(0);
         }

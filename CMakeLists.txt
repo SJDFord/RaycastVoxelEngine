@@ -57,6 +57,12 @@ endif()
 
 include_directories(external)
 
+# GLM
+if (NOT GLM_PATH)
+  message(STATUS "GLM_PATH not specified in .env.cmake, using external/glm")
+  set(GLM_PATH external/glm)
+endif()
+
 # If TINYOBJ_PATH not specified in .env.cmake, try fetching from git repo
 if (NOT TINYOBJ_PATH)
   message(STATUS "TINYOBJ_PATH not specified in .env.cmake, using external/tinyobjloader")
@@ -90,7 +96,7 @@ if (WIN32)
     ${TINYOBJ_PATH}
     ${GLFW_INCLUDE_DIRS}
     ${GLM_PATH}
-    )
+  )
 
   target_link_directories(${PROJECT_NAME} PUBLIC
     ${Vulkan_LIBRARIES}
@@ -98,6 +104,7 @@ if (WIN32)
   )
 
   target_link_libraries(${PROJECT_NAME} glfw vulkan-1)
+
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
     target_include_directories(${PROJECT_NAME} PUBLIC
