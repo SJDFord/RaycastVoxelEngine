@@ -72,6 +72,10 @@ endif()
 file(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/src/*.hpp)
 file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
+# Organises source and header files in one common nested folder structure instead of two flat folder structures
+source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${HEADERS})
+source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SOURCES})
+
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
