@@ -1,27 +1,14 @@
 #pragma once
 
 #include "lve_window.hpp"
+#include "graphics/vulkan/physical_device.hpp"
 
 // std lib headers
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace lve {
-
-struct SwapChainSupportDetails {
-  VkSurfaceCapabilitiesKHR capabilities;
-  std::vector<VkSurfaceFormatKHR> formats;
-  std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct QueueFamilyIndices {
-  uint32_t graphicsFamily;
-  uint32_t presentFamily;
-  bool graphicsFamilyHasValue = false;
-  bool presentFamilyHasValue = false;
-  bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
-};
-
 class LveDevice {
  public:
 #ifdef NDEBUG
@@ -45,11 +32,13 @@ class LveDevice {
   VkQueue graphicsQueue() { return graphicsQueue_; }
   VkQueue presentQueue() { return presentQueue_; }
 
-  SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
+  SwapChainSupportDetails getSwapChainSupport() { return physicalDevice->querySwapChainSupport(surface_); };
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-  QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
+  QueueFamilyIndices findPhysicalQueueFamilies() { return physicalDevice->findQueueFamilies(surface_); }
   VkFormat findSupportedFormat(
-      const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+      const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+        return physicalDevice->findSupportedFormat(candidates, tiling, features);
+      };
 
   // Buffer Helper Functions
   void createBuffer(
@@ -76,7 +65,7 @@ class LveDevice {
   void createInstance();
   void setupDebugMessenger();
   void createSurface();
-  void pickPhysicalDevice();
+  //void pickPhysicalDevice();
   void createLogicalDevice();
   void createCommandPool();
 
@@ -84,7 +73,6 @@ class LveDevice {
   bool isDeviceSuitable(VkPhysicalDevice device);
   std::vector<const char *> getRequiredExtensions();
   bool checkValidationLayerSupport();
-  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
   void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
   void hasGflwRequiredInstanceExtensions();
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -92,7 +80,6 @@ class LveDevice {
 
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
-  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
   LveWindow &window;
   VkCommandPool commandPool;
 
@@ -100,6 +87,8 @@ class LveDevice {
   VkSurfaceKHR surface_;
   VkQueue graphicsQueue_;
   VkQueue presentQueue_;
+
+  std::shared_ptr<PhysicalDevice> physicalDevice;
 
   const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
   const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
