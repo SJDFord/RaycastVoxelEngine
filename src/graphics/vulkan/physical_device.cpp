@@ -21,7 +21,9 @@ PhysicalDevice::PhysicalDevice(const VkInstance& instance) {
 
   getAttributes();
   retrieveQueueFamilyProperties();
-
+  //VULKAN_HPP_NAMESPACE::ApplicationInfo temp;
+  //vk::ApplicationInfo temp;
+  //vk::raii::PhysicalDevice p;
   vkGetPhysicalDeviceProperties(physicalDevice, &properties);
   std::cout << "physical device: " << properties.deviceName << std::endl;
 }

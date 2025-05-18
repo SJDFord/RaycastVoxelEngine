@@ -10,14 +10,13 @@
 
 
 #include <string>
-namespace lve {
 
-class LveWindow {
+class Window {
  public:
-  LveWindow(int w, int h, std::string name);
-  ~LveWindow();
-  LveWindow(const LveWindow &) = delete;
-  LveWindow &operator=(const LveWindow &) = delete;
+  Window(int w, int h, std::string name);
+  ~Window();
+  Window(const Window &) = delete;
+  Window &operator=(const Window &) = delete;
 
   bool shouldClose() { return glfwWindowShouldClose(window); }
   VkExtent2D getExtent() { return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}; }
@@ -25,7 +24,7 @@ class LveWindow {
   void resetWindowResizedFlag() { framebufferResized = false; }
   GLFWwindow *getGLFWwindow() const { return window; }
 
-  void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
+  vk::raii::SurfaceKHR createWindowSurface(vk::raii::Instance &instance);
 
  private:
   static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
@@ -38,4 +37,3 @@ class LveWindow {
   std::string windowName;
   GLFWwindow *window;
 };
-}  // namespace lve

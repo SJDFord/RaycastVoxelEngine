@@ -25,6 +25,7 @@ void LveWindow::initWindow() {
 }
 
 void LveWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR *surface) {
+  //glfwCreateWindow
   if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
     throw std::runtime_error("failed to craete window surface");
   }

@@ -1,16 +1,20 @@
 
 #include "first_app.hpp"
+#include "app.hpp"
 
 // std
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
+// TODO: Look into https://github.com/KhronosGroup/Vulkan-Hpp
+
 int main() {
-  lve::FirstApp app{};
+  //lve::FirstApp app{};
+  App app;
 
   try {
-    app.run();
+    //app.run();
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';
     return EXIT_FAILURE;
