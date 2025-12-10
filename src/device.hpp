@@ -59,13 +59,12 @@ class Device {
   /*
   void copyBufferToImage(
       VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
-
-  void createImageWithInfo(
-      const VkImageCreateInfo &imageInfo,
-      VkMemoryPropertyFlags properties,
-      VkImage &image,
-      VkDeviceMemory &imageMemory);
   */
+  void createImageWithInfo(
+      const vk::ImageCreateInfo &imageInfo,
+      vk::MemoryPropertyFlags properties,
+      vk::raii::Image &image,
+      vk::raii::DeviceMemory& imageMemory);
 
  private:
   void createInstance();

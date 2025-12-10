@@ -1,8 +1,8 @@
 #pragma once
 
-#include "lve_descriptors.hpp"
+#include "descriptors.hpp"
 #include "game_object.hpp"
-#include "lve_renderer.hpp"
+#include "renderer.hpp"
 #include "window.hpp"
 #include "data/world.hpp"
 #include "graphics/world_renderer.hpp"
@@ -12,6 +12,7 @@
 #include <vector>
 #include <set>
 #include <device.hpp>
+#include <renderer.hpp>
 
 class App {
  public:
@@ -31,7 +32,10 @@ class App {
 
   Window _window{WIDTH, HEIGHT, "Vulkan Tutorial"};
   Device _device{_window};
+  //Renderer _renderer{_window, _device};
 
+  
+  std::unique_ptr<DescriptorPool> globalPool{};
   GameObject::Map gameObjects;
 
     

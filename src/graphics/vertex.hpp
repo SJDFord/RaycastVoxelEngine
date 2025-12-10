@@ -12,7 +12,9 @@ struct Vertex {
   glm::vec2 uv{};
 
   static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
+  static std::vector<vk::VertexInputBindingDescription> Vertex::getBindingDescriptionsCpp();
   static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+  static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptionsCpp();
 
   bool operator==(const Vertex &other) const;
 };

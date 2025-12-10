@@ -33,7 +33,6 @@ else()
 	message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
 endif()
 
-
 # 2. Set GLFW_PATH in .env.cmake to target specific glfw
 if (DEFINED GLFW_PATH)
   message(STATUS "Using GLFW path specified in .env")

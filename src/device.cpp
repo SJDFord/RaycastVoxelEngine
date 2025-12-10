@@ -413,30 +413,23 @@ void LveDevice::copyBufferToImage(
       &region);
   endSingleTimeCommands(commandBuffer);
 }
-
-void LveDevice::createImageWithInfo(
-    const VkImageCreateInfo &imageInfo,
-    VkMemoryPropertyFlags properties,
-    VkImage &image,
-    VkDeviceMemory &imageMemory) {
-  if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create image!");
-  }
-
-  VkMemoryRequirements memRequirements;
-  vkGetImageMemoryRequirements(device_, image, &memRequirements);
-
-  VkMemoryAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-  if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate image memory!");
-  }
-
-  if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS) {
-    throw std::runtime_error("failed to bind image memory!");
-  }
-}
 */
+void Device::createImageWithInfo(
+    const vk::ImageCreateInfo &imageInfo,
+    vk::MemoryPropertyFlags properties,
+    vk::raii::Image &image,
+    vk::raii::DeviceMemory &imageMemory) {
+
+  image = _device.createImage(imageInfo);
+
+ 
+  vk::MemoryRequirements memRequirements = image.getMemoryRequirements();
+
+  vk::MemoryAllocateInfo allocInfo =
+      vk::MemoryAllocateInfo()
+          .setAllocationSize(memRequirements.size)
+          .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, properties));
+  
+  imageMemory = _device.allocateMemory(allocInfo);
+  image.bindMemory(imageMemory, 0);
+}
