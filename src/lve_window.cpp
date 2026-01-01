@@ -2,6 +2,7 @@
 
 // std
 #include <stdexcept>
+#include <iostream>
 
 namespace lve {
 
@@ -10,6 +11,7 @@ LveWindow::LveWindow(int w, int h, std::string name) : width{w}, height{h}, wind
 }
 
 LveWindow::~LveWindow() {
+  std::cout << "Destroying window" << std::endl;
   glfwDestroyWindow(window);
   glfwTerminate();
 }
@@ -30,6 +32,8 @@ void LveWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR *surface) 
     throw std::runtime_error("failed to craete window surface");
   }
 }
+
+void LveWindow::close() { glfwSetWindowShouldClose(window, 1); }
 
 void LveWindow::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
   auto lveWindow = reinterpret_cast<LveWindow *>(glfwGetWindowUserPointer(window));

@@ -7,6 +7,7 @@
 #include "lve_camera.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
+#include "graphics/graphics_util.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -20,6 +21,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <keyboard_movement_controller.hpp>
+#include <image.hpp>
 
 namespace lve {
 
@@ -28,6 +30,7 @@ VoxelApp::VoxelApp() {
       LveDescriptorPool::Builder(lveDevice)
           .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+          .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
   _world = std::make_shared<World>();
   _worldRenderer = std::make_unique<WorldRenderer>(lveDevice, _world);
@@ -52,13 +55,22 @@ void VoxelApp::run() {
   auto globalSetLayout =
       LveDescriptorSetLayout::Builder(lveDevice)
           .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+          .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
           .build();
+
+  // TODO: Image needs to be created here instead of attached to the LveGameObject
+  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "textures/jungle-brick-with-moss.png");
+  VkDescriptorImageInfo imageInfo{};
+  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  imageInfo.imageView = image->getImageView();
+  imageInfo.sampler = image->getSampler();
 
   std::vector<VkDescriptorSet> globalDescriptorSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
     LveDescriptorWriter(*globalSetLayout, *globalPool)
         .writeBuffer(0, &bufferInfo)
+        .writeImage(1, &imageInfo)
         .build(globalDescriptorSets[i]);
   }
 
@@ -81,6 +93,11 @@ void VoxelApp::run() {
   while (!lveWindow.shouldClose()) {
     glfwPollEvents();
 
+    if (glfwGetKey(lveWindow.getGLFWwindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+      lveWindow.close();
+      //lveWindow.getGLFWwindow().
+    }
+
     auto newTime = std::chrono::high_resolution_clock::now();
     float frameTime =
         std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -88,7 +105,7 @@ void VoxelApp::run() {
 
     cameraController.updateView(lveWindow.getGLFWwindow(), frameTime, viewerObject);
     //cameraController.moveInPlaneXZ(lveWindow.getGLFWwindow(), frameTime, viewerObject);
-    _worldRenderer->update(lveDevice, viewerObject.transform.translation);
+    //_worldRenderer->update(lveDevice, viewerObject.transform.translation);
     camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
     float aspect = lveRenderer.getAspectRatio();
@@ -96,9 +113,11 @@ void VoxelApp::run() {
 
     if (auto commandBuffer = lveRenderer.beginFrame()) {
       int frameIndex = lveRenderer.getFrameIndex();
-      std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> models =
-  _worldRenderer->getModels(); LveGameObject::Map chunkGameObjects; for (auto positionModel :
-  models) {
+      
+      std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> models = _worldRenderer->getModels(); 
+      //::Map chunkGameObjects; 
+      /*
+      for (auto positionModel : models) {
         //std::cout << "Processing game object" << std::endl;
         glm::vec3 position = positionModel.first;
         std::shared_ptr<lve::LveModel> model = positionModel.second;
@@ -111,6 +130,7 @@ void VoxelApp::run() {
         //gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
         chunkGameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
       }
+      */
 
       auto mainLight = LveGameObject::makePointLight(10.0f);
       mainLight.color = {1.0f, 1.0f, 1.0f};
@@ -118,7 +138,7 @@ void VoxelApp::run() {
       glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};
       mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
       mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
-      chunkGameObjects.emplace(mainLight.getId(), std::move(mainLight));
+      //chunkGameObjects.emplace(mainLight.getId(), std::move(mainLight));
 
       FrameInfo frameInfo{
           frameIndex,
@@ -126,7 +146,7 @@ void VoxelApp::run() {
           commandBuffer,
           camera,
           globalDescriptorSets[frameIndex],
-          chunkGameObjects};
+          gameObjects};
 
       // update
       GlobalUbo ubo{};
@@ -293,6 +313,25 @@ void VoxelApp::loadGameObjects() {
   Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
   World world{{chunk1, chunk2}};
 
+  auto testGameObject = LveGameObject::createGameObject();
+  glm::vec3 position = {1.0f, 1.0f, 1.0f};
+  auto testMesh = createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
+  std::shared_ptr<LveModel> testModel = std::make_shared<LveModel>(lveDevice, testMesh);
+  testGameObject.model = testModel;
+  testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
+  testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
+  gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
+
+  auto testGameObject2 = LveGameObject::createGameObject();
+  glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
+  auto testMesh2 = createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
+  std::shared_ptr<LveModel> testModel2 = std::make_shared<LveModel>(lveDevice, testMesh2);
+  testGameObject2.model = testModel2;
+  testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
+  testGameObject2.transform.scale = {0.2f, 0.2f, 0.2f};
+  gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
+   
+  /*
   for (const Chunk& chunk : world.Chunks) {
     FaceCullingChunkMesher chunkMesher;
     Mesh chunkMesh = chunkMesher.create(chunk);
@@ -303,6 +342,7 @@ void VoxelApp::loadGameObjects() {
     chunkGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
     gameObjects.emplace(chunkGameObject.getId(), std::move(chunkGameObject));
   }
+  */
 
   auto mainLight = LveGameObject::makePointLight(10.0f);
   mainLight.color = {

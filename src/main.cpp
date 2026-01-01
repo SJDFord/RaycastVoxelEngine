@@ -1,4 +1,7 @@
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 #include "voxel_app.hpp"
 #include "app.hpp"
 

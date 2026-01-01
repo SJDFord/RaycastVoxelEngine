@@ -45,7 +45,6 @@ Buffer::Buffer(
     .setSize(bufferSize)
     .setUsage(usageFlags)
     .setSharingMode(vk::SharingMode::eExclusive);
-
   _buffer = device.device().createBuffer(bufferInfo);
 
   vk::DeviceBufferMemoryRequirements memoryRequirementsInfo =

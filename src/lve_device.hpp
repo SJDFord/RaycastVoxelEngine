@@ -27,6 +27,8 @@ class LveDevice {
   LveDevice &operator=(LveDevice &&) = delete;
 
   VkCommandPool getCommandPool() { return commandPool; }
+
+  // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   VkDevice device() { return device_; }
   VkSurfaceKHR surface() { return surface_; }
   VkQueue graphicsQueue() { return graphicsQueue_; }
@@ -52,12 +54,21 @@ class LveDevice {
   void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
   void copyBufferToImage(
       VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+  void transitionImageLayout(
+      VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
   void createImageWithInfo(
       const VkImageCreateInfo &imageInfo,
       VkMemoryPropertyFlags properties,
       VkImage &image,
       VkDeviceMemory &imageMemory);
+  VkImageView createImageView(VkImage image, VkFormat format);
+  VkSampler createSampler();
+
+  void destroySampler(VkSampler sampler);
+  void destroyImageView(VkImageView imageView);
+  void destroyImage(VkImage image);
+  void freeMemory(VkDeviceMemory deviceMemory);
 
   VkPhysicalDeviceProperties properties;
 

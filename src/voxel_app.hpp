@@ -32,7 +32,7 @@ class VoxelApp {
  private:
   void loadGameObjects();
 
-  LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Tutorial"};
+  LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Voxel Engine"};
   LveDevice lveDevice{lveWindow};
   LveRenderer lveRenderer{lveWindow, lveDevice};
   std::shared_ptr<World> _world;

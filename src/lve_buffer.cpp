@@ -49,7 +49,7 @@ LveBuffer::LveBuffer(
 LveBuffer::~LveBuffer() {
   unmap();
   vkDestroyBuffer(lveDevice.device(), buffer, nullptr);
-  vkFreeMemory(lveDevice.device(), memory, nullptr);
+  lveDevice.freeMemory(memory);
 }
 
 /**

@@ -137,6 +137,8 @@ Mesh Meshes::Skybox = {
 Mesh createCubeMesh(glm::vec3 position, glm::vec3 colour, bool back, bool front, bool left, bool right, bool bottom, bool top) {
     Mesh mesh = {{}, {}};
 
+    
+
     if (back) {
         std::vector<Vertex> backVertices = {
                 {CubeCoords::BackBottomLeft + position, colour, CubeNormals::Back, TextureCoords::BottomRight},

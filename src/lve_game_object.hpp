@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lve_model.hpp"
+//#include "image.hpp"
 
 // libs
 #include <glm/gtc/matrix_transform.hpp>
@@ -54,6 +55,7 @@ class LveGameObject {
   // Optional pointer components
   std::shared_ptr<LveModel> model{};
   std::unique_ptr<PointLightComponent> pointLight = nullptr;
+  //std::shared_ptr<Image> image = nullptr;
 
  private:
   LveGameObject(id_t objId) : id{objId} {}
