@@ -4,6 +4,7 @@
 
 #include "voxel_app.hpp"
 #include "app.hpp"
+#include "raii_app.hpp"
 
 // std
 #include <cstdlib>
@@ -13,8 +14,9 @@
 // TODO: Look into https://github.com/KhronosGroup/Vulkan-Hpp
 
 int main() {
-  lve::VoxelApp app{};
+  //lve::VoxelApp app{};
   //App app;
+  lve::RaiiApp app{};
 
   try {
     app.run();
