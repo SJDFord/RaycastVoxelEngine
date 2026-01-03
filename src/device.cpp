@@ -433,3 +433,9 @@ void Device::createImageWithInfo(
   imageMemory = _device.allocateMemory(allocInfo);
   image.bindMemory(imageMemory, 0);
 }
+
+
+
+  void Device::destroyPipelineLayout(VkPipelineLayout pipelineLayout) {
+  //vkDestroyPipelineLayout(_device.get, pipelineLayout, nullptr);
+  }

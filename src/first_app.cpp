@@ -152,7 +152,8 @@ void FirstApp::run() {
     }
   }
 
-  vkDeviceWaitIdle(lveDevice.device());
+
+  lveDevice.waitIdle();
   */
 
   std::vector<std::unique_ptr<LveBuffer>> uboBuffers(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -239,7 +240,7 @@ void FirstApp::run() {
     }
   }
 
-  vkDeviceWaitIdle(lveDevice.device());
+  lveDevice.waitIdle();
 }
 
 void FirstApp::loadGameObjects() {

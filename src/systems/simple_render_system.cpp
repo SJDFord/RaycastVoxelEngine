@@ -26,7 +26,7 @@ SimpleRenderSystem::SimpleRenderSystem(
 }
 
 SimpleRenderSystem::~SimpleRenderSystem() {
-  vkDestroyPipelineLayout(lveDevice.device(), pipelineLayout, nullptr);
+  lveDevice.destroyPipelineLayout(pipelineLayout);
 }
 
 void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout) {

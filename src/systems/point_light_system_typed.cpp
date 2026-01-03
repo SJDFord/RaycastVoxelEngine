@@ -28,8 +28,7 @@ PointLightSystemTyped::PointLightSystemTyped(
 }
 
 PointLightSystemTyped::~PointLightSystemTyped() {
-  // TODO
-    //vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+  //device.destroyPipelineLayout(pipelineLayout);
 }
 
 void PointLightSystemTyped::createPipelineLayout(const vk::raii::DescriptorSetLayout& globalSetLayout) {

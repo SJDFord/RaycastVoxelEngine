@@ -65,6 +65,12 @@ class LveDevice {
   VkImageView createImageView(VkImage image, VkFormat format);
   VkSampler createSampler();
 
+  void waitIdle();
+
+  void destroyShaderModule(VkShaderModule shaderModule);
+  void destroyPipeline(VkPipeline pipeline);
+  void destroyPipelineLayout(VkPipelineLayout pipelineLayout);
+
   void destroySampler(VkSampler sampler);
   void destroyImageView(VkImageView imageView);
   void destroyImage(VkImage image);

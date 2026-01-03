@@ -512,6 +512,18 @@ VkSampler LveDevice::createSampler() {
     return sampler;
 }
 
+void LveDevice::waitIdle() { vkDeviceWaitIdle(device_); }
+
+void LveDevice::destroyShaderModule(VkShaderModule shaderModule) {
+    vkDestroyShaderModule(device_, shaderModule, nullptr);
+}
+void LveDevice::destroyPipeline(VkPipeline pipeline) {
+    vkDestroyPipeline(device_, pipeline, nullptr);
+}
+
+void LveDevice::destroyPipelineLayout(VkPipelineLayout pipelineLayout) { 
+  vkDestroyPipelineLayout(device_, pipelineLayout, nullptr);
+}
 
 void LveDevice::destroySampler(VkSampler sampler) {
     vkDestroySampler(device_, sampler, nullptr);

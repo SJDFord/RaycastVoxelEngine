@@ -28,7 +28,7 @@ PointLightSystem::PointLightSystem(
 }
 
 PointLightSystem::~PointLightSystem() {
-  vkDestroyPipelineLayout(lveDevice.device(), pipelineLayout, nullptr);
+  lveDevice.destroyPipelineLayout(pipelineLayout);
 }
 
 void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout) {

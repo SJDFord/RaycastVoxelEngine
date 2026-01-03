@@ -24,8 +24,7 @@ SimpleRenderSystemTyped::SimpleRenderSystemTyped(
 }
 
 SimpleRenderSystemTyped::~SimpleRenderSystemTyped() {
-  // TODO
-  //vkDestroyPipelineLayout(lveDevice.device(), pipelineLayout, nullptr);
+  //device.destroyPipelineLayout(pipelineLayout);
 }
 
 void SimpleRenderSystemTyped::createPipelineLayout(const vk::raii::DescriptorSetLayout& globalSetLayout) {

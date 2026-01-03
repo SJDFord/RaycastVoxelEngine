@@ -22,11 +22,9 @@ Pipeline::Pipeline(
 }
 
 Pipeline::~Pipeline() {
-  /*
-  vkDestroyShaderModule(lveDevice.device(), vertShaderModule, nullptr);
-  vkDestroyShaderModule(lveDevice.device(), fragShaderModule, nullptr);
-  vkDestroyPipeline(lveDevice.device(), graphicsPipeline, nullptr);
-  */
+  //device.destroyShaderModule(vertShaderModule);
+  //device.destroyShaderModule(fragShaderModule);
+  //device.destroyPipeline(graphicsPipeline);
 }
 
 std::vector<char> Pipeline::readFile(const std::string& filepath) {

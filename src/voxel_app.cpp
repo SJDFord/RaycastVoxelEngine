@@ -169,7 +169,8 @@ void VoxelApp::run() {
     }
   }
 
-  vkDeviceWaitIdle(lveDevice.device());
+  
+  lveDevice.waitIdle();
   /*
   std::vector<std::unique_ptr<LveBuffer>> uboBuffers(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
@@ -255,7 +256,8 @@ void VoxelApp::run() {
     }
   }
 
-  vkDeviceWaitIdle(lveDevice.device());
+
+  lveDevice.waitIdle();
   */
 }
 

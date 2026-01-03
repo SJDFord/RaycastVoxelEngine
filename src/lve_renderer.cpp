@@ -21,8 +21,9 @@ void LveRenderer::recreateSwapChain() {
     extent = lveWindow.getExtent();
     glfwWaitEvents();
   }
-  vkDeviceWaitIdle(lveDevice.device());
 
+  lveDevice.waitIdle();
+  
   if (lveSwapChain == nullptr) {
     lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent);
   } else {

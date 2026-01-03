@@ -66,6 +66,9 @@ class Device {
       vk::raii::Image &image,
       vk::raii::DeviceMemory& imageMemory);
 
+  
+  void destroyPipelineLayout(VkPipelineLayout pipelineLayout);
+
  private:
   void createInstance();
   void setupDebugMessenger();
