@@ -88,14 +88,10 @@ void Device::createInstance() {
     .setPEngineName("No Engine")
     .setApiVersion(VK_API_VERSION_1_0);
 
-  auto glfwExtensionCount = 0u;
-  auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-  std::vector<const char *> glfwExtensionsVector(
-      glfwExtensions,
-      glfwExtensions + glfwExtensionCount);
+  std::vector<const char *> extensions = _window.getRequiredExtensions();
 
   std::string ex = "VK_EXT_debug_utils";
-  glfwExtensionsVector.push_back(ex.c_str());
+  extensions.push_back(ex.c_str());
 
   const vk::InstanceCreateInfo instanceCreateInfo =
       vk::InstanceCreateInfo()
@@ -103,8 +99,8 @@ void Device::createInstance() {
           .setPApplicationInfo(&appInfo)
           .setEnabledLayerCount(static_cast<uint32_t>(_validationLayers.size()))
           .setPpEnabledLayerNames(_validationLayers.data())
-          .setEnabledExtensionCount(static_cast<uint32_t>(glfwExtensionsVector.size()))
-          .setPpEnabledExtensionNames(glfwExtensionsVector.data());
+          .setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()))
+          .setPpEnabledExtensionNames(extensions.data());
 
   _instance = vk::raii::Instance(_context, instanceCreateInfo);
 }
@@ -216,11 +212,7 @@ void Device::setupDebugMessenger() {
 }
 
 std::vector<const char *> Device::getRequiredExtensions() {
-  uint32_t glfwExtensionCount = 0;
-  const char **glfwExtensions;
-  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-  std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+  std::vector<const char *> extensions = _window.getRequiredExtensions();
 
   //if (enableValidationLayers) {
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -244,7 +236,7 @@ void Device::hasGflwRequiredInstanceExtensions() {
   for (const auto &required : requiredExtensions) {
     std::cout << "\t" << required << std::endl;
     if (available.find(required) == available.end()) {
-      throw std::runtime_error("Missing required glfw extension");
+      throw std::runtime_error("Missing required window extension");
     }
   }
 }
