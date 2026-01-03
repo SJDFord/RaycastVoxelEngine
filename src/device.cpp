@@ -120,6 +120,9 @@ void Device::createCommandPool() {
   _commandPool = _device.createCommandPool(poolInfo);
 }
 
+
+void Device::waitIdle() { _device.waitIdle(); }
+
 void Device::createSurface() { 
     _surface = _window.createWindowSurface(_instance);
 }

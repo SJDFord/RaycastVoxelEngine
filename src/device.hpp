@@ -30,6 +30,8 @@ class Device {
   vk::raii::Queue graphicsQueue() { return _graphicsQueue; }
   vk::raii::Queue presentQueue() { return _presentQueue; }
 
+  void waitIdle();
+
   SwapChainSupportInfo getSwapChainSupport();
   uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
   int getGraphicsQueueFamily() { return _graphicsQueueIndex; };
