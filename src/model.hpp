@@ -17,14 +17,14 @@
 
 class Model {
  public:
-  Model(Device &device, const Mesh &mesh);
+  Model(std::shared_ptr<Device> device, const Mesh &mesh);
   ~Model();
 
   Model(const Model &) = delete;
   Model &operator=(const Model &) = delete;
 
   static std::unique_ptr<Model> createModelFromFile(
-      Device &device, const std::string &filepath);
+      std::shared_ptr<Device> device, const std::string &filepath);
 
   void bind(const vk::raii::CommandBuffer& commandBuffer);
   void draw(const vk::raii::CommandBuffer& commandBuffer);
@@ -33,7 +33,7 @@ class Model {
   void createVertexBuffers(const std::vector<Vertex> &vertices);
   void createIndexBuffers(const std::vector<uint32_t> &indices);
 
-  Device &_device;
+  std::shared_ptr<Device> _device;
 
   std::unique_ptr<Buffer> vertexBuffer;
   uint32_t vertexCount;

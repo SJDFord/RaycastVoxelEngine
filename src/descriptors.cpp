@@ -72,7 +72,7 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const {
 // *************** Descriptor Pool *********************
 
 DescriptorPool::DescriptorPool(
-    Device &Device,
+    std::shared_ptr<Device> device,
     uint32_t maxSets,
     vk::DescriptorPoolCreateFlags poolFlags,
     const std::vector<vk::DescriptorPoolSize> &poolSizes)
@@ -83,7 +83,7 @@ DescriptorPool::DescriptorPool(
       .setMaxSets(maxSets)
       .setFlags(poolFlags);
   
-  descriptorPool = device.device().createDescriptorPool(descriptorPoolInfo);
+  descriptorPool = device->createDescriptorPool(descriptorPoolInfo);
 }
 
 DescriptorPool::~DescriptorPool() {
@@ -98,8 +98,8 @@ bool DescriptorPool::allocateDescriptor(
       .setDescriptorPool(descriptorPool)
       .setSetLayouts(*descriptorSetLayout)
       .setDescriptorSetCount(1);
-
-  auto descriptors = device.device().allocateDescriptorSets(allocInfo);
+  // TODO: Expose method for allocateDescriptorSets
+  auto descriptors = device->device().allocateDescriptorSets(allocInfo);
   if (descriptors.size() > 0) {
     descriptor = std::move(descriptors[0]);
     return true;
@@ -189,5 +189,5 @@ void DescriptorWriter::overwrite(vk::raii::DescriptorSet &set) {
   for (auto &write : writes) {
     write.dstSet = set;
   }
-  pool.device.device().updateDescriptorSets(writes, {});
+  pool.device->device().updateDescriptorSets(writes, {});
 }

@@ -8,6 +8,7 @@
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
 #include "raii_app.hpp"
+#include "model.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -22,22 +23,19 @@
 #include <image.hpp>
 #include <keyboard_movement_controller.hpp>
 #include <stdexcept>
+#include <swap_chain.hpp>
 
 namespace lve {
 
 RaiiApp::RaiiApp() {
-  /*
+  window = std::make_shared<Window>(WIDTH, HEIGHT, "Vulkan RAII Voxel Engine");
+  device = std::make_shared<Device>(*window.get());
   globalPool =
-      LveDescriptorPool::Builder(lveDevice)
-          .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
-          .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
-          .addPoolSize(
-              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-              LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+      DescriptorPool::Builder(device)
+          .setMaxSets(SwapChain::MAX_FRAMES_IN_FLIGHT)
+          .addPoolSize(vk::DescriptorType::eUniformBuffer, SwapChain::MAX_FRAMES_IN_FLIGHT)
+          .addPoolSize(vk::DescriptorType::eCombinedImageSampler, SwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
-  _world = std::make_shared<World>();
-  _worldRenderer = std::make_unique<WorldRenderer>(lveDevice, _world);
-  */
 
   loadGameObjects();
 }
@@ -98,11 +96,11 @@ void RaiiApp::run() {
   auto currentTime = std::chrono::high_resolution_clock::now();
   */
 
-  while (!window.shouldClose()) {
-    window.pollEvents();
+  while (!window->shouldClose()) {
+    window->pollEvents();
    
-    if (window.isKeyPressed(KeyboardKey::ESCAPE)) {
-      window.close();
+    if (window->isKeyPressed(KeyboardKey::ESCAPE)) {
+      window->close();
     }
 
     /*
@@ -159,41 +157,19 @@ void RaiiApp::run() {
     }
     */
   }
-  device.waitIdle();
+  device->waitIdle();
 }
 
 void RaiiApp::loadGameObjects() {
-  /*
-    srand(10);
-  std::vector<uint32_t> chunkData;
-  int chunkSize = 16;
-  for (int i = 0; i < chunkSize; i++) {
-    for (int j = 0; j < chunkSize; j++) {
-      for (int k = 0; k < chunkSize; k++) {
-        int x = i - chunkSize / 2;
-        int y = j - chunkSize / 2;
-        int z = k - chunkSize / 2;
-        // unsigned int distance = pow(x, 2) + pow(y, 2) + pow(z, 2);
-        // unsigned int blockValue= distance < 64 ? 1 : 0;  //rand() % 2;
-        uint32_t blockValue = rand() % 2;
-        chunkData.push_back(blockValue);
-      }
-    }
-  }
-
-  Chunk chunk1{{0.0f, 0.0f, 0.0f}, chunkSize, chunkData};
-  Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
-  World world{{chunk1, chunk2}};
-
-  auto testGameObject = LveGameObject::createGameObject();
+  auto testGameObject = GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   auto testMesh = createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
-  std::shared_ptr<LveModel> testModel = std::make_shared<LveModel>(lveDevice, testMesh);
+  std::shared_ptr<Model> testModel = std::make_shared<Model>(device, testMesh);
   testGameObject.model = testModel;
   testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
   gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
-
+  /*
   auto testGameObject2 = LveGameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   auto testMesh2 =

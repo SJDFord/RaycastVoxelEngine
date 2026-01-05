@@ -25,6 +25,7 @@ class Device {
   Device& operator=(Device&&) = delete;
 
   vk::raii::CommandPool& getCommandPool() { return _commandPool; }
+  // TODO: Encapsulate this - external classes should not have access
   vk::raii::Device& device() { return _device; }
   vk::raii::SurfaceKHR& surface() { return _surface; }
   vk::raii::Queue graphicsQueue() { return _graphicsQueue; }
@@ -68,6 +69,7 @@ class Device {
       vk::raii::Image &image,
       vk::raii::DeviceMemory& imageMemory);
 
+  vk::raii::DescriptorPool createDescriptorPool(vk::DescriptorPoolCreateInfo createInfo);
   
   void destroyPipelineLayout(VkPipelineLayout pipelineLayout);
 

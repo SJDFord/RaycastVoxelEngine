@@ -6,11 +6,10 @@
 
 #include "data/world.hpp"
 #include "graphics/world_renderer.hpp"
-#include "lve_descriptors.hpp"
+#include "descriptors.hpp"
 #include "device.hpp"
-#include "lve_game_object.hpp"
-#include "lve_renderer.hpp"
 #include "window.hpp"
+#include "game_object.hpp"
 
 // std
 #include <memory>
@@ -33,16 +32,15 @@ class RaiiApp {
  private:
   void loadGameObjects();
 
-  Window window{WIDTH, HEIGHT, "Vulkan RAII Voxel Engine"};
-  Device device{window};
+  std::shared_ptr<Window> window;
+   //{WIDTH, HEIGHT, "Vulkan RAII Voxel Engine"};
+  std::shared_ptr<Device> device;
+  //{window};
   /*
   LveRenderer lveRenderer{lveWindow, lveDevice};
-  std::shared_ptr<World> _world;
-  std::unique_ptr<WorldRenderer> _worldRenderer;
-
-  // note: order of declarations matters
-  std::unique_ptr<LveDescriptorPool> globalPool{};
-  LveGameObject::Map gameObjects;
   */
+  // note: order of declarations matters
+  std::unique_ptr<DescriptorPool> globalPool{};
+  GameObject::Map gameObjects;
 };
 }  // namespace lve

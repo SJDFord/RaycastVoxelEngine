@@ -21,18 +21,20 @@
 #include <keyboard_movement_controller_typed.hpp>
 
 App::App() {   
+    /*
     globalPool =
       DescriptorPool::Builder(_device)
           .setMaxSets(SwapChain::MAX_FRAMES_IN_FLIGHT)
           .addPoolSize(vk::DescriptorType::eUniformBuffer, SwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
+    */
     setup(); 
 }
 
 App::~App() {}
 
 void App::run() {
-
+    /*
   std::vector<std::unique_ptr<Buffer>> uboBuffers(SwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
     uboBuffers[i] = std::make_unique<Buffer>(
@@ -49,7 +51,7 @@ void App::run() {
       vk::DescriptorType::eUniformBuffer,
       vk::ShaderStageFlagBits::eAllGraphics)
         .build();
-
+        */
   /*
   std::vector<vk::raii::DescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
@@ -126,6 +128,7 @@ void App::run() {
 }
 
 void App::setup() {
+  /*
   std::shared_ptr<Model> lveModel =
       Model::createModelFromFile(_device, "models/flat_vase.obj");
   auto flatVase = GameObject::createGameObject();
@@ -166,4 +169,5 @@ void App::setup() {
     pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
     gameObjects.emplace(pointLight.getId(), std::move(pointLight));
   }
+  */
 }

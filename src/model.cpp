@@ -11,7 +11,7 @@
 #endif
 
 
-Model::Model(Device &device, const Mesh &mesh) : _device{device} {
+Model::Model(std::shared_ptr<Device> device, const Mesh &mesh) : _device{device} {
   createVertexBuffers(mesh.Vertices);
   createIndexBuffers(mesh.Indices);
 }
@@ -19,7 +19,7 @@ Model::Model(Device &device, const Mesh &mesh) : _device{device} {
 Model::~Model() {}
 
 std::unique_ptr<Model> Model::createModelFromFile(
-    Device &device, const std::string &filepath) {
+    std::shared_ptr<Device> device, const std::string &filepath) {
   MeshBuilder builder{};
   Mesh mesh = builder.loadMesh(ENGINE_DIR + filepath);
   return std::make_unique<Model>(device, mesh);
@@ -52,7 +52,7 @@ void Model::createVertexBuffers(const std::vector<Vertex> &vertices) {
       vk::MemoryPropertyFlagBits::eDeviceLocal
   );
 
-  _device.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
+  _device->copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
 void Model::createIndexBuffers(const std::vector<uint32_t> &indices) {
@@ -84,7 +84,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t> &indices) {
       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-  _device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+  _device->copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
 void Model::draw(const vk::raii::CommandBuffer& commandBuffer) {

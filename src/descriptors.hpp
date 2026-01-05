@@ -45,7 +45,7 @@ class DescriptorPool {
  public:
   class Builder {
    public:
-    Builder(Device &device) : device{device} {}
+    Builder(std::shared_ptr<Device> device) : device{device} {}
 
     Builder &addPoolSize(vk::DescriptorType descriptorType, uint32_t count);
     Builder &setPoolFlags(vk::DescriptorPoolCreateFlags flags);
@@ -53,14 +53,14 @@ class DescriptorPool {
     std::unique_ptr<DescriptorPool> build() const;
 
    private:
-    Device &device;
+    std::shared_ptr<Device> device;
     std::vector<vk::DescriptorPoolSize> poolSizes{};
     uint32_t maxSets = 1000;
     vk::DescriptorPoolCreateFlags poolFlags;
   };
 
   DescriptorPool(
-      Device &device,
+      std::shared_ptr<Device> device,
       uint32_t maxSets,
       vk::DescriptorPoolCreateFlags poolFlags,
       const std::vector<vk::DescriptorPoolSize> &poolSizes);
@@ -77,7 +77,7 @@ class DescriptorPool {
   void resetPool();
 
  private:
-  Device &device;
+  std::shared_ptr<Device> device;
   vk::raii::DescriptorPool descriptorPool = VK_NULL_HANDLE;
 
   friend class DescriptorWriter;

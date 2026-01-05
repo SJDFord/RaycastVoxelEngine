@@ -58,6 +58,22 @@ Device::Device(Window &window) : _window{window}, _context{} {
   createPhysicalDevice();
   createLogicalDevice();
   createCommandPool();
+
+  uint32_t maxSets = 2;
+  
+  //vk::DescriptorPoolCreateFlags poolFlags;
+  std::vector<vk::DescriptorPoolSize> poolSizes = {};
+  poolSizes.push_back({(vk::DescriptorType) VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2});
+  poolSizes.push_back({(vk::DescriptorType) VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2});
+  vk::DescriptorPoolCreateFlags poolFlags;
+  VkDescriptorPoolCreateInfo descriptorPoolInfo =
+      vk::DescriptorPoolCreateInfo()
+          .setPoolSizeCount(static_cast<uint32_t>(poolSizes.size()))
+          .setPoolSizes(poolSizes)
+          .setMaxSets(maxSets)
+          .setFlags(poolFlags);
+  _device.createDescriptorPool(descriptorPoolInfo);
+  //_device.getDispatcher().createDesc;
 }
 
 Device::~Device() {
@@ -430,6 +446,9 @@ void Device::createImageWithInfo(
 }
 
 
+  vk::raii::DescriptorPool Device::createDescriptorPool(vk::DescriptorPoolCreateInfo createInfo) {
+    return _device.createDescriptorPool(createInfo);
+  }
 
   void Device::destroyPipelineLayout(VkPipelineLayout pipelineLayout) {
   //vkDestroyPipelineLayout(_device.get, pipelineLayout, nullptr);

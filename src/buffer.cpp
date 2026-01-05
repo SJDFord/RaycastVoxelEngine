@@ -27,7 +27,7 @@ vk::DeviceSize Buffer::getAlignment(vk::DeviceSize instanceSize, vk::DeviceSize 
 }
 
 Buffer::Buffer(
-    Device& device,
+    std::shared_ptr<Device> device,
     vk::DeviceSize instanceSize,
     uint32_t instanceCount,
     vk::BufferUsageFlags usageFlags,
@@ -45,7 +45,8 @@ Buffer::Buffer(
     .setSize(bufferSize)
     .setUsage(usageFlags)
     .setSharingMode(vk::SharingMode::eExclusive);
-  _buffer = device.device().createBuffer(bufferInfo);
+  // TODO: Encapsulate
+  _buffer = device->device().createBuffer(bufferInfo);
 
   vk::DeviceBufferMemoryRequirements memoryRequirementsInfo =
       vk::DeviceBufferMemoryRequirements().setPCreateInfo(&bufferInfo);
@@ -55,9 +56,9 @@ Buffer::Buffer(
       vk::MemoryAllocateInfo()
           .setAllocationSize(memoryRequirements.size)
           .setMemoryTypeIndex(
-              device.findMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags));
+              device->findMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags));
  
-  _memory = vk::raii::DeviceMemory(_device.device(), allocInfo);
+  _memory = vk::raii::DeviceMemory(_device->device(), allocInfo);
   _buffer.bindMemory(_memory, 0);
 }
 
@@ -127,7 +128,7 @@ void Buffer::flush(vk::DeviceSize size, vk::DeviceSize offset) {
       .setMemory(*_memory)
       .setOffset(offset)
       .setSize(size);
-  _device.device().flushMappedMemoryRanges(mappedRange);
+  _device->device().flushMappedMemoryRanges(mappedRange);
 }
 
 /**
@@ -146,7 +147,7 @@ void Buffer::invalidate(vk::DeviceSize size, vk::DeviceSize offset) {
       .setMemory(*_memory)
       .setOffset(offset)
       .setSize(size);
-  _device.device().invalidateMappedMemoryRanges(mappedRange);
+  _device->device().invalidateMappedMemoryRanges(mappedRange);
 }
 
 /**

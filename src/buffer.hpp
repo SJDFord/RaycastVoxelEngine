@@ -7,7 +7,7 @@
 class Buffer {
  public:
   Buffer(
-      Device& device,
+      std::shared_ptr<Device> device,
       vk::DeviceSize instanceSize,
       uint32_t instanceCount,
       vk::BufferUsageFlags usageFlags,
@@ -47,7 +47,7 @@ class Buffer {
   //vk::raii::Buffer* buffer = VK_NULL_HANDLE;
   //vk::raii::DeviceMemory* memory = VK_NULL_HANDLE;
 
-  Device& _device;
+  std::shared_ptr<Device> _device;
   vk::DeviceSize bufferSize;
   uint32_t instanceCount;
   vk::DeviceSize instanceSize;
