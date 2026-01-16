@@ -110,8 +110,8 @@ void RaiiApp::run() {
             0,
             vk::DescriptorType::eStorageBuffer,
             nullptr,
-            bufferInfo),
-        /*
+            bufferInfo)
+        /*,
         vk::WriteDescriptorSet(
             globalDescriptorSets[i],
             1,
@@ -120,19 +120,18 @@ void RaiiApp::run() {
             imageInfo,
             nullptr)*/};
     device->device().updateDescriptorSets(writeDescriptorSet, {});
-  
+  }
 
-  /*
   SimpleRenderSystemTyped simpleRenderSystem{
       device,
       renderer->getSwapChainRenderPass(),
-      descriptorSetLayout*};
-  */
-  /*  
-  PointLightSystem pointLightSystem{
-      lveDevice,
-      lveRenderer.getSwapChainRenderPass(),
-      globalSetLayout->getDescriptorSetLayout()};
+      *descriptorSetLayout};
+    
+  PointLightSystemTyped pointLightSystem{
+      device,
+      renderer->getSwapChainRenderPass(),
+      *descriptorSetLayout};
+  /*
   LveCamera camera{};
 
   auto viewerObject = LveGameObject::createGameObject();
