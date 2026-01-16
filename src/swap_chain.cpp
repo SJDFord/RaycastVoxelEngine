@@ -9,14 +9,14 @@
 #include <set>
 #include <stdexcept>
 
-SwapChain::SwapChain(Device &deviceRef, vk::Extent2D extent)
-    : device{deviceRef}, windowExtent{extent} {
+SwapChain::SwapChain(std::shared_ptr<Device> device, vk::Extent2D extent)
+    : device{device}, windowExtent{extent} {
   init();
 }
 
 SwapChain::SwapChain(
-    Device &deviceRef, vk::Extent2D extent, std::shared_ptr<SwapChain> previous)
-    : device{deviceRef}, windowExtent{extent}, oldSwapChain{previous} {
+    std::shared_ptr<Device> device, vk::Extent2D extent, std::shared_ptr<SwapChain> previous)
+    : device{device}, windowExtent{extent}, oldSwapChain{previous} {
   init();
   oldSwapChain = nullptr;
 }
@@ -35,7 +35,7 @@ SwapChain::~SwapChain() {
 }
 
 std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
-  device.device().waitForFences(
+  device->device().waitForFences(
       **inFlightFences[currentFrame],
       true,
       std::numeric_limits<uint64_t>::max());
@@ -46,7 +46,7 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
           .setTimeout(std::numeric_limits<uint64_t>::max())
           .setSemaphore(**imageAvailableSemaphores[currentFrame])
           .setFence(VK_NULL_HANDLE);
-  std::pair<vk::Result, uint32_t> result = device.device().acquireNextImage2KHR(acquireNextImageInfo);
+  std::pair<vk::Result, uint32_t> result = device->device().acquireNextImage2KHR(acquireNextImageInfo);
 
   return result;
 }
@@ -55,7 +55,7 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
     const vk::raii::CommandBuffer &buffers, uint32_t imageIndex) {
   
   if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-    device.device().waitForFences(
+    device->device().waitForFences(
         **imagesInFlight[imageIndex],
         true,
         std::numeric_limits<uint64_t>::max());
@@ -74,8 +74,8 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
     .setSignalSemaphoreCount(1)
     .setSignalSemaphores(signalSemaphore);
 
-  device.device().resetFences(**inFlightFences[currentFrame]);
-  device.graphicsQueue().submit(submitInfo, *inFlightFences[currentFrame]);
+  device->device().resetFences(**inFlightFences[currentFrame]);
+  device->graphicsQueue().submit(submitInfo, *inFlightFences[currentFrame]);
   vk::PresentInfoKHR presentInfo =
       vk::PresentInfoKHR()
       .setWaitSemaphoreCount(1)
@@ -84,7 +84,7 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
       .setSwapchains(*swapChain)
       .setImageIndices(imageIndex);
 
-  vk::Result result = device.presentQueue().presentKHR(presentInfo);
+  vk::Result result = device->presentQueue().presentKHR(presentInfo);
    
   currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -92,7 +92,7 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
  }
 
 void SwapChain::createSwapChain() {
-  SwapChainSupportInfo swapChainSupport = device.getSwapChainSupport();
+  SwapChainSupportInfo swapChainSupport = device->getSwapChainSupport();
 
   vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
   vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -105,7 +105,7 @@ void SwapChain::createSwapChain() {
   }
 
   vk::SwapchainCreateInfoKHR createInfo = vk::SwapchainCreateInfoKHR()
-      .setSurface(device.surface())
+          .setSurface(device->surface())
       .setMinImageCount(imageCount)
       .setImageFormat(surfaceFormat.format)
       .setImageColorSpace(surfaceFormat.colorSpace)
@@ -113,7 +113,9 @@ void SwapChain::createSwapChain() {
       .setImageArrayLayers(1)
       .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
   
-  uint32_t queueFamilyIndices[] = {device.getGraphicsQueueFamily(), device.getPresentQueueFamily()};
+  uint32_t queueFamilyIndices[] = {
+      device->getGraphicsQueueFamily(),
+      device->getPresentQueueFamily()};
  
   if (queueFamilyIndices[0] != queueFamilyIndices[1]) {
     createInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
@@ -131,15 +133,20 @@ void SwapChain::createSwapChain() {
   createInfo.setClipped(true);
   createInfo.setOldSwapchain(oldSwapChain == nullptr ? VK_NULL_HANDLE : *oldSwapChain->swapChain);
 
-  swapChain = device.device().createSwapchainKHR(createInfo);
+  swapChain = device->device().createSwapchainKHR(createInfo);
 
   // we only specified a minimum number of images in the swap chain, so the implementation is
   // allowed to create a swap chain with more. That's why we'll first query the final number of
   // images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
   // retrieve the handles.
   std::vector<vk::Image> images = swapChain.getImages();
+  for (auto &image : images) {
+    swapChainImages.push_back(std::make_shared<vk::Image>(image));
+  }
+  /*
   swapChainImages.insert(
       swapChainImages.end(), images.begin(), images.end());
+      */
 
   swapChainImageFormat = surfaceFormat.format;
   swapChainExtent = extent;
@@ -147,7 +154,7 @@ void SwapChain::createSwapChain() {
 
 void SwapChain::createImageViews() {
     // TODO
-  swapChainImageViews.resize(swapChainImages.size(), VK_NULL_HANDLE);
+  swapChainImageViews.resize(swapChainImages.size());
   for (size_t i = 0; i < swapChainImages.size(); i++) {
     vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
         .setAspectMask(vk::ImageAspectFlagBits::eColor)
@@ -156,12 +163,12 @@ void SwapChain::createImageViews() {
         .setBaseArrayLayer(0)
         .setLayerCount(1);
     vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
-                                           .setImage(swapChainImages[i])
+                                           .setImage(*swapChainImages[i])
                                            .setViewType(vk::ImageViewType::e2D)
                                            .setFormat(swapChainImageFormat)
                                            .setSubresourceRange(subresourceRange);
 
-    swapChainImageViews[i] = &(device.device().createImageView(viewInfo));
+    swapChainImageViews[i] = std::make_shared<vk::raii::ImageView>(device->device().createImageView(viewInfo));
   }
 }
 
@@ -225,7 +232,7 @@ void SwapChain::createRenderPass() {
           .setDependencyCount(1)
           .setDependencies(dependency);
 
-  renderPass = device.device().createRenderPass(renderPassInfo);
+  renderPass = device->device().createRenderPass(renderPassInfo);
 }
 
 void SwapChain::createFramebuffers() {
@@ -242,7 +249,7 @@ void SwapChain::createFramebuffers() {
         .setHeight(swapChainExtent.height)
         .setLayers(1);
 
-    swapChainFramebuffers[i] = &(device.device().createFramebuffer(framebufferInfo));
+    swapChainFramebuffers[i] = &(device->device().createFramebuffer(framebufferInfo));
   }
 }
 
@@ -271,13 +278,11 @@ void SwapChain::createDepthResources() {
                                         .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
                                         .setSamples(vk::SampleCountFlagBits::e1)
                                         .setSharingMode(vk::SharingMode::eExclusive);
-    //TODO: .setFlags(vk::ImageCreateFlagBits::) imageInfo.flags = 0;
-    
-    device.createImageWithInfo(
-        imageInfo,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        *(depthImages[i]),
-        *(depthImageMemorys[i]));
+    // TODO: .setFlags(vk::ImageCreateFlagBits::) imageInfo.flags = 0;
+
+    auto result = device->createImageWithInfo(imageInfo, vk::MemoryPropertyFlagBits::eDeviceLocal);
+    result.image.swap(depthImages[i]);
+    result.imageMemory.swap(depthImageMemorys[i]);
 
     vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
                                                      .setAspectMask(vk::ImageAspectFlagBits::eDepth)
@@ -287,12 +292,11 @@ void SwapChain::createDepthResources() {
                                                      .setLayerCount(1);
 
     vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
-        .setImage(*(depthImages[i]))
+        .setImage(*depthImages[i])
         .setViewType(vk::ImageViewType::e2D)
         .setFormat(depthFormat)
         .setSubresourceRange(subresourceRange);
-
-    depthImageViews[i] = &(device.device().createImageView(viewInfo));
+    depthImageViews[i] = std::make_shared < vk::raii::ImageView>(device->device().createImageView(viewInfo));
   }
 }
 
@@ -308,9 +312,9 @@ void SwapChain::createSyncObjects() {
       .setFlags(vk::FenceCreateFlagBits::eSignaled);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    imageAvailableSemaphores[i] = &device.device().createSemaphore(semaphoreInfo);
-    renderFinishedSemaphores[i] = &device.device().createSemaphore(semaphoreInfo);
-    inFlightFences[i] = &device.device().createFence(fenceInfo);
+    imageAvailableSemaphores[i] = &device->device().createSemaphore(semaphoreInfo);
+    renderFinishedSemaphores[i] = &device->device().createSemaphore(semaphoreInfo);
+    inFlightFences[i] = &device->device().createFence(fenceInfo);
   }
 }
 
@@ -363,7 +367,7 @@ vk::Extent2D SwapChain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capab
 }
 
 vk::Format SwapChain::findDepthFormat() {
-  return device.findSupportedFormat(
+  return device->findSupportedFormat(
       {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment

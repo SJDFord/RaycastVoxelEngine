@@ -33,7 +33,7 @@ struct PipelineConfigInfo {
 class Pipeline {
  public:
   Pipeline(
-      Device& device,
+      std::shared_ptr<Device> device,
       const std::string& vertFilepath,
       const std::string& fragFilepath,
       const PipelineConfigInfo& configInfo);
@@ -57,7 +57,7 @@ class Pipeline {
 
   void createShaderModule(const std::vector<char>& code, vk::raii::ShaderModule& shaderModule);
 
-  Device& device;
+  std::shared_ptr<Device> device;
   vk::raii::Pipeline graphicsPipeline = VK_NULL_HANDLE;
   vk::raii::ShaderModule vertShaderModule = VK_NULL_HANDLE;
   vk::raii::ShaderModule fragShaderModule = VK_NULL_HANDLE;

@@ -17,7 +17,10 @@ struct SimplePushConstantData {
 };
 
 SimpleRenderSystemTyped::SimpleRenderSystemTyped(
-    Device& device, const vk::raii::RenderPass& renderPass, const vk::raii::DescriptorSetLayout& globalSetLayout)
+
+    std::shared_ptr<Device> device,
+    const vk::raii::RenderPass& renderPass,
+    const vk::raii::DescriptorSetLayout& globalSetLayout)
     : device{device} {
   createPipelineLayout(globalSetLayout);
   createPipeline(renderPass);
@@ -38,7 +41,8 @@ void SimpleRenderSystemTyped::createPipelineLayout(const vk::raii::DescriptorSet
       *globalSetLayout,
       pushConstantRange);
 
-  pipelineLayout = device.device().createPipelineLayout(pipelineLayoutInfo);
+  // TODO: Encapsulate
+  pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
 }
 
 void SimpleRenderSystemTyped::createPipeline(const vk::raii::RenderPass& renderPass) {

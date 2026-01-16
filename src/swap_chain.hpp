@@ -11,9 +11,11 @@ class SwapChain {
  public:
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-  SwapChain(Device &deviceRef, vk::Extent2D windowExtent);
+  SwapChain(std::shared_ptr<Device> device, vk::Extent2D windowExtent);
   SwapChain(
-      Device &deviceRef, vk::Extent2D windowExtent, std::shared_ptr<SwapChain> previous);
+      std::shared_ptr<Device> device,
+      vk::Extent2D windowExtent,
+      std::shared_ptr<SwapChain> previous);
 
   ~SwapChain();
 
@@ -65,13 +67,13 @@ class SwapChain {
   std::vector<vk::raii::Framebuffer*> swapChainFramebuffers;
   vk::raii::RenderPass renderPass = VK_NULL_HANDLE;
 
-  std::vector<vk::raii::Image*> depthImages;
-  std::vector<vk::raii::DeviceMemory*> depthImageMemorys;
-  std::vector<vk::raii::ImageView*> depthImageViews;
-  std::vector<vk::Image> swapChainImages;
-  std::vector<vk::raii::ImageView*> swapChainImageViews;
+  std::vector<std::shared_ptr<vk::raii::Image>> depthImages;
+  std::vector<std::shared_ptr<vk::raii::DeviceMemory>> depthImageMemorys;
+  std::vector<std::shared_ptr<vk::raii::ImageView>> depthImageViews;
+  std::vector<std::shared_ptr<vk::Image>> swapChainImages;
+  std::vector<std::shared_ptr<vk::raii::ImageView>> swapChainImageViews;
 
-  Device &device;
+  std::shared_ptr<Device> device;
   vk::Extent2D windowExtent;
 
   vk::raii::SwapchainKHR swapChain = VK_NULL_HANDLE;

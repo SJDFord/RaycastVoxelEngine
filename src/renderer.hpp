@@ -9,10 +9,10 @@
 #include <cassert>
 #include <memory>
 #include <vector>
-/*
+
 class Renderer {
  public:
-  Renderer(Window &window, Device &device);
+  Renderer(Window &window, std::shared_ptr<Device> device);
   ~Renderer();
 
   Renderer(const Renderer &) = delete;
@@ -43,12 +43,11 @@ class Renderer {
   void recreateSwapChain();
 
   Window &window;
-  Device &device;
+  std::shared_ptr<Device> device;
   std::unique_ptr<SwapChain> swapChain;
-  std::vector<vk::raii::CommandBuffer> commandBuffers;
+  vk::raii::CommandBuffers commandBuffers{nullptr};
 
   uint32_t currentImageIndex;
   int currentFrameIndex{0};
   bool isFrameStarted{false};
 };
-*/

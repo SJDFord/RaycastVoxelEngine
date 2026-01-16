@@ -13,7 +13,7 @@
 #endif
 
 Pipeline::Pipeline(
-    Device& device,
+    std::shared_ptr<Device> device,
     const std::string& vertFilepath,
     const std::string& fragFilepath,
     const PipelineConfigInfo& configInfo)
@@ -125,7 +125,7 @@ void Pipeline::createGraphicsPipeline(
       .setBasePipelineIndex(-1)
       .setBasePipelineHandle(VK_NULL_HANDLE);
   
-  graphicsPipeline = device.device().createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+  graphicsPipeline = device->device().createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
 }
 
 void Pipeline::createShaderModule(const std::vector<char>& code, vk::raii::ShaderModule& shaderModule) {
@@ -133,7 +133,7 @@ void Pipeline::createShaderModule(const std::vector<char>& code, vk::raii::Shade
       .setCodeSize(code.size())
       .setPCode(reinterpret_cast<const uint32_t*>(code.data()));
   
-  shaderModule = device.device().createShaderModule(createInfo);
+  shaderModule = device->device().createShaderModule(createInfo);
 }
 
 void Pipeline::bind(const vk::raii::CommandBuffer& commandBuffer) {

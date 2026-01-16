@@ -13,7 +13,7 @@
 class PointLightSystemTyped {
  public:
   PointLightSystemTyped(
-      Device &device,
+      std::shared_ptr<Device> device,
       const vk::raii::RenderPass& renderPass,
       const vk::raii::DescriptorSetLayout& globalSetLayout);
   ~PointLightSystemTyped();
@@ -28,7 +28,7 @@ class PointLightSystemTyped {
   void createPipelineLayout(const vk::raii::DescriptorSetLayout& globalSetLayout);
   void createPipeline(const vk::raii::RenderPass& renderPass);
 
-  Device &device;
+  std::shared_ptr<Device> device;
 
   std::unique_ptr<Pipeline> pipeline;
   vk::raii::PipelineLayout pipelineLayout = VK_NULL_HANDLE;

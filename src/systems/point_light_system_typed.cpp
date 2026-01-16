@@ -19,7 +19,7 @@ struct PointLightPushConstants {
 };
 
 PointLightSystemTyped::PointLightSystemTyped(
-    Device& device,
+    std::shared_ptr<Device> device,
     const vk::raii::RenderPass& renderPass,
     const vk::raii::DescriptorSetLayout& globalSetLayout)
     : device{device} {
@@ -42,7 +42,7 @@ void PointLightSystemTyped::createPipelineLayout(const vk::raii::DescriptorSetLa
       *globalSetLayout,
       pushConstantRange);
 
-  pipelineLayout = device.device().createPipelineLayout(pipelineLayoutInfo);
+  pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
 }
 
 void PointLightSystemTyped::createPipeline(const vk::raii::RenderPass& renderPass) {

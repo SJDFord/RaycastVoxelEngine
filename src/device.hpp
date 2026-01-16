@@ -13,6 +13,11 @@ struct SwapChainSupportInfo {
   std::vector<vk::PresentModeKHR> presentModes;
 };
 
+struct ImageWithMemory {
+  std::shared_ptr<vk::raii::Image> image;
+  std::shared_ptr<vk::raii::DeviceMemory> imageMemory;
+};
+
 class Device {
  public:
   Device(Window& window);
@@ -63,11 +68,30 @@ class Device {
   void copyBufferToImage(
       VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
   */
+  /*
   void createImageWithInfo(
       const vk::ImageCreateInfo &imageInfo,
       vk::MemoryPropertyFlags properties,
       vk::raii::Image &image,
       vk::raii::DeviceMemory& imageMemory);
+  */
+  void copyBufferToImage(
+      const vk::raii::Buffer& buffer,
+      vk::raii::Image& image,
+      uint32_t width,
+      uint32_t height,
+      uint32_t layerCount);
+  void transitionImageLayout(
+      const vk::raii::Image& image,
+      vk::Format format,
+      vk::ImageLayout oldLayout,
+      vk::ImageLayout newLayout);
+
+  ImageWithMemory createImageWithInfo(
+      const vk::ImageCreateInfo& imageInfo,
+      vk::MemoryPropertyFlags properties);
+  void createImageView(vk::raii::Image& image, vk::Format format, vk::raii::ImageView& imageView);
+  void createSampler(vk::raii::Sampler& sampler);
 
   vk::raii::DescriptorPool createDescriptorPool(vk::DescriptorPoolCreateInfo createInfo);
   

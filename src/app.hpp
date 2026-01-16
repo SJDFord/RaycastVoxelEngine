@@ -1,6 +1,5 @@
 #pragma once
 
-#include "descriptors.hpp"
 #include "game_object.hpp"
 #include "renderer.hpp"
 #include "window.hpp"
@@ -35,7 +34,7 @@ class App {
   //Renderer _renderer{_window, _device};
 
   
-  std::unique_ptr<DescriptorPool> globalPool{};
+  //std::unique_ptr<DescriptorPool> globalPool{};
   GameObject::Map gameObjects;
 
     

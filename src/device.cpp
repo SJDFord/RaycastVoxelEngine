@@ -384,7 +384,6 @@ void Device::endSingleTimeCommands(vk::raii::CommandBuffer& commandBuffer) {
 }
 
 
-
 void Device::copyBuffer(
     const vk::raii::Buffer &srcBuffer, const vk::raii::Buffer &dstBuffer, vk::DeviceSize size) {
   vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -397,52 +396,142 @@ void Device::copyBuffer(
 
   endSingleTimeCommands(commandBuffer);
 }
-/*
-void LveDevice::copyBufferToImage(
-    VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) {
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-  VkBufferImageCopy region{};
+void Device::copyBufferToImage(
+    const vk::raii::Buffer& buffer,
+    vk::raii::Image& image,
+    uint32_t width,
+    uint32_t height,
+    uint32_t layerCount) {
+  vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
+
+  vk::BufferImageCopy region{};
   region.bufferOffset = 0;
   region.bufferRowLength = 0;
   region.bufferImageHeight = 0;
 
-  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
   region.imageSubresource.mipLevel = 0;
   region.imageSubresource.baseArrayLayer = 0;
   region.imageSubresource.layerCount = layerCount;
 
-  region.imageOffset = {0, 0, 0};
-  region.imageExtent = {width, height, 1};
+  region.imageOffset = vk::Offset3D{0, 0, 0};
+  region.imageExtent = vk::Extent3D{width, height, 1};
+  commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
 
-  vkCmdCopyBufferToImage(
-      commandBuffer,
-      buffer,
-      image,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      1,
-      &region);
   endSingleTimeCommands(commandBuffer);
 }
-*/
-void Device::createImageWithInfo(
+
+void Device::transitionImageLayout(
+    const vk::raii::Image& image,
+    vk::Format format,
+    vk::ImageLayout oldLayout,
+    vk::ImageLayout newLayout) {
+  vk::raii::CommandBuffer commandBuffer = beginSingleTimeCommands();
+  VkImageMemoryBarrier a;
+  vk::ImageMemoryBarrier barrier{};
+  barrier.sType = vk::StructureType::eImageMemoryBarrier;
+  barrier.oldLayout = oldLayout;
+  barrier.newLayout = newLayout;
+
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+  barrier.image = image;
+  barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+
+  vk::PipelineStageFlags sourceStage;
+  vk::PipelineStageFlags destinationStage;
+
+  if (oldLayout == vk::ImageLayout::eUndefined &&
+      newLayout == vk::ImageLayout::eTransferDstOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+    destinationStage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (
+      oldLayout == vk::ImageLayout::eTransferDstOptimal &&
+      newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    sourceStage = vk::PipelineStageFlagBits::eTransfer;
+    destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else {
+    throw std::invalid_argument("unsupported layout transition!");
+  }
+
+  commandBuffer.pipelineBarrier(
+      sourceStage,
+      destinationStage,
+      vk::DependencyFlags(),
+      nullptr,
+      nullptr,
+      barrier);
+
+  endSingleTimeCommands(commandBuffer);
+}
+
+ImageWithMemory Device::createImageWithInfo(
     const vk::ImageCreateInfo &imageInfo,
-    vk::MemoryPropertyFlags properties,
-    vk::raii::Image &image,
-    vk::raii::DeviceMemory &imageMemory) {
-
-  image = _device.createImage(imageInfo);
-
- 
-  vk::MemoryRequirements memRequirements = image.getMemoryRequirements();
+    vk::MemoryPropertyFlags properties) {
+  ImageWithMemory result = {};
+  result.image =
+      std::make_shared<vk::raii::Image>(_device.createImage(imageInfo));
+  
+  vk::MemoryRequirements memRequirements = result.image->getMemoryRequirements();
 
   vk::MemoryAllocateInfo allocInfo =
       vk::MemoryAllocateInfo()
           .setAllocationSize(memRequirements.size)
           .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, properties));
-  
-  imageMemory = _device.allocateMemory(allocInfo);
-  image.bindMemory(imageMemory, 0);
+  result.imageMemory = std::make_shared<vk::raii::DeviceMemory>(_device.allocateMemory(allocInfo));
+  //imageMemory = ;
+  result.image->bindMemory(*result.imageMemory, 0);
+  return result;
+}
+
+void Device::createImageView(
+    vk::raii::Image& image, vk::Format format, vk::raii::ImageView &imageView) {
+  vk::ImageViewCreateInfo viewInfo{};
+  viewInfo.sType = vk::StructureType::eImageViewCreateInfo;
+  viewInfo.image = image;
+  viewInfo.viewType = vk::ImageViewType::e2D;
+  viewInfo.format = format;
+  viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  viewInfo.subresourceRange.baseMipLevel = 0;
+  viewInfo.subresourceRange.levelCount = 1;
+  viewInfo.subresourceRange.baseArrayLayer = 0;
+  viewInfo.subresourceRange.layerCount = 1;
+  imageView = _device.createImageView(viewInfo);
+}
+
+void Device::createSampler(vk::raii::Sampler& sampler) {
+  vk::SamplerCreateInfo samplerInfo{};
+  samplerInfo.sType = vk::StructureType::eSamplerCreateInfo;
+  samplerInfo.magFilter = vk::Filter::eLinear;
+  samplerInfo.minFilter = vk::Filter::eLinear;
+  samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+  samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+  samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+  samplerInfo.anisotropyEnable = VK_FALSE;  // VK_TRUE;
+  samplerInfo.maxAnisotropy = 1.0f;
+  // properties.limits.maxSamplerAnisotropy;
+  samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+  samplerInfo.unnormalizedCoordinates = VK_FALSE;
+  samplerInfo.compareEnable = VK_FALSE;
+  samplerInfo.compareOp = vk::CompareOp::eAlways;
+  samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+  samplerInfo.mipLodBias = 0.0f;
+  samplerInfo.minLod = 0.0f;
+  samplerInfo.maxLod = 0.0f;
+
+  sampler = _device.createSampler(samplerInfo, nullptr);
 }
 
 

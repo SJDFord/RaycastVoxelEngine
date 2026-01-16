@@ -4,8 +4,8 @@
 #include <array>
 #include <cassert>
 #include <stdexcept>
-/*
-Renderer::Renderer(Window& window, Device& device)
+
+Renderer::Renderer(Window& window, std::shared_ptr<Device> device)
     : window{window}, device{device} {
   recreateSwapChain();
   createCommandBuffers();
@@ -19,7 +19,7 @@ void Renderer::recreateSwapChain() {
     extent = window.getExtent();
     glfwWaitEvents();
   }
-  device.device().waitIdle();
+  device->waitIdle();
   
   if (swapChain == nullptr) {
     swapChain = std::make_unique<SwapChain>(device, extent);
@@ -34,14 +34,19 @@ void Renderer::recreateSwapChain() {
 }
 
 void Renderer::createCommandBuffers() {
-  commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+  //commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT, vk::raii::CommandBuffer(nullptr));
 
   vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
       .setLevel(vk::CommandBufferLevel::ePrimary)
-      .setCommandPool(device.getCommandPool())
-      .setCommandBufferCount(static_cast<uint32_t>(commandBuffers.size()));
+      .setCommandPool(device->getCommandPool())
+          .setCommandBufferCount(static_cast<uint32_t>(SwapChain::MAX_FRAMES_IN_FLIGHT));
 
-  commandBuffers = device.device().allocateCommandBuffers(allocInfo);
+  // TODO: Encapsulate
+  
+  commandBuffers = vk::raii::CommandBuffers(device->device(), allocInfo);
+
+  // TODO: Encapsulate
+  //commandBuffers = device->device().allocateCommandBuffers(allocInfo);
 }
 
 void Renderer::freeCommandBuffers() {
@@ -125,4 +130,3 @@ void Renderer::endSwapChainRenderPass(const vk::raii::CommandBuffer& commandBuff
 
   commandBuffer.endRenderPass();
 }
-*/
