@@ -53,17 +53,19 @@ void Renderer::freeCommandBuffers() {
   //TODO
 }
 
-const vk::raii::CommandBuffer& Renderer::beginFrame() {
+
+const vk::raii::CommandBuffer& Renderer::beginFrame(bool& hasFrame) {
   assert(!isFrameStarted && "Can't call beginFrame while already in progress");
 
   std::pair<vk::Result, uint32_t> resultPair = swapChain->acquireNextImage();
-  const vk::Result& result = resultPair.first;
-  if (result == vk::Result::eErrorOutOfDateKHR) {
+  const vk::Result& vkResult = resultPair.first;
+  if (vkResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
+    hasFrame = false;
     return VK_NULL_HANDLE;
   }
 
-  if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+  if (vkResult != vk::Result::eSuccess && vkResult != vk::Result::eSuboptimalKHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   currentImageIndex = resultPair.second;
@@ -72,6 +74,7 @@ const vk::raii::CommandBuffer& Renderer::beginFrame() {
   const vk::raii::CommandBuffer& commandBuffer = getCurrentCommandBuffer();
   vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
   commandBuffer.begin(beginInfo);
+  hasFrame = true;
   return commandBuffer;
 }
 
@@ -104,7 +107,7 @@ void Renderer::beginSwapChainRenderPass(const vk::raii::CommandBuffer& commandBu
       .setRenderArea(renderArea);
 
   std::array<vk::ClearValue, 2> clearValues{
-      vk::ClearValue().setColor({0.01f, 0.01f, 0.01f, 1.0f}),
+            vk::ClearValue().setColor({0.01f, 0.01f, 0.01f, 1.0f}),
       vk::ClearValue().setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0))
   };
   renderPassInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()))

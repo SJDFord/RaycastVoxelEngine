@@ -216,7 +216,7 @@ void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo) {
       vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
       
   configInfo.colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-  configInfo.colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrc1Alpha);
+  configInfo.colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
   configInfo.colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
   configInfo.colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
   configInfo.colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);

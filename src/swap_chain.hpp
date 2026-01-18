@@ -64,7 +64,7 @@ class SwapChain {
   vk::Format swapChainDepthFormat;
   vk::Extent2D swapChainExtent;
 
-  std::vector<vk::raii::Framebuffer*> swapChainFramebuffers;
+  std::vector<std::shared_ptr<vk::raii::Framebuffer>> swapChainFramebuffers;
   vk::raii::RenderPass renderPass = VK_NULL_HANDLE;
 
   std::vector<std::shared_ptr<vk::raii::Image>> depthImages;
@@ -79,9 +79,9 @@ class SwapChain {
   vk::raii::SwapchainKHR swapChain = VK_NULL_HANDLE;
   std::shared_ptr<SwapChain> oldSwapChain;
 
-  std::vector<vk::raii::Semaphore*> imageAvailableSemaphores;
-  std::vector<vk::raii::Semaphore*> renderFinishedSemaphores;
-  std::vector<vk::raii::Fence*> inFlightFences;
-  std::vector<vk::raii::Fence*> imagesInFlight;
+  std::vector < std::shared_ptr<vk::raii::Semaphore>> imageAvailableSemaphores;
+  std::vector < std::shared_ptr<vk::raii::Semaphore>> renderFinishedSemaphores;
+  std::vector<std::shared_ptr<vk::raii::Fence>> inFlightFences;
+  std::vector<std::shared_ptr<vk::raii::Fence>> imagesInFlight;
   size_t currentFrame = 0;
 };

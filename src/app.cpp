@@ -1,5 +1,15 @@
 #include "app.hpp"
 
+#include "data/chunk.hpp"
+#include "data/world.hpp"
+#include "graphics/face_culling_chunk_mesher.hpp"
+#include "fps_movement_controller.hpp"
+#include "lve_buffer.hpp"
+#include "lve_camera.hpp"
+#include "systems/point_light_system.hpp"
+#include "systems/simple_render_system.hpp"
+#include "graphics/graphics_util.hpp"
+
 // libs
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -11,163 +21,187 @@
 #include <cassert>
 #include <chrono>
 #include <stdexcept>
-#include <vector>
-#include <iostream>
-#include <model.hpp>
-#include <swap_chain.hpp>
-#include <frame_info.hpp>
-#include <systems/simple_render_system_typed.hpp>
-#include <systems/point_light_system_typed.hpp>
-#include <keyboard_movement_controller_typed.hpp>
+#include <keyboard_movement_controller.hpp>
+#include <image.hpp>
+
 
 App::App() {   
-    /*
-    globalPool =
-      DescriptorPool::Builder(_device)
-          .setMaxSets(SwapChain::MAX_FRAMES_IN_FLIGHT)
-          .addPoolSize(vk::DescriptorType::eUniformBuffer, SwapChain::MAX_FRAMES_IN_FLIGHT)
+  globalPool =
+      lve::LveDescriptorPool::Builder(lveDevice)
+          .setMaxSets(lve::LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+          .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, lve::LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+          .addPoolSize(
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+              lve::LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
-    */
-    setup(); 
+  _world = std::make_shared<World>();
+  _worldRenderer = std::make_unique<WorldRenderer>(lveDevice, _world);
+
+  loadGameObjects();
 }
 
 App::~App() {}
 
 void App::run() {
-    /*
-  std::vector<std::unique_ptr<Buffer>> uboBuffers(SwapChain::MAX_FRAMES_IN_FLIGHT);
-  for (int i = 0; i < uboBuffers.size(); i++) {
-    uboBuffers[i] = std::make_unique<Buffer>(
-        _device,
-        sizeof(GlobalUbo),
-        1,
-        vk::BufferUsageFlagBits::eUniformBuffer,
-        vk::MemoryPropertyFlagBits::eHostVisible);
-    uboBuffers[i]->map();
-  }
+  std::vector<std::unique_ptr<lve::LveBuffer>> uboBuffers(lve::LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < uboBuffers.size(); i++) {
+    uboBuffers[i] = std::make_unique<lve::LveBuffer>(
+          lveDevice,
+          sizeof(lve::GlobalUbo),
+          1,
+          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+      uboBuffers[i]->map();
+    }
 
-  auto globalSetLayout = DescriptorSetLayout::Builder(_device).addBinding(
-      0,
-      vk::DescriptorType::eUniformBuffer,
-      vk::ShaderStageFlagBits::eAllGraphics)
-        .build();
-        */
-  /*
-  std::vector<vk::raii::DescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
-  for (int i = 0; i < globalDescriptorSets.size(); i++) {
-    auto bufferInfo = uboBuffers[i]->descriptorInfo();
-    DescriptorWriter(*globalSetLayout, *globalPool)
-        .writeBuffer(0, &bufferInfo)
-        .build(globalDescriptorSets[i]);
-  }
-  
-  SimpleRenderSystemTyped simpleRenderSystem{
-      _device,
-      _renderer.getSwapChainRenderPass(),
-      globalSetLayout->getDescriptorSetLayout()};
-  PointLightSystemTyped pointLightSystem{
-      _device,
-      _renderer.getSwapChainRenderPass(),
-      globalSetLayout->getDescriptorSetLayout()};
-  lve::LveCamera camera{};
+    auto globalSetLayout =
+        lve::LveDescriptorSetLayout::Builder(lveDevice)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build();
 
-  auto viewerObject = GameObject::createGameObject();
-  viewerObject.transform.translation.z = -2.5f;
-  KeyboardMovementController cameraController{};
+    std::unique_ptr<Image> image =
+        std::make_unique<Image>(lveDevice, "textures/jungle-brick-with-moss.png");
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image->getImageView();
+    imageInfo.sampler = image->getSampler();
 
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  while (!_window.shouldClose()) {
-    glfwPollEvents();
+    std::vector<VkDescriptorSet> globalDescriptorSets(lve::LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < globalDescriptorSets.size(); i++) {
+      auto bufferInfo = uboBuffers[i]->descriptorInfo();
+      lve::LveDescriptorWriter(*globalSetLayout, *globalPool)
+          .writeBuffer(0, &bufferInfo)
+          .writeImage(1, &imageInfo)
+          .build(globalDescriptorSets[i]);
+    }
 
-    auto newTime = std::chrono::high_resolution_clock::now();
-    float frameTime =
-        std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-    currentTime = newTime;
+    lve::SimpleRenderSystem simpleRenderSystem{
+        lveDevice,
+        lveRenderer.getSwapChainRenderPass(),
+        globalSetLayout->getDescriptorSetLayout()};
+    lve::PointLightSystem pointLightSystem{
+        lveDevice,
+        lveRenderer.getSwapChainRenderPass(),
+        globalSetLayout->getDescriptorSetLayout()};
+    lve::LveCamera camera{};
 
-    cameraController.moveInPlaneXZ(_window.getGLFWwindow(), frameTime, viewerObject);
-    camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+    auto viewerObject = lve::LveGameObject::createGameObject();
+    viewerObject.transform.translation.z = -2.5f;
+    lve::FpsMovementController cameraController{lveWindow.getGLFWwindow()};
 
-    float aspect = _renderer.getAspectRatio();
-    camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    while (!lveWindow.shouldClose()) {
+      glfwPollEvents();
 
-    try {
-      const vk::raii::CommandBuffer& commandBuffer = _renderer.beginFrame();
+      if (glfwGetKey(lveWindow.getGLFWwindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        lveWindow.close();
+      }
 
-      int frameIndex = _renderer.getFrameIndex();
-      FrameInfo frameInfo{
-          frameIndex,
-          frameTime,
-          commandBuffer,
-          camera,
-          globalDescriptorSets[frameIndex],
-          gameObjects};
+      auto newTime = std::chrono::high_resolution_clock::now();
+      float frameTime =
+          std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+      currentTime = newTime;
 
-      // update
-      GlobalUbo ubo{};
-      ubo.projection = camera.getProjection();
-      ubo.view = camera.getView();
-      ubo.inverseView = camera.getInverseView();
-      pointLightSystem.update(frameInfo, ubo);
-      uboBuffers[frameIndex]->writeToBuffer(&ubo);
-      uboBuffers[frameIndex]->flush();
+      cameraController.updateView(lveWindow.getGLFWwindow(), frameTime, viewerObject);
+      camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
-      // render
-      _renderer.beginSwapChainRenderPass(commandBuffer);
+      float aspect = lveRenderer.getAspectRatio();
+      camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
-      // order here matters
-      simpleRenderSystem.renderGameObjects(frameInfo);
-      pointLightSystem.render(frameInfo);
+      if (auto commandBuffer = lveRenderer.beginFrame()) {
+        int frameIndex = lveRenderer.getFrameIndex();
 
-      _renderer.endSwapChainRenderPass(commandBuffer);
-      _renderer.endFrame();
-    } catch (...) {
-    } 
-  }
-   */
-  _device.device().waitIdle();
+        std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> models =
+            _worldRenderer->getModels();
+
+        auto mainLight = lve::LveGameObject::makePointLight(10.0f);
+        mainLight.color = {1.0f, 1.0f, 1.0f};
+
+        glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};
+        mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
+        mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
+
+        lve::FrameInfo frameInfo{
+            frameIndex,
+            frameTime,
+            commandBuffer,
+            camera,
+            globalDescriptorSets[frameIndex],
+            gameObjects};
+
+        // update
+        lve::GlobalUbo ubo{};
+        ubo.projection = camera.getProjection();
+        ubo.view = camera.getView();
+        ubo.inverseView = camera.getInverseView();
+        pointLightSystem.update(frameInfo, ubo);
+        uboBuffers[frameIndex]->writeToBuffer(&ubo);
+        uboBuffers[frameIndex]->flush();
+
+        // render
+        lveRenderer.beginSwapChainRenderPass(commandBuffer);
+
+        // order here matters
+        simpleRenderSystem.renderGameObjects(frameInfo);
+        pointLightSystem.render(frameInfo);
+
+        lveRenderer.endSwapChainRenderPass(commandBuffer);
+        lveRenderer.endFrame();
+      }
+    }
+
+    lveDevice.waitIdle();
 }
 
-void App::setup() {
-  /*
-  std::shared_ptr<Model> lveModel =
-      Model::createModelFromFile(_device, "models/flat_vase.obj");
-  auto flatVase = GameObject::createGameObject();
-  flatVase.model = lveModel;
-  flatVase.transform.translation = {-.5f, .5f, 0.f};
-  flatVase.transform.scale = {3.f, 1.5f, 3.f};
-  gameObjects.emplace(flatVase.getId(), std::move(flatVase));
+void App::loadGameObjects() {
+    srand(10);
+    std::vector<uint32_t> chunkData;
+    int chunkSize = 16;
+    for (int i = 0; i < chunkSize; i++) {
+      for (int j = 0; j < chunkSize; j++) {
+        for (int k = 0; k < chunkSize; k++) {
+          int x = i - chunkSize / 2;
+          int y = j - chunkSize / 2;
+          int z = k - chunkSize / 2;
+          // unsigned int distance = pow(x, 2) + pow(y, 2) + pow(z, 2);
+          // unsigned int blockValue= distance < 64 ? 1 : 0;  //rand() % 2;
+          uint32_t blockValue = rand() % 2;
+          chunkData.push_back(blockValue);
+        }
+      }
+    }
 
-  lveModel = Model::createModelFromFile(_device, "models/smooth_vase.obj");
-  auto smoothVase = GameObject::createGameObject();
-  smoothVase.model = lveModel;
-  smoothVase.transform.translation = {.5f, .5f, 0.f};
-  smoothVase.transform.scale = {3.f, 1.5f, 3.f};
-  gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
+    Chunk chunk1{{0.0f, 0.0f, 0.0f}, chunkSize, chunkData};
+    Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
+    World world{{chunk1, chunk2}};
 
-  lveModel = Model::createModelFromFile(_device, "models/quad.obj");
-  auto floor = GameObject::createGameObject();
-  floor.model = lveModel;
-  floor.transform.translation = {0.f, .5f, 0.f};
-  floor.transform.scale = {3.f, 1.f, 3.f};
-  gameObjects.emplace(floor.getId(), std::move(floor));
+    auto testGameObject = lve::LveGameObject::createGameObject();
+    glm::vec3 position = {1.0f, 1.0f, 1.0f};
+    auto testMesh =
+        createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
+    std::shared_ptr<lve::LveModel> testModel =
+        std::make_shared <lve::LveModel> (lveDevice, testMesh);
+    testGameObject.model = testModel;
+    testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
+    testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
+    gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
 
-    std::vector<glm::vec3> lightColors{
-      {1.f, .1f, .1f},
-      {.1f, .1f, 1.f},
-      {.1f, 1.f, .1f},
-      {1.f, 1.f, .1f},
-      {.1f, 1.f, 1.f},
-      {1.f, 1.f, 1.f}};
+    auto testGameObject2 = lve::LveGameObject::createGameObject();
+    glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
+    auto testMesh2 =
+        createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
+    std::shared_ptr<lve::LveModel> testModel2 =
+        std::make_shared<lve::LveModel>(lveDevice, testMesh2);
+    testGameObject2.model = testModel2;
+    testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
+    testGameObject2.transform.scale = {0.2f, 0.2f, 0.2f};
+    gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
 
-  for (int i = 0; i < lightColors.size(); i++) {
-    auto pointLight = GameObject::makePointLight(0.2f);
-    pointLight.color = lightColors[i];
-    auto rotateLight = glm::rotate(
-        glm::mat4(1.f),
-        (i * glm::two_pi<float>()) / lightColors.size(),
-        {0.f, -1.f, 0.f});
-    pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
-    gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-  }
-  */
+    auto mainLight = lve::LveGameObject::makePointLight(10.0f);
+    mainLight.color = {1.0f, 1.0f, 1.0f};
+
+    mainLight.transform.translation = {0.0f, -5.0f, 0.0f};
+    mainLight.transform.scale = {1.0f, 1.0f, 1.0f};
+    gameObjects.emplace(mainLight.getId(), std::move(mainLight));
 }

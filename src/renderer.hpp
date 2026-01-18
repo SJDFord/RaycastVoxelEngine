@@ -32,7 +32,7 @@ class Renderer {
     return currentFrameIndex;
   }
 
-  const vk::raii::CommandBuffer& beginFrame();
+  const vk::raii::CommandBuffer& beginFrame(bool &hasFrame);
   void endFrame();
   void beginSwapChainRenderPass(const vk::raii::CommandBuffer& commandBuffer);
   void endSwapChainRenderPass(const vk::raii::CommandBuffer& commandBuffer);

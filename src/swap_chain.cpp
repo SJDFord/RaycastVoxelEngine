@@ -45,7 +45,9 @@ std::pair<vk::Result, uint32_t> SwapChain::acquireNextImage() {
           .setSwapchain(swapChain)
           .setTimeout(std::numeric_limits<uint64_t>::max())
           .setSemaphore(**imageAvailableSemaphores[currentFrame])
-          .setFence(VK_NULL_HANDLE);
+          .setFence(VK_NULL_HANDLE)
+          .setDeviceMask(1);
+      //.set;
   std::pair<vk::Result, uint32_t> result = device->device().acquireNextImage2KHR(acquireNextImageInfo);
 
   return result;
@@ -249,7 +251,7 @@ void SwapChain::createFramebuffers() {
         .setHeight(swapChainExtent.height)
         .setLayers(1);
 
-    swapChainFramebuffers[i] = &(device->device().createFramebuffer(framebufferInfo));
+    swapChainFramebuffers[i] = std::make_shared<vk::raii::Framebuffer>(device->device().createFramebuffer(framebufferInfo));
   }
 }
 
@@ -312,9 +314,9 @@ void SwapChain::createSyncObjects() {
       .setFlags(vk::FenceCreateFlagBits::eSignaled);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    imageAvailableSemaphores[i] = &device->device().createSemaphore(semaphoreInfo);
-    renderFinishedSemaphores[i] = &device->device().createSemaphore(semaphoreInfo);
-    inFlightFences[i] = &device->device().createFence(fenceInfo);
+    imageAvailableSemaphores[i] = std::make_shared<vk::raii::Semaphore>(device->device().createSemaphore(semaphoreInfo));
+    renderFinishedSemaphores[i] = std::make_shared<vk::raii::Semaphore>(device->device().createSemaphore(semaphoreInfo));
+    inFlightFences[i] = std::make_shared<vk::raii::Fence>(device->device().createFence(fenceInfo));
   }
 }
 

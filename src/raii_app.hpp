@@ -35,13 +35,9 @@ class RaiiApp {
   void createDescriptorSetLayout();
 
   std::shared_ptr<Window> window;
-   //{WIDTH, HEIGHT, "Vulkan RAII Voxel Engine"};
   std::shared_ptr<Device> device;
-  //{window};
   std::shared_ptr<Renderer> renderer;
-  /*
-  LveRenderer lveRenderer{lveWindow, lveDevice};
-  */
+
   // note: order of declarations matters
   std::shared_ptr<vk::raii::DescriptorPool> globalPool{};
   std::vector<vk::DescriptorSetLayoutBinding> setLayoutBindings;

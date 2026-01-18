@@ -1,17 +1,20 @@
 #pragma once
 
-#include "game_object.hpp"
-#include "renderer.hpp"
-#include "window.hpp"
 #include "data/world.hpp"
 #include "graphics/world_renderer.hpp"
+#include "lve_descriptors.hpp"
+#include "lve_device.hpp"
+#include "lve_game_object.hpp"
+#include "lve_model.hpp"
+#include "lve_renderer.hpp"
+#include "lve_window.hpp"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_vulkan.h>
 
 // std
 #include <memory>
 #include <vector>
-#include <set>
-#include <device.hpp>
-#include <renderer.hpp>
 
 class App {
  public:
@@ -27,17 +30,15 @@ class App {
   void run();
 
  private:
-  void setup();
+  void loadGameObjects();
 
-  Window _window{WIDTH, HEIGHT, "Vulkan Tutorial"};
-  Device _device{_window};
-  //Renderer _renderer{_window, _device};
+  lve::LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Voxel Engine"};
+  lve::LveDevice lveDevice{lveWindow};
+  lve::LveRenderer lveRenderer{lveWindow, lveDevice};
+  std::shared_ptr<World> _world;
+  std::unique_ptr<WorldRenderer> _worldRenderer;
 
-  
-  //std::unique_ptr<DescriptorPool> globalPool{};
-  GameObject::Map gameObjects;
-
-    
-  const std::vector<const char *> _validationLayers = {"VK_LAYER_KHRONOS_validation"};
-  const std::vector<const char *> _deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  // note: order of declarations matters
+  std::unique_ptr<lve::LveDescriptorPool> globalPool{};
+  lve::LveGameObject::Map gameObjects;
 };
