@@ -1,20 +1,21 @@
 #pragma once
 
-#include "data/world.hpp"
-#include "graphics/world_renderer.hpp"
-#include "lve_descriptors.hpp"
-#include "lve_device.hpp"
-#include "lve_game_object.hpp"
-#include "lve_model.hpp"
-#include "lve_renderer.hpp"
-#include "lve_window.hpp"
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_vulkan.h>
+#include "window.hpp"
+#include "device.hpp"
 
 // std
 #include <memory>
 #include <vector>
+#include <optional>
+
+constexpr uint32_t IN_FLIGHT_FRAME_COUNT{2};
+
+struct Frame {
+  vk::raii::CommandBuffer commandBuffer;
+  vk::raii::Semaphore imageAvailableSemaphore;
+  vk::raii::Semaphore renderFinishedSemaphore;
+  vk::raii::Fence fence;
+};
 
 class App {
  public:
@@ -30,15 +31,10 @@ class App {
   void run();
 
  private:
-  void loadGameObjects();
+  std::shared_ptr<Window> window;
+  std::shared_ptr<Device> device;
+  std::array<std::optional<Frame>, IN_FLIGHT_FRAME_COUNT> frames{};
+  uint32_t frameIndex{};
 
-  lve::LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Voxel Engine"};
-  lve::LveDevice lveDevice{lveWindow};
-  lve::LveRenderer lveRenderer{lveWindow, lveDevice};
-  std::shared_ptr<World> _world;
-  std::unique_ptr<WorldRenderer> _worldRenderer;
-
-  // note: order of declarations matters
-  std::unique_ptr<lve::LveDescriptorPool> globalPool{};
-  lve::LveGameObject::Map gameObjects;
+  void initFrames();
 };

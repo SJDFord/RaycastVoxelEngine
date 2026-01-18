@@ -15,8 +15,8 @@
 
 int main() {
   //lve::VoxelApp app{};
-  //App app;
-  lve::RaiiApp app{};
+  App app;
+  //lve::RaiiApp app{};
 
   try {
     app.run();
