@@ -4,6 +4,7 @@
 #include "vulkan/vulkan_raii.hpp"
 #include <device.hpp>
 
+
 class Buffer {
  public:
   Buffer(

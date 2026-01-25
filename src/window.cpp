@@ -74,7 +74,9 @@ void Window::setRawMouseMotion(bool enabled) {
   }
 
   if (!glfwRawMouseMotionSupported()) {
-    throw std::exception("Raw mouse motion is not supported");
+    return;
+    // TODO: Throw error
+    //throw std::exception("Raw mouse motion is not supported");
   }
 
 

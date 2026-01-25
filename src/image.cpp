@@ -2,7 +2,7 @@
 
 
 Image::Image(lve::LveDevice &device, const std::string &filepath) : lveDevice{device} {
-    createImage();
+    createImage(filepath);
     createImageView();
     textureSampler = lveDevice.createSampler();
 }
@@ -15,14 +15,9 @@ Image::~Image() {
 }
 
 
-void Image::createImage() {
+void Image::createImage(const std::string &filepath) {
   int texWidth, texHeight, texChannels;
-  std::string pathPrefix = "textures/skybox/water_scene/";
-  std::string pathSuffix = "front.jpg";
-  //std::string path = pathPrefix + pathSuffix;
-  std::string path =
-      "C:/Users/sjdf/Code/RaycastVoxelEngine/textures/jungle-brick-with-moss.png";
-  stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+  stbi_uc *pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
   VkDeviceSize imageSize = texWidth * texHeight * 4;
   if (!pixels) {
     throw std::runtime_error("failed to load texture image!");

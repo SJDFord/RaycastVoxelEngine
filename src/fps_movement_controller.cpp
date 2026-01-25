@@ -6,11 +6,7 @@
 namespace lve {
 
 FpsMovementController::FpsMovementController(GLFWwindow* window) { 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported()) {
-        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    }
-    getMousePos(window, lastMousePos);
+    setMouseCapture(window, true);
 }
 
 void FpsMovementController::updateView(
@@ -23,8 +19,10 @@ void FpsMovementController::updateView(
   rotate.x -= mousePosDelta.y;
   rotate.y += mousePosDelta.x;
   if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
+  	//std::cout << "RotX: " << rotate.x << ", RotY: " << rotate.y << std::endl;
         gameObject.transform.rotation += lookSpeed * dt * glm::normalize(rotate);
   }
+  
   // limit pitch values between about +/- 85ish degrees and minimise the rotation value (e.g. 10 degrees instead of 370 degrees)
   gameObject.transform.rotation.x = glm::clamp(gameObject.transform.rotation.x, -1.5f, 1.5f);
   gameObject.transform.rotation.y = glm::mod(gameObject.transform.rotation.y, glm::two_pi<float>());
@@ -40,7 +38,13 @@ void FpsMovementController::updateView(
   if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
   if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
   if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
-
+  if (glfwGetKey(window, keys.enableMouseCapture) == GLFW_PRESS) {
+  	setMouseCapture(window, true);
+  }
+  if (glfwGetKey(window, keys.disableMouseCapture) == GLFW_PRESS) {
+  	setMouseCapture(window, false);
+  }
+	
   if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
     gameObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
   }
@@ -49,8 +53,29 @@ void FpsMovementController::updateView(
   void FpsMovementController::getMousePos(GLFWwindow* window, glm::vec2& result) { 
       double x, y;
       glfwGetCursorPos(window, &x, &y);
+      //std::cout << "[RAW] RotX: " << x << ", RotY: " << y << std::endl;
       result.x = x;
       result.y = y;
+  }
+  
+  
+  void FpsMovementController::setMouseCapture(GLFWwindow* window, bool capture) {
+	if (capture) {
+	    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	    
+	    if (glfwRawMouseMotionSupported()) {
+		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+		//std::cout << "Enabling raw mouse motion" << std::endl;
+	    }
+	    
+	    getMousePos(window, lastMousePos);
+	    return;
+	}
+
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		
+		//glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+		return;
   }
 
 }  // namespace lve

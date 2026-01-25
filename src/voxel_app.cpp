@@ -58,7 +58,7 @@ void VoxelApp::run() {
           .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
           .build();
 
-  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "textures/jungle-brick-with-moss.png");
+  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/jungle-brick-with-moss.png");
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   imageInfo.imageView = image->getImageView();

@@ -51,7 +51,7 @@ class Image {
   VkImageView textureImageView = VK_NULL_HANDLE;
   VkSampler textureSampler = VK_NULL_HANDLE;
 
-  void createImage();
+  void createImage(const std::string &filepath);
   void createImageView();
   static void loadCubemap(lve::LveDevice &device, std::string filename, VkFormat format);
   /*

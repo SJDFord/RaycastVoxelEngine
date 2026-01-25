@@ -183,7 +183,7 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
   configInfo.colorBlendInfo.setLogicOp(vk::LogicOp::eCopy);
   configInfo.colorBlendInfo.setAttachmentCount(1);
   configInfo.colorBlendInfo.setAttachments(configInfo.colorBlendAttachment);
-  std::array<float, 4Ui64> blendConstants = {0.0f, 0.0f, 0.0f, 0.0f};
+  std::array<float, 4> blendConstants = {0.0f, 0.0f, 0.0f, 0.0f};
   configInfo.colorBlendInfo.setBlendConstants(blendConstants);
 
   configInfo.depthStencilInfo.setDepthTestEnable(true);

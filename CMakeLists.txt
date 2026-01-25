@@ -46,6 +46,11 @@ if (DEFINED GLFW_PATH)
 else()
   CPMAddPackage("gh:glfw/glfw#3.3.9")
   set(GLFW_LIB glfw)
+  
+
+# GLSLang  
+set( ENABLE_OPT OFF ) # could use ALLOW_EXTERNAL_SPIRV_TOOLS=ON instead
+CPMAddPackage("gh:KhronosGroup/glslang#16.1.0")
 
 endif()
 if (NOT GLFW_LIB)
@@ -83,7 +88,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SOURCES})
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
@@ -123,7 +128,7 @@ elseif (UNIX)
       ${STB_PATH}
       ${TINYOBJ_PATH}
     )
-    target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} glfw glslang ${Vulkan_LIBRARIES})
 endif()
 
 
