@@ -787,13 +787,16 @@ namespace vk
                                            {},
                                            initialLayout );
       image = device.createImage( imageCreateInfo );
-
+      std::cout << "Image created!" << std::endl;
       deviceMemory = vk::su::allocateDeviceMemory( device, physicalDevice.getMemoryProperties(), device.getImageMemoryRequirements( image ), memoryProperties );
+      std::cout << "Memory allocated!" << std::endl;
 
       device.bindImageMemory( image, deviceMemory, 0 );
+      std::cout << "Image bound!" << std::endl;
 
       vk::ImageViewCreateInfo imageViewCreateInfo( {}, image, vk::ImageViewType::e2D, format, {}, { aspectMask, 0, 1, 0, 1 } );
       imageView = device.createImageView( imageViewCreateInfo );
+      std::cout << "Image view created!" << std::endl;
     }
 
     SurfaceData::SurfaceData( vk::Instance const & instance, std::string const & windowName, vk::Extent2D const & extent_ )

@@ -147,7 +147,8 @@ void Device::createPhysicalDevice() {
     std::cout << "Found Physical Device: " << props.deviceName << std::endl;
   }
 
-  _physicalDevice = physicalDevices[0];
+  // TODO: Score device properly
+  _physicalDevice = physicalDevices[1];
   _properties = _physicalDevice.getProperties();
   _features = _physicalDevice.getFeatures();
   _memoryProperties = _physicalDevice.getMemoryProperties();
@@ -170,7 +171,7 @@ void Device::createLogicalDevice() {
   }
 
   std::cout << "Found Graphics Index : " << std::to_string(_graphicsQueueIndex)
-            << "and Present Index: " << std::to_string(_presentQueueIndex) << std::endl;
+            << " and Present Index: " << std::to_string(_presentQueueIndex) << std::endl;
 
   std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {

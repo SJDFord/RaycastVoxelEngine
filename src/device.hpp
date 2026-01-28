@@ -32,6 +32,7 @@ class Device {
   vk::raii::CommandPool& getCommandPool() { return _commandPool; }
   // TODO: Encapsulate this - external classes should not have access
   vk::raii::Device& device() { return _device; }
+  vk::raii::PhysicalDevice& physicalDevice() { return _physicalDevice; }
   vk::raii::SurfaceKHR& surface() { return _surface; }
   vk::raii::Queue graphicsQueue() { return _graphicsQueue; }
   vk::raii::Queue presentQueue() { return _presentQueue; }

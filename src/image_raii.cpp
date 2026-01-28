@@ -1,9 +1,49 @@
 #include "image_raii.hpp"
 
-ImageRaii::ImageRaii(std::shared_ptr<Device> device, const std::string &filepath) : device{device} {
-  createImage();
+ImageRaii::ImageRaii(
+        vk::Device const & device 
+) {
+  createImage(device);
   createImageView();
-  device->createSampler(textureSampler);
+  
+  /* Old settings
+  VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_FALSE;  // VK_TRUE;
+    samplerInfo.maxAnisotropy = 1.0f;
+    //properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+  */
+  
+  /*
+  textureSampler = device.createSampler( vk::SamplerCreateInfo( vk::SamplerCreateFlags(),
+     vk::Filter::eLinear,
+     vk::Filter::eLinear,
+     vk::SamplerMipmapMode::eLinear,
+     vk::SamplerAddressMode::eRepeat,
+     vk::SamplerAddressMode::eRepeat,
+     vk::SamplerAddressMode::eRepeat,
+     0.0f,
+     anisotropyEnable,
+     16.0f,
+     false,
+     vk::CompareOp::eNever,
+     0.0f,
+     0.0f,
+     vk::BorderColor::eFloatOpaqueBlack ) );
+  */
 }
 
 ImageRaii::~ImageRaii() {
@@ -15,7 +55,7 @@ ImageRaii::~ImageRaii() {
   */
 }
 
-void ImageRaii::createImage() {
+void ImageRaii::createImage(const vk::Device& device) {
   int texWidth, texHeight, texChannels;
   std::string pathPrefix = "textures/skybox/water_scene/";
   std::string pathSuffix = "front.jpg";
@@ -26,19 +66,21 @@ void ImageRaii::createImage() {
   if (!pixels) {
     throw std::runtime_error("failed to load texture image!");
   }
-
-  Buffer buffer(
+  /*
+  BufferRaii buffer(
       device,
       imageSize,
       1,
       vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+     
 
   buffer.map(imageSize, 0);
   buffer.writeToBuffer(pixels, static_cast<size_t>(imageSize));
   buffer.unmap();
   stbi_image_free(pixels);
-
+  */
+  /*
   vk::ImageCreateInfo imageInfo{};
   imageInfo.sType = vk::StructureType::eImageCreateInfo;
   imageInfo.imageType = vk::ImageType::e2D;
@@ -55,33 +97,66 @@ void ImageRaii::createImage() {
   imageInfo.sharingMode = vk::SharingMode::eExclusive;
   imageInfo.samples = vk::SampleCountFlagBits::e1;
   imageInfo.flags = vk::ImageCreateFlags();  // Optional
-
-  auto result = device->createImageWithInfo(
+  */
+  /*
+  auto result = device.createImageWithInfo(
       imageInfo,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   result.image.swap(textureImage);
   result.imageMemory.swap(textureImageMemory);
+  */
+  
+  /*
+  TODO: Implement
+  vk::ImageCreateInfo imageCreateInfo( vk::ImageCreateFlags(),
+   vk::ImageType::e2D,
+   format,
+   vk::Extent3D( extent, 1 ),
+   1,
+   1,
+   vk::SampleCountFlagBits::e1,
+   tiling,
+   usage | vk::ImageUsageFlagBits::eSampled,
+   vk::SharingMode::eExclusive,
+   {},
+   initialLayout );
+   textureImage = std::make_shared<<vk::raii::Image>(device.createImage( imageCreateInfo ));
+      std::cout << "Image created!" << std::endl;
+   deviceMemory = vk::su::allocateDeviceMemory( device, physicalDevice.getMemoryProperties(), device.getImageMemoryRequirements( image ), memoryProperties );
+      std::cout << "Memory allocated!" << std::endl;
 
-  device->transitionImageLayout(
+      device.bindImageMemory( image, deviceMemory, 0 );
+      std::cout << "Image bound!" << std::endl;
+
+      vk::ImageViewCreateInfo imageViewCreateInfo( {}, image, vk::ImageViewType::e2D, format, {}, { aspectMask, 0, 1, 0, 1 } );
+      imageView = device.createImageView( imageViewCreateInfo );
+      std::cout << "Image view created!" << std::endl;
+  */
+
+  // TODO: Implement
+  /*
+  device.transitionImageLayout(
       *textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eTransferDstOptimal);
-  device->copyBufferToImage(
+  device.copyBufferToImage(
       buffer.getBuffer(),
       *textureImage,
       static_cast<uint32_t>(texWidth),
       static_cast<uint32_t>(texHeight),
       1);
-  device->transitionImageLayout(
+  device.transitionImageLayout(
       *textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eTransferDstOptimal,
       vk::ImageLayout::eShaderReadOnlyOptimal);
+  */
 }
 
 void ImageRaii::createImageView() {
+  /*
   vk::ImageViewCreateInfo viewInfo{};
   viewInfo.sType = vk::StructureType::eImageViewCreateInfo;
   viewInfo.image = *textureImage;
@@ -93,11 +168,9 @@ void ImageRaii::createImageView() {
   viewInfo.subresourceRange.baseArrayLayer = 0;
   viewInfo.subresourceRange.layerCount = 1;
 
-  device->createImageView(*textureImage, vk::Format::eR8G8B8A8Srgb, textureImageView);
+  device.createImageView(*textureImage, vk::Format::eR8G8B8A8Srgb, textureImageView);
+  */
 }
 
-void ImageRaii::loadCubemap(std::shared_ptr<Device> device, std::string filename, vk::Format format) {
-}
-
-vk::raii::ImageView& ImageRaii::getImageView() { return textureImageView; }
-vk::raii::Sampler& ImageRaii::getSampler() { return textureSampler; }
+//vk::ImageView& ImageRaii::getImageView() { return textureImageView; }
+//vk::Sampler& ImageRaii::getSampler() { return textureSampler; }

@@ -113,6 +113,8 @@ void LveDevice::createLogicalDevice() {
   QueueFamilyIndices indices = physicalDevice->findQueueFamilies(surface_);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::cout << "Found Graphics Index : " << std::to_string(indices.graphicsFamily)
+            << " and Present Index: " << std::to_string(indices.presentFamily) << std::endl;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
 
   float queuePriority = 1.0f;
