@@ -17,6 +17,7 @@
 #include "./utils/shaders.hpp"
 #include "./utils/utils.hpp"
 #include "glslang/Public/ShaderLang.h"
+#include "buffer_raii.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -69,9 +70,16 @@ void RaiiApp::run() {
     commandBuffer.begin( vk::CommandBufferBeginInfo() );
     textureData.setImage( device, commandBuffer, vk::su::CheckerboardImageGenerator() );
 
-    vk::su::BufferData uniformBufferData( physicalDevice, device, sizeof( glm::mat4x4 ), vk::BufferUsageFlagBits::eUniformBuffer );
+        
+    BufferRaii uniformBufferData(
+        physicalDevice, 
+        device, 
+        sizeof( glm::mat4x4 ), 
+        vk::BufferUsageFlagBits::eUniformBuffer
+    );
+    //vk::su::BufferData uniformBufferData( physicalDevice, device, sizeof( glm::mat4x4 ), vk::BufferUsageFlagBits::eUniformBuffer );
     glm::mat4x4        mvpcMatrix = vk::su::createModelViewProjectionClipMatrix( surfaceData.extent );
-    vk::su::copyToDevice( device, uniformBufferData.deviceMemory, mvpcMatrix );
+    vk::su::copyToDevice( device, uniformBufferData.getDeviceMemory(), mvpcMatrix );
 
     vk::DescriptorSetLayout descriptorSetLayout =
       vk::su::createDescriptorSetLayout( device,
@@ -98,15 +106,20 @@ void RaiiApp::run() {
     std::vector<vk::Framebuffer> framebuffers =
       vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.imageView, surfaceData.extent );
 
-    vk::su::BufferData vertexBufferData( physicalDevice, device, sizeof( texturedCubeData ), vk::BufferUsageFlagBits::eVertexBuffer );
-    vk::su::copyToDevice( device, vertexBufferData.deviceMemory, texturedCubeData, sizeof( texturedCubeData ) / sizeof( texturedCubeData[0] ) );
+    BufferRaii vertexBufferData(
+        physicalDevice, 
+        device, 
+        sizeof( texturedCubeData ),
+        vk::BufferUsageFlagBits::eVertexBuffer
+    );
+    vk::su::copyToDevice( device, vertexBufferData.getDeviceMemory(), texturedCubeData, sizeof( texturedCubeData ) / sizeof( texturedCubeData[0] ) );
 
     vk::DescriptorPool descriptorPool =
       vk::su::createDescriptorPool( device, { { vk::DescriptorType::eUniformBuffer, 1 }, { vk::DescriptorType::eCombinedImageSampler, 1 } } );
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo( descriptorPool, descriptorSetLayout );
     vk::DescriptorSet             descriptorSet = device.allocateDescriptorSets( descriptorSetAllocateInfo ).front();
 
-    vk::su::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.buffer, VK_WHOLE_SIZE, {} } }, textureData );
+    vk::su::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
 
     vk::PipelineCache pipelineCache    = device.createPipelineCache( vk::PipelineCacheCreateInfo() );
     vk::Pipeline      graphicsPipeline = vk::su::createGraphicsPipeline( device,
@@ -138,7 +151,7 @@ void RaiiApp::run() {
     commandBuffer.bindPipeline( vk::PipelineBindPoint::eGraphics, graphicsPipeline );
     commandBuffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr );
 
-    commandBuffer.bindVertexBuffers( 0, vertexBufferData.buffer, { 0 } );
+    commandBuffer.bindVertexBuffers( 0, vertexBufferData.getBuffer(), { 0 } );
     commandBuffer.setViewport(
       0, vk::Viewport( 0.0f, 0.0f, static_cast<float>( surfaceData.extent.width ), static_cast<float>( surfaceData.extent.height ), 0.0f, 1.0f ) );
     commandBuffer.setScissor( 0, vk::Rect2D( vk::Offset2D( 0, 0 ), surfaceData.extent ) );
@@ -175,7 +188,7 @@ void RaiiApp::run() {
     device.destroyPipelineCache( pipelineCache );
     device.freeDescriptorSets( descriptorPool, descriptorSet );
     device.destroyDescriptorPool( descriptorPool );
-    vertexBufferData.clear( device );
+    vertexBufferData.clear();
     for ( auto framebuffer : framebuffers )
     {
       device.destroyFramebuffer( framebuffer );
@@ -185,7 +198,7 @@ void RaiiApp::run() {
     device.destroyRenderPass( renderPass );
     device.destroyPipelineLayout( pipelineLayout );
     device.destroyDescriptorSetLayout( descriptorSetLayout );
-    uniformBufferData.clear( device );
+    uniformBufferData.clear();
     textureData.clear( device );
     depthBufferData.clear( device );
     swapChainData.clear( device );

@@ -29,22 +29,19 @@ vk::DeviceSize BufferRaii::getAlignment(vk::DeviceSize instanceSize, vk::DeviceS
 BufferRaii::BufferRaii(
     const vk::PhysicalDevice& physicalDevice,      
     const vk::Device& device,
-    vk::DeviceSize instanceSize,
-    uint32_t instanceCount,
-    vk::BufferUsageFlags usageFlags,
-    vk::MemoryPropertyFlags memoryPropertyFlags,
-    vk::DeviceSize minOffsetAlignment)
+    vk::DeviceSize size,
+    vk::BufferUsageFlags usage,
+    vk::MemoryPropertyFlags propertyFlags)
     : _device{device},
-      instanceSize{instanceSize},
-      instanceCount{instanceCount},
-      usageFlags{usageFlags},
-      memoryPropertyFlags{memoryPropertyFlags} {
-  alignmentSize = getAlignment(instanceSize, minOffsetAlignment);
-  bufferSize = alignmentSize * instanceCount;
+      size{size},
+      usage{usage},
+      propertyFlags{propertyFlags} {
+  //alignmentSize = getAlignment(instanceSize, minOffsetAlignment);
+  //bufferSize = alignmentSize * instanceCount;
   
   vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
-    .setSize(bufferSize)
-    .setUsage(usageFlags)
+    .setSize(size)
+    .setUsage(usage)
     .setSharingMode(vk::SharingMode::eExclusive);
   _buffer = device.createBuffer(bufferInfo);
 
@@ -53,7 +50,7 @@ BufferRaii::BufferRaii(
   vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
   
   vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-  uint32_t memoryTypeIndex = findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, memoryPropertyFlags );
+  uint32_t memoryTypeIndex = findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
   
   vk::MemoryAllocateInfo allocInfo =
       vk::MemoryAllocateInfo()
@@ -110,6 +107,8 @@ void BufferRaii::unmap() {
  * @param offset (Optional) Byte offset from beginning of mapped region
  *
  */
+ 
+/*
 void BufferRaii::writeToBuffer(void *data, vk::DeviceSize size, vk::DeviceSize offset) {
   assert(_mapped && "Cannot copy to unmapped buffer");
 
@@ -121,6 +120,7 @@ void BufferRaii::writeToBuffer(void *data, vk::DeviceSize size, vk::DeviceSize o
     memcpy(memOffset, data, size);
   }
 }
+*/
 
 /**
  * Flush a memory range of the buffer to make it visible to the device
@@ -160,6 +160,13 @@ void BufferRaii::invalidate(vk::DeviceSize size, vk::DeviceSize offset) {
   _device.invalidateMappedMemoryRanges(mappedRange);
 }
 
+void BufferRaii::clear()
+{
+        _device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
+        _device.freeMemory( _memory );
+}
+
+
 /**
  * Create a buffer info descriptor
  *
@@ -179,9 +186,12 @@ vk::DescriptorBufferInfo BufferRaii::descriptorInfo(vk::DeviceSize size, vk::Dev
  * @param index Used in offset calculation
  *
  */
+ 
+ /*
 void BufferRaii::writeToIndex(void *data, int index) {
   writeToBuffer(data, instanceSize, index * alignmentSize);
 }
+*/
 
 /**
  *  Flush the memory range at index * alignmentSize of the buffer to make it visible to the device
@@ -189,7 +199,7 @@ void BufferRaii::writeToIndex(void *data, int index) {
  * @param index Used in offset calculation
  *
  */
-void BufferRaii::flushIndex(int index) { return flush(alignmentSize, index * alignmentSize); }
+//void BufferRaii::flushIndex(int index) { return flush(alignmentSize, index * alignmentSize); }
 
 /**
  * Create a buffer info descriptor
@@ -198,9 +208,10 @@ void BufferRaii::flushIndex(int index) { return flush(alignmentSize, index * ali
  *
  * @return VkDescriptorBufferInfo for instance at index
  */
-vk::DescriptorBufferInfo BufferRaii::descriptorInfoForIndex(int index) {
+/*vk::DescriptorBufferInfo BufferRaii::descriptorInfoForIndex(int index) {
   return descriptorInfo(alignmentSize, index * alignmentSize);
 }
+*/
 
 /**
  * Invalidate a memory range of the buffer to make it visible to the host
@@ -211,9 +222,10 @@ vk::DescriptorBufferInfo BufferRaii::descriptorInfoForIndex(int index) {
  *
  * @return VkResult of the invalidate call
  */
-void BufferRaii::invalidateIndex(int index) {
+/*void BufferRaii::invalidateIndex(int index) {
   return invalidate(alignmentSize, index * alignmentSize);
 }
+*/
 
 uint32_t BufferRaii::findMemoryType( 
         vk::PhysicalDeviceMemoryProperties const & memoryProperties, 

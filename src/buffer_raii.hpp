@@ -8,13 +8,11 @@
 class BufferRaii {
  public:
   BufferRaii(
-      const vk::PhysicalDevice& physicalDevice,
-      const vk::Device& device, 
-      vk::DeviceSize instanceSize,
-      uint32_t instanceCount,
-      vk::BufferUsageFlags usageFlags,
-      vk::MemoryPropertyFlags memoryPropertyFlags,
-      vk::DeviceSize minOffsetAlignment = 1);
+        const vk::PhysicalDevice& physicalDevice,      
+    const vk::Device& device,
+    vk::DeviceSize size,
+    vk::BufferUsageFlags usage,
+    vk::MemoryPropertyFlags propertyFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
   ~BufferRaii();
 
   BufferRaii(const BufferRaii&) = delete;
@@ -25,26 +23,23 @@ class BufferRaii {
   void unmap();
   */
 
-  void writeToBuffer(void* data, vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
+  //void writeToBuffer(void* data, vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
   void flush(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
   vk::DescriptorBufferInfo descriptorInfo(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
   void invalidate(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
 
-  void writeToIndex(void* data, int index);
-  void flushIndex(int index);
-  vk::DescriptorBufferInfo descriptorInfoForIndex(int index);
-  void invalidateIndex(int index);
+  void clear();
+  //void writeToIndex(void* data, int index);
+  //void flushIndex(int index);
+  //vk::DescriptorBufferInfo descriptorInfoForIndex(int index);
+  //void invalidateIndex(int index);
   
 
   const vk::Buffer& getBuffer() const { return _buffer; }
+  const vk::DeviceMemory& getDeviceMemory() const { return _memory; }
   void* getMappedMemory() const { return _mapped; }
-  uint32_t getInstanceCount() const { return instanceCount; }
-  vk::DeviceSize getInstanceSize() const { return instanceSize; }
-  vk::DeviceSize getAlignmentSize() const { return instanceSize; }
-  vk::BufferUsageFlags getUsageFlags() const { return usageFlags; }
-  vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return memoryPropertyFlags; }
-  vk::DeviceSize getBufferSize() const { return bufferSize; }
-
+  vk::BufferUsageFlags getUsageFlags() const { return usage; }
+  vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return propertyFlags; }
  private:
   static vk::DeviceSize getAlignment(vk::DeviceSize instanceSize, vk::DeviceSize minOffsetAlignment);
 
@@ -59,12 +54,9 @@ class BufferRaii {
   //vk::raii::DeviceMemory* memory = VK_NULL_HANDLE;
 
   const vk::Device& _device;
-  vk::DeviceSize bufferSize;
-  uint32_t instanceCount;
-  vk::DeviceSize instanceSize;
-  vk::DeviceSize alignmentSize;
-  vk::BufferUsageFlags usageFlags;
-  vk::MemoryPropertyFlags memoryPropertyFlags;
+  vk::DeviceSize size;
+  vk::BufferUsageFlags usage;
+  vk::MemoryPropertyFlags propertyFlags;
   
   vk::Buffer _buffer;
   vk::DeviceMemory _memory;
