@@ -77,10 +77,9 @@ void RaiiApp::run() {
         sizeof( glm::mat4x4 ), 
         vk::BufferUsageFlagBits::eUniformBuffer
     );
-    //vk::su::BufferData uniformBufferData( physicalDevice, device, sizeof( glm::mat4x4 ), vk::BufferUsageFlagBits::eUniformBuffer );
     glm::mat4x4        mvpcMatrix = vk::su::createModelViewProjectionClipMatrix( surfaceData.extent );
-    vk::su::copyToDevice( device, uniformBufferData.getDeviceMemory(), mvpcMatrix );
-
+    uniformBufferData.write(mvpcMatrix);
+   
     vk::DescriptorSetLayout descriptorSetLayout =
       vk::su::createDescriptorSetLayout( device,
                                          { { vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex },
@@ -112,8 +111,8 @@ void RaiiApp::run() {
         sizeof( texturedCubeData ),
         vk::BufferUsageFlagBits::eVertexBuffer
     );
-    vk::su::copyToDevice( device, vertexBufferData.getDeviceMemory(), texturedCubeData, sizeof( texturedCubeData ) / sizeof( texturedCubeData[0] ) );
-
+    vertexBufferData.write( texturedCubeData, sizeof( texturedCubeData ) / sizeof( texturedCubeData[0] ) );
+    
     vk::DescriptorPool descriptorPool =
       vk::su::createDescriptorPool( device, { { vk::DescriptorType::eUniformBuffer, 1 }, { vk::DescriptorType::eCombinedImageSampler, 1 } } );
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo( descriptorPool, descriptorSetLayout );
@@ -188,7 +187,7 @@ void RaiiApp::run() {
     device.destroyPipelineCache( pipelineCache );
     device.freeDescriptorSets( descriptorPool, descriptorSet );
     device.destroyDescriptorPool( descriptorPool );
-    vertexBufferData.clear();
+    vertexBufferData.clear( );
     for ( auto framebuffer : framebuffers )
     {
       device.destroyFramebuffer( framebuffer );
@@ -198,7 +197,7 @@ void RaiiApp::run() {
     device.destroyRenderPass( renderPass );
     device.destroyPipelineLayout( pipelineLayout );
     device.destroyDescriptorSetLayout( descriptorSetLayout );
-    uniformBufferData.clear();
+    uniformBufferData.clear( );
     textureData.clear( device );
     depthBufferData.clear( device );
     swapChainData.clear( device );
