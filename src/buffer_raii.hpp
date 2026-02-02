@@ -2,8 +2,7 @@
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
-#include <device.hpp>
-
+#include "util/vulkan_utils.hpp"
 
 class BufferRaii {
 public:
@@ -55,17 +54,10 @@ public:
     const vk::DeviceMemory& getDeviceMemory() const { return _memory; }
 
 private:
-    uint32_t findMemoryType(
-            vk::PhysicalDeviceMemoryProperties const & memoryProperties, 
-            uint32_t typeBits, 
-            vk::MemoryPropertyFlags requirementsMask 
-    );
-
-
     const vk::Device& _device;
-    vk::DeviceSize size;
-    vk::BufferUsageFlags usage;
-    vk::MemoryPropertyFlags propertyFlags;
+    vk::DeviceSize _size;
+    vk::BufferUsageFlags _usage;
+    vk::MemoryPropertyFlags _propertyFlags;
 
     vk::Buffer _buffer;
     vk::DeviceMemory _memory;

@@ -18,6 +18,7 @@
 #include "./utils/utils.hpp"
 #include "glslang/Public/ShaderLang.h"
 #include "buffer_raii.hpp"
+#include "image_raii.hpp"
 
 #include "window.hpp"
 #include "device.hpp"

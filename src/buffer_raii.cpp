@@ -19,9 +19,9 @@ BufferRaii::BufferRaii(
     vk::MemoryPropertyFlags propertyFlags
     )
     : _device{device},
-      size{size},
-      usage{usage},
-      propertyFlags{propertyFlags} {
+      _size{size},
+      _usage{usage},
+      _propertyFlags{propertyFlags} {
 
     vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
     .setSize(size)
@@ -34,7 +34,7 @@ BufferRaii::BufferRaii(
     vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
 
     vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-    uint32_t memoryTypeIndex = findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
+    uint32_t memoryTypeIndex = VulkanUtils::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
 
     vk::MemoryAllocateInfo allocInfo =
       vk::MemoryAllocateInfo()
@@ -52,24 +52,5 @@ void BufferRaii::clear()
 {
     _device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
     _device.freeMemory( _memory );
-}
-
-uint32_t BufferRaii::findMemoryType( 
-    vk::PhysicalDeviceMemoryProperties const & memoryProperties, 
-    uint32_t typeBits, 
-    vk::MemoryPropertyFlags requirementsMask 
-    ) {
-    uint32_t typeIndex = uint32_t( ~0 );
-    for ( uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++ )
-    {
-    if ( ( typeBits & 1 ) && ( ( memoryProperties.memoryTypes[i].propertyFlags & requirementsMask ) == requirementsMask ) )
-    {
-      typeIndex = i;
-      break;
-    }
-    typeBits >>= 1;
-    }
-    assert( typeIndex != uint32_t( ~0 ) );
-    return typeIndex;
 }
 

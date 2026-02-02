@@ -1,43 +1,34 @@
 #pragma once
 
-#include "stb/stb_image.h"
+#include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_raii.hpp"
 
-// libs
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include "util/vulkan_utils.hpp"
 
-#include "buffer_raii.hpp"
+class ImageRaii
+{
+public:
+    ImageRaii( 
+        vk::PhysicalDevice const & physicalDevice,
+        vk::Device const &         device,
+        vk::Format                 format,
+        vk::Extent2D const &       extent,
+        vk::ImageTiling            tiling,
+        vk::ImageUsageFlags        usage,
+        vk::ImageLayout            initialLayout,
+        vk::MemoryPropertyFlags    propertyFlags,
+        vk::ImageAspectFlags       aspectMask 
+    );
+    ~ImageRaii();
 
-// std
-#include <iostream>
-#include <lve_device.hpp>
-#include <memory>
-#include <vector>
+    ImageRaii(const ImageRaii&) = delete;
+    ImageRaii& operator=(const ImageRaii&) = delete;
 
-// Encapsulates ImageRaii and ImageRaii view/sampling
-// TODO: Separate ImageRaii creaton and ImageRaii view/sampling
-// TODO: Implement cubemap support for skyboxes
-class ImageRaii {
- public:
-  // TODO: Other ways to create an ImageRaii
-  ImageRaii(
-        vk::Device const & device
-  );
-  ~ImageRaii();
+    void clear( vk::Device const & device );
 
-  ImageRaii(const ImageRaii &) = delete;
-  ImageRaii &operator=(const ImageRaii &) = delete;
-
-  //vk::ImageView& getImageView();
-  //vk::Sampler& getSampler();
-
- private:
-  std::shared_ptr<vk::raii::Image> textureImage = VK_NULL_HANDLE;
-  std::shared_ptr<vk::raii::DeviceMemory> textureImageMemory = VK_NULL_HANDLE;
-  vk::raii::ImageView textureImageView = VK_NULL_HANDLE;
-  vk::raii::Sampler textureSampler = VK_NULL_HANDLE;
-
-  void createImage(const vk::Device & device);
-  void createImageView();
+private:
+    vk::Format       _format;
+    vk::Image        _image;
+    vk::DeviceMemory _deviceMemory;
+    vk::ImageView    _imageView;
 };
