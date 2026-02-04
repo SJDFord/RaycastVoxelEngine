@@ -64,7 +64,18 @@ void RaiiApp::run() {
                                          graphicsAndPresentQueueFamilyIndex.first,
                                          graphicsAndPresentQueueFamilyIndex.second );
 
-    vk::su::DepthBufferData depthBufferData( physicalDevice, device, vk::Format::eD16Unorm, surfaceData.extent );
+
+    // Info:: DepthBufferData has been dropped in favour of using ImageData/ImageRaii directly
+    //vk::su::DepthBufferData depthBufferData( physicalDevice, device, vk::Format::eD16Unorm, surfaceData.extent );
+    ImageRaii depthBufferData( physicalDevice,
+                   device,
+                   vk::Format::eD16Unorm,
+                   surfaceData.extent,
+                   vk::ImageTiling::eOptimal,
+                   vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                   vk::ImageLayout::eUndefined,
+                   vk::MemoryPropertyFlagBits::eDeviceLocal,
+                   vk::ImageAspectFlagBits::eDepth );
 
     vk::su::TextureData textureData( physicalDevice, device );
 
@@ -88,7 +99,7 @@ void RaiiApp::run() {
     vk::PipelineLayout pipelineLayout = device.createPipelineLayout( vk::PipelineLayoutCreateInfo( vk::PipelineLayoutCreateFlags(), descriptorSetLayout ) );
 
     vk::RenderPass renderPass = vk::su::createRenderPass(
-      device, vk::su::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surfaceData.surface ) ).format, depthBufferData.format );
+      device, vk::su::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surfaceData.surface ) ).format, depthBufferData.getFormat() );
 
     glslang::InitializeProcess();
     // TODO: Replace with createShaderModule from pipeline.cpp
@@ -104,7 +115,7 @@ void RaiiApp::run() {
     glslang::FinalizeProcess();
 
     std::vector<vk::Framebuffer> framebuffers =
-      vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.imageView, surfaceData.extent );
+      vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.getImageView(), surfaceData.extent );
 
     BufferRaii vertexBufferData(
         physicalDevice, 

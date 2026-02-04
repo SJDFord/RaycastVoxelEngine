@@ -41,6 +41,15 @@ ImageRaii::~ImageRaii() {
 
 }
 
+
+const vk::Format& ImageRaii::getFormat() const {
+    return _format;
+}
+
+const vk::ImageView& ImageRaii::getImageView() const {
+    return _imageView;
+}
+
 void ImageRaii::clear( vk::Device const & device )
 {
     device.destroyImageView( _imageView );

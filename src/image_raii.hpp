@@ -23,6 +23,9 @@ public:
 
     ImageRaii(const ImageRaii&) = delete;
     ImageRaii& operator=(const ImageRaii&) = delete;
+    
+    const vk::Format& getFormat() const;
+    const vk::ImageView& getImageView() const;
 
     void clear( vk::Device const & device );
 
