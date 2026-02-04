@@ -17,8 +17,8 @@
 #include "./utils/shaders.hpp"
 #include "./utils/utils.hpp"
 #include "glslang/Public/ShaderLang.h"
-#include "buffer_raii.hpp"
-#include "image_raii.hpp"
+#include "./engine/buffer.hpp"
+#include "./engine/image.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -65,9 +65,9 @@ void RaiiApp::run() {
                                          graphicsAndPresentQueueFamilyIndex.second );
 
 
-    // Info:: DepthBufferData has been dropped in favour of using ImageData/ImageRaii directly
+    // Info:: DepthBufferData has been dropped in favour of using ImageData/Image directly
     //vk::su::DepthBufferData depthBufferData( physicalDevice, device, vk::Format::eD16Unorm, surfaceData.extent );
-    ImageRaii depthBufferData( physicalDevice,
+    engine::Image depthBufferData( physicalDevice,
                    device,
                    vk::Format::eD16Unorm,
                    surfaceData.extent,
@@ -83,7 +83,7 @@ void RaiiApp::run() {
     textureData.setImage( device, commandBuffer, vk::su::CheckerboardImageGenerator() );
 
         
-    BufferRaii uniformBufferData(
+    engine::Buffer uniformBufferData(
         physicalDevice, 
         device, 
         sizeof( glm::mat4x4 ), 
@@ -117,7 +117,7 @@ void RaiiApp::run() {
     std::vector<vk::Framebuffer> framebuffers =
       vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.getImageView(), surfaceData.extent );
 
-    BufferRaii vertexBufferData(
+    engine::Buffer vertexBufferData(
         physicalDevice, 
         device, 
         sizeof( texturedCubeData ),

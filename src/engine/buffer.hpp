@@ -2,21 +2,23 @@
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
-#include "util/vulkan_utils.hpp"
+#include "../util/vulkan_utils.hpp"
 
-class BufferRaii {
+namespace engine {
+
+class Buffer {
 public:
-    BufferRaii(
+    Buffer(
         const vk::PhysicalDevice& physicalDevice,      
         const vk::Device& device,
         vk::DeviceSize size,
         vk::BufferUsageFlags usage,
         vk::MemoryPropertyFlags propertyFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
     );
-    ~BufferRaii();
+    ~Buffer();
 
-    BufferRaii(const BufferRaii&) = delete;
-    BufferRaii& operator=(const BufferRaii&) = delete;
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
 
     template <class T>
     void write( 
@@ -62,3 +64,5 @@ private:
     vk::Buffer _buffer;
     vk::DeviceMemory _memory;
 };
+
+}

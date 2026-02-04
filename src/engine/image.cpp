@@ -1,6 +1,8 @@
-#include "image_raii.hpp"
+#include "image.hpp"
 
-ImageRaii::ImageRaii( 
+namespace engine {
+
+Image::Image( 
     vk::PhysicalDevice const & physicalDevice,
     vk::Device const &         device,
     vk::Format                 format,
@@ -37,22 +39,24 @@ ImageRaii::ImageRaii(
       _imageView = device.createImageView( imageViewCreateInfo );
 }
 
-ImageRaii::~ImageRaii() {
+Image::~Image() {
 
 }
 
 
-const vk::Format& ImageRaii::getFormat() const {
+const vk::Format& Image::getFormat() const {
     return _format;
 }
 
-const vk::ImageView& ImageRaii::getImageView() const {
+const vk::ImageView& Image::getImageView() const {
     return _imageView;
 }
 
-void ImageRaii::clear( vk::Device const & device )
+void Image::clear( vk::Device const & device )
 {
     device.destroyImageView( _imageView );
     device.destroyImage( _image );  // the Image should to be destroyed before the bound DeviceMemory is freed
     device.freeMemory( _deviceMemory );
+}
+
 }

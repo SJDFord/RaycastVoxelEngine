@@ -3,12 +3,14 @@
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
 
-#include "util/vulkan_utils.hpp"
+#include "../util/vulkan_utils.hpp"
 
-class ImageRaii
+namespace engine {
+
+class Image
 {
 public:
-    ImageRaii( 
+    Image( 
         vk::PhysicalDevice const & physicalDevice,
         vk::Device const &         device,
         vk::Format                 format,
@@ -19,10 +21,10 @@ public:
         vk::MemoryPropertyFlags    propertyFlags,
         vk::ImageAspectFlags       aspectMask 
     );
-    ~ImageRaii();
+    ~Image();
 
-    ImageRaii(const ImageRaii&) = delete;
-    ImageRaii& operator=(const ImageRaii&) = delete;
+    Image(const Image&) = delete;
+    Image& operator=(const Image&) = delete;
     
     const vk::Format& getFormat() const;
     const vk::ImageView& getImageView() const;
@@ -35,3 +37,5 @@ private:
     vk::DeviceMemory _deviceMemory;
     vk::ImageView    _imageView;
 };
+
+}

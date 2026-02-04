@@ -1,4 +1,4 @@
-#include "buffer_raii.hpp"
+#include "buffer.hpp"
 
 /*
  * Encapsulates a vulkan buffer
@@ -11,7 +11,9 @@
 #include <cassert>
 #include <cstring>
 
-BufferRaii::BufferRaii(
+namespace engine {
+
+Buffer::Buffer(
     const vk::PhysicalDevice& physicalDevice,      
     const vk::Device& device,
     vk::DeviceSize size,
@@ -44,13 +46,14 @@ BufferRaii::BufferRaii(
     _device.bindBufferMemory(_buffer, _memory, 0);
 }
 
-BufferRaii::~BufferRaii() {
+Buffer::~Buffer() {
     //clear();
 }
 
-void BufferRaii::clear()
+void Buffer::clear()
 {
     _device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
     _device.freeMemory( _memory );
 }
 
+}
