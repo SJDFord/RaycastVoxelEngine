@@ -24,6 +24,7 @@
 #include "./util/vulkan_utils.hpp"
 #include "./util/descriptor_set_utils.hpp"
 #include "./engine/window.hpp"
+#include "./engine/swap_chain.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -60,7 +61,7 @@ void RaiiApp::run() {
     vk::Queue graphicsQueue = device.getQueue( graphicsAndPresentQueueFamilyIndex.first, 0 );
     vk::Queue presentQueue  = device.getQueue( graphicsAndPresentQueueFamilyIndex.second, 0 );
 
-    vk::su::SwapChainData swapChainData( physicalDevice,
+    engine::SwapChain swapChainData( physicalDevice,
                                          device,
                                          window.getSurface(),
                                          window.getExtent(),
@@ -119,7 +120,7 @@ void RaiiApp::run() {
     glslang::FinalizeProcess();
 
     std::vector<vk::Framebuffer> framebuffers =
-      vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.getImageView(), window.getExtent() );
+      vk::su::createFramebuffers( device, renderPass, swapChainData.getImageViews(), depthBufferData.getImageView(), window.getExtent() );
 
     engine::Buffer vertexBufferData(
         physicalDevice, 
@@ -151,7 +152,7 @@ void RaiiApp::run() {
 
     // Get the index of the next available swapchain image:
     vk::Semaphore             imageAcquiredSemaphore = device.createSemaphore( vk::SemaphoreCreateInfo() );
-    vk::ResultValue<uint32_t> currentBuffer = device.acquireNextImageKHR( swapChainData.swapChain, vk::su::FenceTimeout, imageAcquiredSemaphore, nullptr );
+    vk::ResultValue<uint32_t> currentBuffer = device.acquireNextImageKHR( swapChainData.getSwapChain(), vk::su::FenceTimeout, imageAcquiredSemaphore, nullptr );
     assert( currentBuffer.result == vk::Result::eSuccess );
     assert( currentBuffer.value < framebuffers.size() );
 
@@ -184,7 +185,7 @@ void RaiiApp::run() {
     while ( vk::Result::eTimeout == device.waitForFences( drawFence, VK_TRUE, vk::su::FenceTimeout ) )
       ;
 
-    vk::Result result = presentQueue.presentKHR( vk::PresentInfoKHR( {}, swapChainData.swapChain, currentBuffer.value ) );
+    vk::Result result = presentQueue.presentKHR( vk::PresentInfoKHR( {}, swapChainData.getSwapChain(), currentBuffer.value ) );
     switch ( result )
     {
       case vk::Result::eSuccess: break;
