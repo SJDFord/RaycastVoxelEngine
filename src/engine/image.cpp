@@ -1,5 +1,7 @@
 #include "image.hpp"
 
+#include <iostream>
+
 namespace engine {
 
 Image::Image( 
@@ -13,6 +15,7 @@ Image::Image(
     vk::MemoryPropertyFlags    propertyFlags,
     vk::ImageAspectFlags       aspectMask 
 ) : _format( format ) {
+
     vk::ImageCreateInfo imageCreateInfo( vk::ImageCreateFlags(),
                                            vk::ImageType::e2D,
                                            format,

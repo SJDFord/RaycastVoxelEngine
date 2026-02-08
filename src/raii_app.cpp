@@ -23,6 +23,7 @@
 #include "./engine/image_generators.hpp"
 #include "./util/vulkan_utils.hpp"
 #include "./util/descriptor_set_utils.hpp"
+#include "./engine/window.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -47,9 +48,9 @@ void RaiiApp::run() {
 
     vk::PhysicalDevice physicalDevice = instance.enumeratePhysicalDevices().front();
 
-    vk::su::SurfaceData surfaceData( instance, AppName, vk::Extent2D( 500, 500 ) );
+    engine::Window window(instance, AppName, 500, 500);
 
-    std::pair<uint32_t, uint32_t> graphicsAndPresentQueueFamilyIndex = vk::su::findGraphicsAndPresentQueueFamilyIndex( physicalDevice, surfaceData.surface );
+    std::pair<uint32_t, uint32_t> graphicsAndPresentQueueFamilyIndex = vk::su::findGraphicsAndPresentQueueFamilyIndex( physicalDevice, window.getSurface() );
     vk::Device                    device = vk::su::createDevice( physicalDevice, graphicsAndPresentQueueFamilyIndex.first, vk::su::getDeviceExtensions() );
 
     vk::CommandPool   commandPool = device.createCommandPool( { {}, graphicsAndPresentQueueFamilyIndex.first } );
@@ -61,39 +62,38 @@ void RaiiApp::run() {
 
     vk::su::SwapChainData swapChainData( physicalDevice,
                                          device,
-                                         surfaceData.surface,
-                                         surfaceData.extent,
+                                         window.getSurface(),
+                                         window.getExtent(),
                                          vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
                                          {},
                                          graphicsAndPresentQueueFamilyIndex.first,
                                          graphicsAndPresentQueueFamilyIndex.second );
-
-
+                                         
     // Info:: DepthBufferData has been dropped in favour of using ImageData/Image directly
     //vk::su::DepthBufferData depthBufferData( physicalDevice, device, vk::Format::eD16Unorm, surfaceData.extent );
+    
     engine::Image depthBufferData( physicalDevice,
                    device,
                    vk::Format::eD16Unorm,
-                   surfaceData.extent,
+                   window.getExtent(),
                    vk::ImageTiling::eOptimal,
                    vk::ImageUsageFlagBits::eDepthStencilAttachment,
                    vk::ImageLayout::eUndefined,
                    vk::MemoryPropertyFlagBits::eDeviceLocal,
                    vk::ImageAspectFlagBits::eDepth );
-
+    
     engine::Texture textureData( physicalDevice, device );
 
     commandBuffer.begin( vk::CommandBufferBeginInfo() );
     textureData.setImage( device, commandBuffer, engine::CheckerboardImageGenerator() );
-
-        
+    
     engine::Buffer uniformBufferData(
         physicalDevice, 
         device, 
         sizeof( glm::mat4x4 ), 
         vk::BufferUsageFlagBits::eUniformBuffer
     );
-    glm::mat4x4        mvpcMatrix = vk::su::createModelViewProjectionClipMatrix( surfaceData.extent );
+    glm::mat4x4        mvpcMatrix = vk::su::createModelViewProjectionClipMatrix( window.getExtent() );
     uniformBufferData.write(mvpcMatrix);
    
     vk::DescriptorSetLayout descriptorSetLayout =
@@ -103,7 +103,7 @@ void RaiiApp::run() {
     vk::PipelineLayout pipelineLayout = device.createPipelineLayout( vk::PipelineLayoutCreateInfo( vk::PipelineLayoutCreateFlags(), descriptorSetLayout ) );
 
     vk::RenderPass renderPass = vk::su::createRenderPass(
-      device, vk::su::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surfaceData.surface ) ).format, depthBufferData.getFormat() );
+      device, vk::su::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( window.getSurface() ) ).format, depthBufferData.getFormat() );
 
     glslang::InitializeProcess();
     // TODO: Replace with createShaderModule from pipeline.cpp
@@ -119,7 +119,7 @@ void RaiiApp::run() {
     glslang::FinalizeProcess();
 
     std::vector<vk::Framebuffer> framebuffers =
-      vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.getImageView(), surfaceData.extent );
+      vk::su::createFramebuffers( device, renderPass, swapChainData.imageViews, depthBufferData.getImageView(), window.getExtent() );
 
     engine::Buffer vertexBufferData(
         physicalDevice, 
@@ -161,15 +161,15 @@ void RaiiApp::run() {
     clearValues[0].color        = vk::ClearColorValue( 0.2f, 0.2f, 0.2f, 0.2f );
     clearValues[1].depthStencil = vk::ClearDepthStencilValue( 1.0f, 0 );
     vk::RenderPassBeginInfo renderPassBeginInfo(
-      renderPass, framebuffers[currentBuffer.value], vk::Rect2D( vk::Offset2D( 0, 0 ), surfaceData.extent ), clearValues );
+      renderPass, framebuffers[currentBuffer.value], vk::Rect2D( vk::Offset2D( 0, 0 ), window.getExtent() ), clearValues );
     commandBuffer.beginRenderPass( renderPassBeginInfo, vk::SubpassContents::eInline );
     commandBuffer.bindPipeline( vk::PipelineBindPoint::eGraphics, graphicsPipeline );
     commandBuffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr );
 
     commandBuffer.bindVertexBuffers( 0, vertexBufferData.getBuffer(), { 0 } );
     commandBuffer.setViewport(
-      0, vk::Viewport( 0.0f, 0.0f, static_cast<float>( surfaceData.extent.width ), static_cast<float>( surfaceData.extent.height ), 0.0f, 1.0f ) );
-    commandBuffer.setScissor( 0, vk::Rect2D( vk::Offset2D( 0, 0 ), surfaceData.extent ) );
+      0, vk::Viewport( 0.0f, 0.0f, static_cast<float>( window.getExtent().width ), static_cast<float>( window.getExtent().height ), 0.0f, 1.0f ) );
+    commandBuffer.setScissor( 0, vk::Rect2D( vk::Offset2D( 0, 0 ), window.getExtent() ) );
 
     commandBuffer.draw( 12 * 3, 1, 0, 0 );
     commandBuffer.endRenderPass();
@@ -197,6 +197,7 @@ void RaiiApp::run() {
 
     device.waitIdle();
 
+    // TODO: See which elements of this can be moved to the relevant desctructors (RAII)
     device.destroyFence( drawFence );
     device.destroySemaphore( imageAcquiredSemaphore );
     device.destroyPipeline( graphicsPipeline );
@@ -220,7 +221,7 @@ void RaiiApp::run() {
     device.freeCommandBuffers( commandPool, commandBuffer );
     device.destroyCommandPool( commandPool );
     device.destroy();
-    instance.destroySurfaceKHR( surfaceData.surface );
+    instance.destroySurfaceKHR( window.getSurface() );
 #if !defined( NDEBUG )
     //instance.destroyDebugUtilsMessengerEXT( debugUtilsMessenger );
 #endif
