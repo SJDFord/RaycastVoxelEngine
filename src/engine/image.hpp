@@ -28,6 +28,8 @@ public:
     
     const vk::Format& getFormat() const;
     const vk::ImageView& getImageView() const;
+    const vk::Image& getImage() const;
+    const vk::DeviceMemory& getDeviceMemory() const;
 
     void clear( vk::Device const & device );
 

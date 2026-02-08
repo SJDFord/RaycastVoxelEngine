@@ -52,6 +52,15 @@ const vk::ImageView& Image::getImageView() const {
     return _imageView;
 }
 
+const vk::Image& Image::getImage() const {
+    return _image;
+}
+
+
+const vk::DeviceMemory& Image::getDeviceMemory() const {
+    return _deviceMemory;
+}
+
 void Image::clear( vk::Device const & device )
 {
     device.destroyImageView( _imageView );

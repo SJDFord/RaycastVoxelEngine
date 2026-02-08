@@ -19,6 +19,10 @@
 #include "glslang/Public/ShaderLang.h"
 #include "./engine/buffer.hpp"
 #include "./engine/image.hpp"
+#include "./engine/texture.hpp"
+#include "./engine/image_generators.hpp"
+#include "./util/vulkan_utils.hpp"
+#include "./util/descriptor_set_utils.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -77,10 +81,10 @@ void RaiiApp::run() {
                    vk::MemoryPropertyFlagBits::eDeviceLocal,
                    vk::ImageAspectFlagBits::eDepth );
 
-    vk::su::TextureData textureData( physicalDevice, device );
+    engine::Texture textureData( physicalDevice, device );
 
     commandBuffer.begin( vk::CommandBufferBeginInfo() );
-    textureData.setImage( device, commandBuffer, vk::su::CheckerboardImageGenerator() );
+    textureData.setImage( device, commandBuffer, engine::CheckerboardImageGenerator() );
 
         
     engine::Buffer uniformBufferData(
@@ -130,7 +134,7 @@ void RaiiApp::run() {
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo( descriptorPool, descriptorSetLayout );
     vk::DescriptorSet             descriptorSet = device.allocateDescriptorSets( descriptorSetAllocateInfo ).front();
 
-    vk::su::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
+    DescriptorSetUtils::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
 
     vk::PipelineCache pipelineCache    = device.createPipelineCache( vk::PipelineCacheCreateInfo() );
     vk::Pipeline      graphicsPipeline = vk::su::createGraphicsPipeline( device,
@@ -199,7 +203,7 @@ void RaiiApp::run() {
     device.destroyPipelineCache( pipelineCache );
     device.freeDescriptorSets( descriptorPool, descriptorSet );
     device.destroyDescriptorPool( descriptorPool );
-    vertexBufferData.clear( );
+    vertexBufferData.clear( device );
     for ( auto framebuffer : framebuffers )
     {
       device.destroyFramebuffer( framebuffer );
@@ -209,7 +213,7 @@ void RaiiApp::run() {
     device.destroyRenderPass( renderPass );
     device.destroyPipelineLayout( pipelineLayout );
     device.destroyDescriptorSetLayout( descriptorSetLayout );
-    uniformBufferData.clear( );
+    uniformBufferData.clear( device  );
     textureData.clear( device );
     depthBufferData.clear( device );
     swapChainData.clear( device );

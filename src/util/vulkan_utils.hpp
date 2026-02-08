@@ -11,5 +11,8 @@ namespace VulkanUtils {
         uint32_t typeBits, 
         vk::MemoryPropertyFlags requirementsMask 
     );
+    
+    void setImageLayout(
+      vk::CommandBuffer const & commandBuffer, vk::Image image, vk::Format format, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout );
 
 }

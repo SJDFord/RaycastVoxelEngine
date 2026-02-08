@@ -1,0 +1,7 @@
+#include "HEADER_FILE"
+
+CLASS_NAME::CLASS_NAME() {
+}
+
+CLASS_NAME::~CLASS_NAME() {
+}

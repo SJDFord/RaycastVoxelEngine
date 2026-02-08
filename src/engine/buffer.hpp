@@ -50,7 +50,7 @@ public:
   write<T>( &data, 1 );
 }
 
-    void clear();
+    void clear( vk::Device const & device );
   
     const vk::Buffer& getBuffer() const { return _buffer; }
     const vk::DeviceMemory& getDeviceMemory() const { return _memory; }

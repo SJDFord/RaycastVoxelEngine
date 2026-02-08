@@ -50,10 +50,10 @@ Buffer::~Buffer() {
     //clear();
 }
 
-void Buffer::clear()
+void Buffer::clear( vk::Device const & device )
 {
-    _device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
-    _device.freeMemory( _memory );
+    device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
+    device.freeMemory( _memory );
 }
 
 }
