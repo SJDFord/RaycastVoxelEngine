@@ -21,8 +21,8 @@
 #include "./engine/image.hpp"
 #include "./engine/texture.hpp"
 #include "./engine/image_generators.hpp"
-#include "./util/vulkan_utils.hpp"
-#include "./util/descriptor_set_utils.hpp"
+#include "./engine/utils.hpp"
+#include "./engine/descriptor_set_utils.hpp"
 #include "./engine/window.hpp"
 #include "./engine/swap_chain.hpp"
 
@@ -135,7 +135,7 @@ void RaiiApp::run() {
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo( descriptorPool, descriptorSetLayout );
     vk::DescriptorSet             descriptorSet = device.allocateDescriptorSets( descriptorSetAllocateInfo ).front();
 
-    DescriptorSetUtils::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
+    engine::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
 
     vk::PipelineCache pipelineCache    = device.createPipelineCache( vk::PipelineCacheCreateInfo() );
     vk::Pipeline      graphicsPipeline = vk::su::createGraphicsPipeline( device,

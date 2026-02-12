@@ -3,7 +3,7 @@
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
 
-#include "../util/vulkan_utils.hpp"
+#include "utils.hpp"
 
 namespace engine {
 

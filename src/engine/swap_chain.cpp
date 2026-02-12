@@ -14,7 +14,7 @@ namespace engine {
                                   uint32_t                   graphicsQueueFamilyIndex,
                                   uint32_t                   presentQueueFamilyIndex )
     {
-      vk::SurfaceFormatKHR surfaceFormat = VulkanUtils::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surface ) );
+      vk::SurfaceFormatKHR surfaceFormat = engine::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surface ) );
       _colorFormat = surfaceFormat.format;
 
       vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR( surface );
@@ -38,11 +38,11 @@ namespace engine {
           : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied ) ? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
           : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit )        ? vk::CompositeAlphaFlagBitsKHR::eInherit
                                                                                                              : vk::CompositeAlphaFlagBitsKHR::eOpaque;
-      vk::PresentModeKHR         presentMode = VulkanUtils::pickPresentMode( physicalDevice.getSurfacePresentModesKHR( surface ) );
+      vk::PresentModeKHR         presentMode = engine::pickPresentMode( physicalDevice.getSurfacePresentModesKHR( surface ) );
       vk::SwapchainCreateInfoKHR swapChainCreateInfo(
         {},
         surface,
-        VulkanUtils::clampSurfaceImageCount( 3u, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount ),
+        engine::clampSurfaceImageCount( 3u, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount ),
         _colorFormat,
         surfaceFormat.colorSpace,
         swapchainExtent,

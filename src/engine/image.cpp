@@ -32,7 +32,7 @@ Image::Image(
       
       vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
       vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-      uint32_t memoryTypeIndex = VulkanUtils::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
+      uint32_t memoryTypeIndex = engine::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
       _deviceMemory = device.allocateMemory( vk::MemoryAllocateInfo( memoryRequirements.size, memoryTypeIndex ) );
       
 

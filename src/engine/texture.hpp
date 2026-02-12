@@ -4,7 +4,7 @@
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
-#include "../util/vulkan_utils.hpp"
+#include "utils.hpp"
 
 #include "./buffer.hpp"
 #include "./image.hpp"
@@ -49,7 +49,7 @@ public:
         if ( _needsStaging )
         {
           // Since we're going to blit to the texture image, set its layout to eTransferDstOptimal
-          VulkanUtils::setImageLayout( commandBuffer, _image->getImage(), _image->getFormat(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
+          engine::setImageLayout( commandBuffer, _image->getImage(), _image->getFormat(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal );
           vk::BufferImageCopy copyRegion( 0,
                                           _extent.width,
                                           _extent.height,
@@ -58,13 +58,13 @@ public:
                                           vk::Extent3D( _extent, 1 ) );
           commandBuffer.copyBufferToImage(_stagingBuffer->getBuffer(), _image->getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion );
           // Set the layout for the texture image from eTransferDstOptimal to SHADER_READ_ONLY
-          VulkanUtils::setImageLayout(
+          engine::setImageLayout(
             commandBuffer, _image->getImage(), _image->getFormat(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal );
         }
         else
         {
           // If we can use the linear tiled image as a texture, just do it
-          VulkanUtils::setImageLayout(
+          engine::setImageLayout(
             commandBuffer, _image->getImage(), _image->getFormat(), vk::ImageLayout::ePreinitialized, vk::ImageLayout::eShaderReadOnlyOptimal );
         }
     }

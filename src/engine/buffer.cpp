@@ -36,7 +36,7 @@ Buffer::Buffer(
     vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
 
     vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-    uint32_t memoryTypeIndex = VulkanUtils::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
+    uint32_t memoryTypeIndex = engine::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
 
     vk::MemoryAllocateInfo allocInfo =
       vk::MemoryAllocateInfo()
