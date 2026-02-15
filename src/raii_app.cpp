@@ -26,6 +26,8 @@
 #include "./engine/window.hpp"
 #include "./engine/swap_chain.hpp"
 #include "./engine/instance_builder.hpp"
+#include "./engine/physical_device_strategy.hpp"
+#include "./engine/ranked_physical_device_strategy.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -77,7 +79,7 @@ void RaiiApp::run() {
     //vk::DebugUtilsMessengerEXT debugUtilsMessenger = instance.createDebugUtilsMessengerEXT( vk::su::makeDebugUtilsMessengerCreateInfoEXT() );
 #endif
 
-    vk::PhysicalDevice physicalDevice = instance.enumeratePhysicalDevices().front();
+    vk::PhysicalDevice physicalDevice = engine::RankedPhysicalDeviceStrategy().pickPhysicalDevice(instance.enumeratePhysicalDevices());
 
     engine::Window window(instance, AppName, 500, 500);
 
@@ -274,3 +276,4 @@ void RaiiApp::run() {
     exit( -1 );
   }
 }
+
