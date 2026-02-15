@@ -1066,7 +1066,8 @@ namespace vk
       vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags( vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
                                                           vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation );
       vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> instanceCreateInfo(
-        { instanceCreateFlagBits, &applicationInfo, layers, extensions }, { {}, severityFlags, messageTypeFlags, &vk::su::debugUtilsMessengerCallback } );
+        { instanceCreateFlagBits, &applicationInfo, layers, extensions },
+        { {}, severityFlags, messageTypeFlags, &vk::su::debugUtilsMessengerCallback } );
 #endif
       return instanceCreateInfo;
     }

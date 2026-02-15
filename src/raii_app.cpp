@@ -25,6 +25,7 @@
 #include "./engine/descriptor_set_utils.hpp"
 #include "./engine/window.hpp"
 #include "./engine/swap_chain.hpp"
+#include "./engine/instance_builder.hpp"
 
 #include "window.hpp"
 #include "device.hpp"
@@ -41,8 +42,37 @@ void RaiiApp::run() {
     char const * AppName    = "DrawTexturedCube";
     char const * EngineName = "Vulkan.hpp";
 
-  
-    vk::Instance instance = vk::su::createInstance( AppName, EngineName, {}, vk::su::getInstanceExtensions() );
+      std::vector<std::string> extensions;
+      extensions.push_back( VK_KHR_SURFACE_EXTENSION_NAME );
+#if defined( VK_USE_PLATFORM_ANDROID_KHR )
+      extensions.push_back( VK_KHR_ANDROID_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_METAL_EXT )
+      extensions.push_back( VK_EXT_METAL_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_VI_NN )
+      extensions.push_back( VK_NN_VI_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_WAYLAND_KHR )
+      extensions.push_back( VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_WIN32_KHR )
+      extensions.push_back( VK_KHR_WIN32_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_XCB_KHR )
+      extensions.push_back( VK_KHR_XCB_SURFACE_EXTENSION_NAME );
+      std::cout << "Requesting ext" << std::endl;
+#elif defined( VK_USE_PLATFORM_XLIB_KHR )
+      extensions.push_back( VK_KHR_XLIB_SURFACE_EXTENSION_NAME );
+#elif defined( VK_USE_PLATFORM_XLIB_XRANDR_EXT )
+      extensions.push_back( VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME );
+#endif
+
+      // TODO: Fix properly
+      extensions.push_back( "VK_KHR_xcb_surface" );
+
+    vk::Instance instance = engine::InstanceBuilder()
+        .setApplicationName(AppName)
+        .setEngineName(EngineName)
+        .setExtensions(extensions)
+        .setApiVersion(VK_API_VERSION_1_0)
+        .build();
+
 #if !defined( NDEBUG )
     //vk::DebugUtilsMessengerEXT debugUtilsMessenger = instance.createDebugUtilsMessengerEXT( vk::su::makeDebugUtilsMessengerCreateInfoEXT() );
 #endif
