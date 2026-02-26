@@ -76,35 +76,44 @@ void RaiiApp::run() {
         .build();
 
 #if !defined( NDEBUG )
+    // TODO: Do this in the InstanceBuilder instead
     //vk::DebugUtilsMessengerEXT debugUtilsMessenger = instance.createDebugUtilsMessengerEXT( vk::su::makeDebugUtilsMessengerCreateInfoEXT() );
 #endif
 
-    vk::PhysicalDevice physicalDevice = engine::RankedPhysicalDeviceStrategy().pickPhysicalDevice(instance.enumeratePhysicalDevices());
+    const std::vector<vk::PhysicalDevice>& physicalDevices = instance.enumeratePhysicalDevices();
+    engine::PhysicalDeviceStrategy physicalDeviceStrategy = engine::RankedPhysicalDeviceStrategy();
+    vk::PhysicalDevice physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
 
     engine::Window window(instance, AppName, 500, 500);
 
-    std::pair<uint32_t, uint32_t> graphicsAndPresentQueueFamilyIndex = vk::su::findGraphicsAndPresentQueueFamilyIndex( physicalDevice, window.getSurface() );
-    vk::Device                    device = vk::su::createDevice( physicalDevice, graphicsAndPresentQueueFamilyIndex.first, vk::su::getDeviceExtensions() );
+    std::pair<uint32_t, uint32_t> queueFamilyIndices = engine::findGraphicsAndPresentQueueFamilyIndex(
+        physicalDevice,
+        window.getSurface()
+    );
+    uint32_t graphicsQueueIndex = queueFamilyIndices.first;
+    uint32_t presentQueueIndex = queueFamilyIndices.second;
 
-    vk::CommandPool   commandPool = device.createCommandPool( { {}, graphicsAndPresentQueueFamilyIndex.first } );
+    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
+    vk::Device device = vk::su::createDevice( physicalDevice, graphicsQueueIndex, vk::su::getDeviceExtensions() );
+
+    vk::CommandPool   commandPool = device.createCommandPool( { {}, graphicsQueueIndex} );
     vk::CommandBuffer commandBuffer =
       device.allocateCommandBuffers( vk::CommandBufferAllocateInfo( commandPool, vk::CommandBufferLevel::ePrimary, 1 ) ).front();
 
-    vk::Queue graphicsQueue = device.getQueue( graphicsAndPresentQueueFamilyIndex.first, 0 );
-    vk::Queue presentQueue  = device.getQueue( graphicsAndPresentQueueFamilyIndex.second, 0 );
+    vk::Queue graphicsQueue = device.getQueue( graphicsQueueIndex, 0 );
+    vk::Queue presentQueue  = device.getQueue( presentQueueIndex, 0 );
 
+    // TODO: Maybe a builder for this?
     engine::SwapChain swapChainData( physicalDevice,
                                          device,
                                          window.getSurface(),
                                          window.getExtent(),
                                          vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
                                          {},
-                                         graphicsAndPresentQueueFamilyIndex.first,
-                                         graphicsAndPresentQueueFamilyIndex.second );
-                                         
-    // Info:: DepthBufferData has been dropped in favour of using ImageData/Image directly
-    //vk::su::DepthBufferData depthBufferData( physicalDevice, device, vk::Format::eD16Unorm, surfaceData.extent );
-    
+                                         graphicsQueueIndex,
+                                         presentQueueIndex );
+
+    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     engine::Image depthBufferData( physicalDevice,
                    device,
                    vk::Format::eD16Unorm,
@@ -120,6 +129,8 @@ void RaiiApp::run() {
     commandBuffer.begin( vk::CommandBufferBeginInfo() );
     textureData.setImage( device, commandBuffer, engine::CheckerboardImageGenerator() );
     
+
+    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     engine::Buffer uniformBufferData(
         physicalDevice, 
         device, 
@@ -129,31 +140,35 @@ void RaiiApp::run() {
     glm::mat4x4        mvpcMatrix = vk::su::createModelViewProjectionClipMatrix( window.getExtent() );
     uniformBufferData.write(mvpcMatrix);
    
+    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     vk::DescriptorSetLayout descriptorSetLayout =
       vk::su::createDescriptorSetLayout( device,
                                          { { vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex },
                                            { vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment } } );
     vk::PipelineLayout pipelineLayout = device.createPipelineLayout( vk::PipelineLayoutCreateInfo( vk::PipelineLayoutCreateFlags(), descriptorSetLayout ) );
 
+    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     vk::RenderPass renderPass = vk::su::createRenderPass(
       device, vk::su::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( window.getSurface() ) ).format, depthBufferData.getFormat() );
 
     glslang::InitializeProcess();
-    // TODO: Replace with createShaderModule from pipeline.cpp
-    // TODO: We need the spv header to be able to pass into pipeline.cpp code
+    // TODO: Compile the GLSL shader to spv during runtime (and cache the result) rather than at compile time. This is because the compiled shaders are system specific but the GLSL is universal
     // "../shaders/vertexShaderText_PT_T.vert.spv",
     // "../shaders/fragmentShaderText_T_C.frag.spv",
     
     auto vertCode = vk::su::readFile("../shaders/vertexShaderText_PT_T.vert.spv");
     auto fragCode = vk::su::readFile("../shaders/fragmentShaderText_T_C.frag.spv");
     
+    // TODO: Builder pattern?
     vk::ShaderModule vertexShaderModule   = vk::su::createPrecompiledShaderModule( device, vk::ShaderStageFlagBits::eVertex, vertCode );
     vk::ShaderModule fragmentShaderModule = vk::su::createPrecompiledShaderModule( device, vk::ShaderStageFlagBits::eFragment, fragCode);
     glslang::FinalizeProcess();
 
+    // TODO: Builder pattern?
     std::vector<vk::Framebuffer> framebuffers =
       vk::su::createFramebuffers( device, renderPass, swapChainData.getImageViews(), depthBufferData.getImageView(), window.getExtent() );
 
+    // TODO: Builder pattern?
     engine::Buffer vertexBufferData(
         physicalDevice, 
         device, 
@@ -162,6 +177,8 @@ void RaiiApp::run() {
     );
     vertexBufferData.write( texturedCubeData, sizeof( texturedCubeData ) / sizeof( texturedCubeData[0] ) );
     
+
+    // TODO: Definitely builder pattern
     vk::DescriptorPool descriptorPool =
       vk::su::createDescriptorPool( device, { { vk::DescriptorType::eUniformBuffer, 1 }, { vk::DescriptorType::eCombinedImageSampler, 1 } } );
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo( descriptorPool, descriptorSetLayout );
@@ -170,6 +187,8 @@ void RaiiApp::run() {
     engine::updateDescriptorSets( device, descriptorSet, { { vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {} } }, textureData );
 
     vk::PipelineCache pipelineCache    = device.createPipelineCache( vk::PipelineCacheCreateInfo() );
+
+    // TODO: Definitely builder pattern
     vk::Pipeline      graphicsPipeline = vk::su::createGraphicsPipeline( device,
                                                                     pipelineCache,
                                                                     std::make_pair( vertexShaderModule, nullptr ),
@@ -230,7 +249,7 @@ void RaiiApp::run() {
 
     device.waitIdle();
 
-    // TODO: See which elements of this can be moved to the relevant desctructors (RAII)
+    // TODO: See which elements of this can be moved to the relevant destructors (RAII)
     device.destroyFence( drawFence );
     device.destroySemaphore( imageAcquiredSemaphore );
     device.destroyPipeline( graphicsPipeline );
@@ -276,4 +295,5 @@ void RaiiApp::run() {
     exit( -1 );
   }
 }
+
 

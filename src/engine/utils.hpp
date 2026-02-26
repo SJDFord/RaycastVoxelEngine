@@ -21,4 +21,5 @@ vk::SurfaceFormatKHR pickSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const& 
 vk::PresentModeKHR pickPresentMode(std::vector<vk::PresentModeKHR> const& presentModes);
 uint32_t clampSurfaceImageCount(
     const uint32_t desiredImageCount, const uint32_t minImageCount, const uint32_t maxImageCount);
+std::pair<uint32_t, uint32_t>    findGraphicsAndPresentQueueFamilyIndex( vk::PhysicalDevice physicalDevice, vk::SurfaceKHR const & surface );
 }  // namespace engine

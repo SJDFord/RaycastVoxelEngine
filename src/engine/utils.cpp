@@ -193,5 +193,60 @@ uint32_t clampSurfaceImageCount(
   return imageCount;
 }
 
+std::pair<uint32_t, uint32_t> findGraphicsAndPresentQueueFamilyIndex(
+    vk::PhysicalDevice physicalDevice, vk::SurfaceKHR const& surface) {
+  std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
+      physicalDevice.getQueueFamilyProperties();
+  assert(queueFamilyProperties.size() < (std::numeric_limits<uint32_t>::max)());
+
+  // look for a queueFamilyIndex that supports graphics and present
+  auto combinedIt = std::find_if(
+      queueFamilyProperties.begin(),
+      queueFamilyProperties.end(),
+      [&physicalDevice, &surface](vk::QueueFamilyProperties const& qfp) {
+        static uint32_t index = 0;
+        return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) &&
+               physicalDevice.getSurfaceSupportKHR(index++, surface);
+      });
+
+  if (combinedIt != queueFamilyProperties.end()) {
+    uint32_t index =
+        static_cast<uint32_t>(std::distance(queueFamilyProperties.begin(), combinedIt));
+    return {index, index};  // the first index that supports graphics and present
+  }
+
+  // there's no single index that supports both graphics and present -> look for separate ones
+  auto graphicsIt = std::find_if(
+      queueFamilyProperties.begin(),
+      queueFamilyProperties.end(),
+      [](vk::QueueFamilyProperties const& qfp) {
+        return qfp.queueFlags & vk::QueueFlagBits::eGraphics;
+      });
+
+  if (graphicsIt == queueFamilyProperties.end()) {
+    throw std::runtime_error(
+        "Could not find a queue family index that supports graphics -> terminating");
+  }
+
+  uint32_t graphicsIndex =
+      static_cast<uint32_t>(std::distance(queueFamilyProperties.begin(), graphicsIt));
+  auto presentIt = std::find_if(
+      queueFamilyProperties.begin(),
+      queueFamilyProperties.end(),
+      [&physicalDevice, &surface](vk::QueueFamilyProperties const&) {
+        static uint32_t index = 0;
+        return physicalDevice.getSurfaceSupportKHR(index++, surface);
+      });
+
+  if (presentIt != queueFamilyProperties.end()) {
+    uint32_t presentIndex =
+        static_cast<uint32_t>(std::distance(queueFamilyProperties.begin(), presentIt));
+    return {graphicsIndex, presentIndex};
+  }
+
+  throw std::runtime_error(
+      "Could not find a queue family index that supports present -> terminating");
+}
+
 }  // namespace engine
 
