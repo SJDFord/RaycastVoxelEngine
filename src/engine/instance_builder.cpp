@@ -61,21 +61,13 @@ static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugUtilsMessengerCallback(
 
 namespace engine {
 
-InstanceBuilder::InstanceBuilder() {
-    _apiVersion = VK_API_VERSION_1_0;
+InstanceBuilder::InstanceBuilder(const std::string& applicationName, const std::string& engineName, uint32_t apiVersion) {
+    _applicationName = applicationName;
+    _engineName = engineName;
+    _apiVersion = apiVersion;
 }
 
 InstanceBuilder::~InstanceBuilder() {}
-
-InstanceBuilder& InstanceBuilder::setApplicationName(const std::string& applicationName) {
-  _applicationName = applicationName;
-  return *this;
-}
-
-InstanceBuilder& InstanceBuilder::setEngineName(const std::string& engineName) {
-  _engineName = engineName;
-  return *this;
-}
 
 InstanceBuilder& InstanceBuilder::setLayers(std::vector<std::string> const& layers) {
   _layers = layers;
@@ -83,11 +75,6 @@ InstanceBuilder& InstanceBuilder::setLayers(std::vector<std::string> const& laye
 }
 InstanceBuilder& InstanceBuilder::setExtensions(std::vector<std::string> const& extensions) {
   _extensions = extensions;
-  return *this;
-}
-
-InstanceBuilder& InstanceBuilder::setApiVersion(uint32_t apiVersion) {
-  _apiVersion = apiVersion;
   return *this;
 }
 

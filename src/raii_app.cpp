@@ -26,6 +26,7 @@
 #include "./engine/window.hpp"
 #include "./engine/swap_chain.hpp"
 #include "./engine/instance_builder.hpp"
+#include "./engine/device_builder.hpp"
 #include "./engine/physical_device_strategy.hpp"
 #include "./engine/ranked_physical_device_strategy.hpp"
 
@@ -68,11 +69,8 @@ void RaiiApp::run() {
       // TODO: Fix properly
       extensions.push_back( "VK_KHR_xcb_surface" );
 
-    vk::Instance instance = engine::InstanceBuilder()
-        .setApplicationName(AppName)
-        .setEngineName(EngineName)
+    vk::Instance instance = engine::InstanceBuilder(AppName, EngineName, VK_API_VERSION_1_0)
         .setExtensions(extensions)
-        .setApiVersion(VK_API_VERSION_1_0)
         .build();
 
 #if !defined( NDEBUG )
@@ -93,8 +91,9 @@ void RaiiApp::run() {
     uint32_t graphicsQueueIndex = queueFamilyIndices.first;
     uint32_t presentQueueIndex = queueFamilyIndices.second;
 
-    // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
-    vk::Device device = vk::su::createDevice( physicalDevice, graphicsQueueIndex, vk::su::getDeviceExtensions() );
+    vk::Device device = engine::DeviceBuilder(physicalDevice, graphicsQueueIndex)
+        .setExtensions(vk::su::getDeviceExtensions())
+        .build();
 
     vk::CommandPool   commandPool = device.createCommandPool( { {}, graphicsQueueIndex} );
     vk::CommandBuffer commandBuffer =

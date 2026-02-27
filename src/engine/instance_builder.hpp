@@ -11,17 +11,14 @@ namespace engine {
 
 class InstanceBuilder {
  public:
-  InstanceBuilder();
+  InstanceBuilder(const std::string& applicationName, const std::string& engineName, uint32_t apiVersion);
   ~InstanceBuilder();
 
   InstanceBuilder(const InstanceBuilder&) = delete;
   InstanceBuilder& operator=(const InstanceBuilder&) = delete;
 
-  InstanceBuilder& setApplicationName(const std::string& applicationName);
-  InstanceBuilder& setEngineName(const std::string& engineName);
   InstanceBuilder& setLayers(std::vector<std::string> const& layers);
   InstanceBuilder& setExtensions(std::vector<std::string> const& extensions);
-  InstanceBuilder& setApiVersion(uint32_t apiVersion);
   vk::Instance build();
 
  private:
