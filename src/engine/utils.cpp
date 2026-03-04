@@ -248,5 +248,23 @@ std::pair<uint32_t, uint32_t> findGraphicsAndPresentQueueFamilyIndex(
       "Could not find a queue family index that supports present -> terminating");
 }
 
+std::string readFileString(const std::string& filepath) {
+  std::string enginePath = filepath;
+  std::ifstream file{enginePath, std::ios::ate | std::ios::binary};
+
+  if (!file.is_open()) {
+    throw std::runtime_error("failed to open file: " + enginePath);
+  }
+
+  size_t fileSize = static_cast<size_t>(file.tellg());
+  std::string buffer(fileSize, ' ');
+
+  file.seekg(0);
+  file.read(&buffer[0], fileSize);
+
+  file.close();
+  return buffer;
+}
+
 }  // namespace engine
 

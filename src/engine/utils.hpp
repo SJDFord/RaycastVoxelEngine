@@ -3,6 +3,8 @@
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
 
+#include <fstream>
+
 namespace engine {
 
 uint32_t findMemoryType(
@@ -22,4 +24,6 @@ vk::PresentModeKHR pickPresentMode(std::vector<vk::PresentModeKHR> const& presen
 uint32_t clampSurfaceImageCount(
     const uint32_t desiredImageCount, const uint32_t minImageCount, const uint32_t maxImageCount);
 std::pair<uint32_t, uint32_t>    findGraphicsAndPresentQueueFamilyIndex( vk::PhysicalDevice physicalDevice, vk::SurfaceKHR const & surface );
+
+std::string readFileString(const std::string& filepath);
 }  // namespace engine

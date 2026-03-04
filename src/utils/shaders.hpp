@@ -27,6 +27,9 @@ namespace vk
     
     vk::ShaderModule createPrecompiledShaderModule(vk::Device const & device, vk::ShaderStageFlagBits shaderStage, const std::vector<char>& shaderCode);
 
+
+    std::string readFileString(const std::string& filepath);
+
     std::vector<char> readFile(const std::string& filepath);
 
     bool GLSLtoSPV( const vk::ShaderStageFlagBits shaderType, std::string const & glslShader, std::vector<unsigned int> & spvShader );

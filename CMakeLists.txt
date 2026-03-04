@@ -51,6 +51,10 @@ else()
 # GLSLang  
 set( ENABLE_OPT OFF ) # could use ALLOW_EXTERNAL_SPIRV_TOOLS=ON instead
 CPMAddPackage("gh:KhronosGroup/glslang#16.1.0")
+  #find_package(glslang REQUIRED) # throws error if could not find Vulkan
+  #message(STATUS "Found GLSLang: $ENV{VULKAN_SDK}")
+
+  #find_package(spvtools REQUIRED) # throws error if could not find Vulkan
 
 endif()
 if (NOT GLFW_LIB)
@@ -69,7 +73,7 @@ endif()
 
 # STB
 if (NOT STB_PATH)
-  message(STATUS, "STB_PATH not specified in .env.cmake, using external/stb")
+  message(STATUS "STB_PATH not specified in .env.cmake, using external/stb")
   set(STB_PATH external/stb)
 endif()
 

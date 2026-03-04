@@ -22,6 +22,7 @@
 #include "./engine/instance_builder.hpp"
 #include "./engine/physical_device_strategy.hpp"
 #include "./engine/ranked_physical_device_strategy.hpp"
+#include "./engine/shader_module_builder.hpp"
 #include "./engine/swap_chain.hpp"
 #include "./engine/texture.hpp"
 #include "./engine/utils.hpp"
@@ -142,7 +143,10 @@ void RaiiApp::run() {
     vk::DescriptorSetLayout descriptorSetLayout =
         engine::DescriptorSetLayoutBuilder(device)
             .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
-            .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+            .addBinding(
+                vk::DescriptorType::eCombinedImageSampler,
+                1,
+                vk::ShaderStageFlagBits::eFragment)
             .build();
 
     vk::PipelineLayout pipelineLayout = device.createPipelineLayout(
@@ -154,22 +158,14 @@ void RaiiApp::run() {
         vk::su::pickSurfaceFormat(physicalDevice.getSurfaceFormatsKHR(window.getSurface())).format,
         depthBufferData.getFormat());
 
-    glslang::InitializeProcess();
-    // TODO: Compile the GLSL shader to spv during runtime (and cache the result) rather than at
-    // compile time. This is because the compiled shaders are system specific but the GLSL is
-    // universal
-    // "../shaders/vertexShaderText_PT_T.vert.spv",
-    // "../shaders/fragmentShaderText_T_C.frag.spv",
-
-    auto vertCode = vk::su::readFile("../shaders/vertexShaderText_PT_T.vert.spv");
-    auto fragCode = vk::su::readFile("../shaders/fragmentShaderText_T_C.frag.spv");
-
-    // TODO: Builder pattern?
+    std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
+    std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
     vk::ShaderModule vertexShaderModule =
-        vk::su::createPrecompiledShaderModule(device, vk::ShaderStageFlagBits::eVertex, vertCode);
+        engine::ShaderModuleBuilder(device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
+            .build();
     vk::ShaderModule fragmentShaderModule =
-        vk::su::createPrecompiledShaderModule(device, vk::ShaderStageFlagBits::eFragment, fragCode);
-    glslang::FinalizeProcess();
+        engine::ShaderModuleBuilder(device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
+            .build();
 
     // TODO: Builder pattern?
     std::vector<vk::Framebuffer> framebuffers = vk::su::createFramebuffers(
