@@ -8,6 +8,8 @@ namespace engine {
 
 class RankedPhysicalDeviceStrategy : public PhysicalDeviceStrategy {
  public:
+     RankedPhysicalDeviceStrategy(){}
+     ~RankedPhysicalDeviceStrategy(){}
   vk::PhysicalDevice pickPhysicalDevice(
       const std::vector<vk::PhysicalDevice>& physicalDevices) override;
  private:

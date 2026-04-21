@@ -28,16 +28,34 @@ vk::PhysicalDevice RankedPhysicalDeviceStrategy::pickPhysicalDevice(
 
 int32_t RankedPhysicalDeviceStrategy::scoreDevice(const vk::PhysicalDevice& physicalDevice) {
   int32_t score = 0;
-  //vk::PhysicalDeviceFeatures features;
-  //vk::PhysicalDeviceProperties properties;
+  vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+  std::cout << "Scoring Physical Device: " << properties.deviceName << std::endl;
+
+
   std::vector<vk::ExtensionProperties> extensionProperties = physicalDevice.enumerateDeviceExtensionProperties();
 
-  //vkGetPhysicalDeviceFeatures(device, &features);
-  //vkGetPhysicalDeviceProperties(device, &properties);
-  vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-  vk::PhysicalDeviceFeatures features = physicalDevice.getFeatures();
+  std::vector<vk::ExtensionProperties>::iterator extension = std::find_if(
+    extensionProperties.begin(), 
+    extensionProperties.end(), 
+    [] (const vk::ExtensionProperties& e) { 
+      std::string extensionName = e.extensionName;
+      return extensionName == VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME; 
+    } 
+  );
 
-  std::cout << "Scoring Physical Device: " << properties.deviceName << std::endl;
+  if (extension == extensionProperties.end()) {
+    std::cout << "Physical Device Missing Dynamic Rendering Extension!" << std::endl;
+    score -= 1000000;
+    return score;
+  } else {
+    std::cout << "Found Dynamic Rendering Extension!" << (*extension).extensionName << std::endl;
+  }
+
+  for (int i = 0; i < extensionProperties.size(); i++) {
+    //std::cout << "Physical Device Extension: " << extensionProperties[i].extensionName << std::endl;
+
+  }
+  vk::PhysicalDeviceFeatures features = physicalDevice.getFeatures();
 
   if (!features.geometryShader) {
     std::cout << "\t-1000 (no geometry shader)" << std::endl;

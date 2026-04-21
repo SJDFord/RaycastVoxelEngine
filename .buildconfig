@@ -1,0 +1,11 @@
+[default-2]
+name=Default (Copy)
+runtime=host
+toolchain=default
+config-opts=
+run-opts=
+prefix=/home/samuel/Projects/.gnome-builder/projects/RaycastVoxelEngine/install/host
+app-id=
+postbuild=
+prebuild=
+run-command=

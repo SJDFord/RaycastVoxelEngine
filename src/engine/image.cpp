@@ -55,7 +55,7 @@ const vk::ImageView& Image::getImageView() const {
     return _imageView;
 }
 
-const vk::Image& Image::getImage() const {
+vk::Image Image::getImage() const {
     return _image;
 }
 

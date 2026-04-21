@@ -33,12 +33,13 @@ enum class KeyboardKey {
 
 class Window {
  public:
-  Window(const vk::Instance& instance, std::string name, int w, int h);
+  Window(std::string name, int w, int h);
   ~Window();
   Window(const Window &) = delete;
   Window &operator=(const Window &) = delete;
 
-  std::vector<const char *> getRequiredExtensions();
+  void createSurface(const vk::Instance& instance); 
+  std::vector<std::string> getRequiredExtensions();
   bool shouldClose() { return glfwWindowShouldClose(window); }
   const vk::Extent2D& getExtent() { return _extent; }
   const vk::SurfaceKHR& getSurface();
@@ -57,7 +58,7 @@ class Window {
 
  private:
   static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
-  void initWindow(const vk::Instance& instance);
+  void initWindow();
 
   int width;
   int height;

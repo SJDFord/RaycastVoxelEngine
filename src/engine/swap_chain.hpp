@@ -33,6 +33,7 @@ public:
     
     const vk::SwapchainKHR& getSwapChain() const;
     const std::vector<vk::ImageView>& getImageViews() const;
+    const std::vector<vk::Image>& getImages() const;
 
 private:
     vk::Format                 _colorFormat;

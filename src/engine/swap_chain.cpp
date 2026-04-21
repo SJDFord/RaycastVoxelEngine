@@ -89,4 +89,9 @@ SwapChain::~SwapChain() {
         return _imageViews;
     }
 
+
+    const std::vector<vk::Image>& SwapChain::getImages() const {
+      return _images;
+    }
+
 }

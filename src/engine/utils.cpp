@@ -2,6 +2,66 @@
 
 namespace engine {
 
+vk::PipelineStageFlags getPipelineStageFlags(vk::ImageLayout layout)
+{
+	switch (layout)
+	{
+		case vk::ImageLayout::eUndefined:
+      return vk::PipelineStageFlagBits::eTopOfPipe;
+    case vk::ImageLayout::ePreinitialized:
+      return vk::PipelineStageFlagBits::eHost;
+    case vk::ImageLayout::eTransferDstOptimal:
+    case vk::ImageLayout::eTransferSrcOptimal:
+      return vk::PipelineStageFlagBits::eTransfer;
+    case vk::ImageLayout::eColorAttachmentOptimal:
+      return vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    case vk::ImageLayout::eDepthAttachmentOptimal:
+      return vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+    case vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR:
+      return vk::PipelineStageFlagBits::eFragmentShadingRateAttachmentKHR;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+      return vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader;
+    case vk::ImageLayout::ePresentSrcKHR:
+      return vk::PipelineStageFlagBits::eBottomOfPipe;
+    case vk::ImageLayout::eGeneral:
+			assert(false && "Don't know how to get a meaningful VkPipelineStageFlags for VK_IMAGE_LAYOUT_GENERAL! Don't use it!");
+			return vk::PipelineStageFlagBits::eNone;
+		default:
+			assert(false);
+			return vk::PipelineStageFlagBits::eNone;
+	}
+}
+
+vk::AccessFlags getAccessFlags(vk::ImageLayout layout)
+{
+	switch (layout)
+	{
+    case vk::ImageLayout::eUndefined:
+    case vk::ImageLayout::ePresentSrcKHR:
+      return vk::AccessFlagBits::eNone;
+    case vk::ImageLayout::ePreinitialized:
+      return vk::AccessFlagBits::eHostWrite;
+    case vk::ImageLayout::eColorAttachmentOptimal:
+      return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+    case vk::ImageLayout::eDepthAttachmentOptimal:
+      return vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+    case vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR:
+      return vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR;
+    case vk::ImageLayout::eShaderReadOnlyOptimal:
+      return vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eInputAttachmentRead;
+    case vk::ImageLayout::eTransferSrcOptimal:
+      return vk::AccessFlagBits::eTransferRead;
+    case vk::ImageLayout::eTransferDstOptimal:
+      return vk::AccessFlagBits::eTransferWrite;
+    case vk::ImageLayout::eGeneral:
+			assert(false && "Don't know how to get a meaningful VkAccessFlags for VK_IMAGE_LAYOUT_GENERAL! Don't use it!");
+      return vk::AccessFlagBits::eNone;
+		default:
+			assert(false);
+      return vk::AccessFlagBits::eNone;
+	}
+}
+
 uint32_t findMemoryType(
     vk::PhysicalDeviceMemoryProperties const& memoryProperties,
     uint32_t typeBits,
@@ -17,6 +77,28 @@ uint32_t findMemoryType(
   }
   assert(typeIndex != uint32_t(~0));
   return typeIndex;
+}
+
+void setImageLayout(
+    vk::CommandBuffer const& commandBuffer,
+    vk::Image image,
+    vk::PipelineStageFlags sourceStageMask,
+    vk::PipelineStageFlags destinationStageMask,
+    vk::AccessFlags sourceAccessMask,
+    vk::AccessFlags destinationAccessMask,
+    vk::ImageLayout oldImageLayout,
+    vk::ImageLayout newImageLayout,
+    vk::ImageSubresourceRange const& subresourceRange) {
+  vk::ImageMemoryBarrier imageMemoryBarrier(
+      sourceAccessMask,
+      destinationAccessMask,
+      oldImageLayout,
+      newImageLayout,
+      VK_QUEUE_FAMILY_IGNORED,
+      VK_QUEUE_FAMILY_IGNORED,
+      image,
+      subresourceRange);
+  return commandBuffer.pipelineBarrier(sourceStageMask, destinationStageMask, {}, nullptr, nullptr, imageMemoryBarrier);
 }
 
 void setImageLayout(
@@ -121,17 +203,41 @@ void setImageLayout(
   }
 
   vk::ImageSubresourceRange imageSubresourceRange(aspectMask, 0, 1, 0, 1);
-  vk::ImageMemoryBarrier imageMemoryBarrier(
-      sourceAccessMask,
-      destinationAccessMask,
-      oldImageLayout,
-      newImageLayout,
-      VK_QUEUE_FAMILY_IGNORED,
-      VK_QUEUE_FAMILY_IGNORED,
-      image,
-      imageSubresourceRange);
-  return commandBuffer
-      .pipelineBarrier(sourceStage, destinationStage, {}, nullptr, nullptr, imageMemoryBarrier);
+  return setImageLayout(
+    commandBuffer, 
+    image, 
+    sourceStage, 
+    destinationStage, 
+    sourceAccessMask, 
+    destinationAccessMask,
+    oldImageLayout,
+    newImageLayout,
+    imageSubresourceRange
+  );
+}
+
+void setImageLayout(
+    vk::CommandBuffer const& commandBuffer,
+    vk::Image image,
+    vk::ImageLayout oldImageLayout,
+    vk::ImageLayout newImageLayout,
+    vk::ImageSubresourceRange const& subresourceRange) {
+	vk::PipelineStageFlags srcStageMask  = getPipelineStageFlags(oldImageLayout);
+	vk::PipelineStageFlags dstStageMask  = getPipelineStageFlags(newImageLayout);
+	vk::AccessFlags        srcAccessMask = getAccessFlags(oldImageLayout);
+	vk::AccessFlags        dstAccessMask = getAccessFlags(newImageLayout);
+
+	return setImageLayout(
+    commandBuffer, 
+    image, 
+    srcStageMask, 
+    dstStageMask, 
+    srcAccessMask, 
+    dstAccessMask, 
+    oldImageLayout, 
+    newImageLayout, 
+    subresourceRange
+  );
 }
 
 vk::SurfaceFormatKHR pickSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const& formats) {

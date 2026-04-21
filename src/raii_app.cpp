@@ -27,6 +27,7 @@
 #include "./engine/texture.hpp"
 #include "./engine/utils.hpp"
 #include "./engine/window.hpp"
+#include "./engine/renderer.hpp"
 #include "./utils/geometries.hpp"
 #include "./utils/math.hpp"
 #include "./utils/shaders.hpp"
@@ -44,33 +45,18 @@ void RaiiApp::run() {
     char const* AppName = "DrawTexturedCube";
     char const* EngineName = "Vulkan.hpp";
 
-    std::vector<std::string> extensions;
-    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-    extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_VI_NN)
-    extensions.push_back(VK_NN_VI_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-    extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-    std::cout << "Requesting ext" << std::endl;
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
-    extensions.push_back(VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME);
-#endif
+    engine::Window window(AppName, 500, 500);
+    std::vector<std::string> extensions = window.getRequiredExtensions();
 
-    // TODO: Fix properly
-    extensions.push_back("VK_KHR_xcb_surface");
+    for (int i = 0; i < extensions.size(); i++) {
+        std::cout << "Extension required: " << extensions[i] << std::endl; 
+    }
 
-    vk::Instance instance = engine::InstanceBuilder(AppName, EngineName, VK_API_VERSION_1_0)
+    vk::Instance instance = engine::InstanceBuilder(AppName, EngineName, VK_API_VERSION_1_3)
                                 .setExtensions(extensions)
                                 .build();
+
+    window.createSurface(instance);
 
 #if !defined(NDEBUG)
     // TODO: Do this in the InstanceBuilder instead
@@ -79,18 +65,22 @@ void RaiiApp::run() {
 #endif
 
     const std::vector<vk::PhysicalDevice>& physicalDevices = instance.enumeratePhysicalDevices();
-    engine::PhysicalDeviceStrategy physicalDeviceStrategy = engine::RankedPhysicalDeviceStrategy();
-    vk::PhysicalDevice physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
-
-    engine::Window window(instance, AppName, 500, 500);
+    engine::PhysicalDeviceStrategy* physicalDeviceStrategy = new engine::RankedPhysicalDeviceStrategy();
+    vk::PhysicalDevice physicalDevice = physicalDeviceStrategy->pickPhysicalDevice(physicalDevices);
+    delete physicalDeviceStrategy;
 
     std::pair<uint32_t, uint32_t> queueFamilyIndices =
         engine::findGraphicsAndPresentQueueFamilyIndex(physicalDevice, window.getSurface());
     uint32_t graphicsQueueIndex = queueFamilyIndices.first;
     uint32_t presentQueueIndex = queueFamilyIndices.second;
 
+
     vk::Device device = engine::DeviceBuilder(physicalDevice, graphicsQueueIndex)
-                            .setExtensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME})
+                            .setExtensions({
+                                VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+                                VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+                            })
+                            .setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
                             .build();
 
     vk::CommandPool commandPool = device.createCommandPool({{}, graphicsQueueIndex});
@@ -115,6 +105,7 @@ void RaiiApp::run() {
         presentQueueIndex);
 
     // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
+    
     engine::Image depthBufferData(
         physicalDevice,
         device,
@@ -215,6 +206,8 @@ void RaiiApp::run() {
         renderPass);
     /* VULKAN_KEY_START */
 
+    //engine::Renderer renderer(window, device);
+
     // Get the index of the next available swapchain image:
     vk::Semaphore imageAcquiredSemaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
     vk::ResultValue<uint32_t> currentBuffer = device.acquireNextImageKHR(
@@ -230,36 +223,132 @@ void RaiiApp::run() {
     std::array<vk::ClearValue, 2> clearValues;
     clearValues[0].color = vk::ClearColorValue(0.2f, 0.2f, 0.2f, 0.2f);
     clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-    vk::RenderPassBeginInfo renderPassBeginInfo(
-        renderPass,
-        framebuffers[currentBuffer.value],
-        vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()),
-        clearValues);
-    commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-    commandBuffer.bindDescriptorSets(
-        vk::PipelineBindPoint::eGraphics,
-        pipelineLayout,
-        0,
-        descriptorSet,
-        nullptr);
+    
 
-    commandBuffer.bindVertexBuffers(0, vertexBufferData.getBuffer(), {0});
-    commandBuffer.setViewport(
-        0,
-        vk::Viewport(
-            0.0f,
-            0.0f,
-            static_cast<float>(window.getExtent().width),
-            static_cast<float>(window.getExtent().height),
-            0.0f,
-            1.0f));
-    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()));
+    bool enableDynamicRendering = true;
 
-    commandBuffer.draw(12 * 3, 1, 0, 0);
-    commandBuffer.endRenderPass();
+    vk::ImageSubresourceRange range{};
+    range.aspectMask     = vk::ImageAspectFlagBits::eColor;
+    range.baseMipLevel   = 0;
+    range.levelCount     = VK_REMAINING_MIP_LEVELS;
+    range.baseArrayLayer = 0;
+    range.layerCount     = VK_REMAINING_ARRAY_LAYERS;
+
+    vk::ImageSubresourceRange depthRange{range};
+    depthRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+    std::cout << "Pre-render complete" << std::endl;
+
+    if (enableDynamicRendering) {
+        std::cout << "Dynamic rendering enabled" << std::endl;
+        engine::setImageLayout(
+            commandBuffer,
+            swapChainData.getImages()[0],
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::AccessFlagBits::eNone,
+            vk::AccessFlagBits::eColorAttachmentWrite,
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            range
+        );
+
+        engine::setImageLayout(
+            commandBuffer,
+            depthBufferData.getImage(),
+            vk::ImageLayout::eUndefined,
+            vk::ImageLayout::eDepthAttachmentOptimal,
+            depthRange
+        );
+
+        vk::RenderingAttachmentInfoKHR colorAttachmentInfo; 
+        colorAttachmentInfo.imageView = swapChainData.getImageViews()[0];
+        colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        colorAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+        colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+        colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+        colorAttachmentInfo.clearValue = clearValues[0];
+        
+        vk::RenderingAttachmentInfoKHR depthAttachmentInfo;
+        depthAttachmentInfo.imageView = depthBufferData.getImageView();
+        depthAttachmentInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+        depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+        depthAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+        depthAttachmentInfo.storeOp = vk::AttachmentStoreOp::eDontCare;
+        depthAttachmentInfo.clearValue = clearValues[1];
+        
+        vk::Rect2D renderArea = vk::Rect2D(vk::Offset2D(0, 0), window.getExtent());
+        vk::RenderingInfoKHR renderingInfo   = {};
+        renderingInfo.pNext                = VK_NULL_HANDLE;
+        renderingInfo.renderArea           = renderArea;
+        renderingInfo.layerCount           = 1;
+        renderingInfo.viewMask             = 0;
+        renderingInfo.setColorAttachments(colorAttachmentInfo);
+        renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
+        
+        /*
+        vk::Format depthFormat = depthBufferData.getFormat();
+        if (depthFormat == vk::Format::eD16Unorm || depthFormat == vk::Format::eD32Sfloat) {
+            renderingInfo.setPStencilAttachment(&depthAttachmentInfo);
+        } 
+        */
+
+        commandBuffer.beginRendering(renderingInfo);
+        // TODO: drawScene();
+        commandBuffer.endRendering();
+        // TODO: drawUI();
+
+
+        /*        
+        vkCmdBeginRenderingKHR(draw_cmd_buffer, &render_info);
+        draw_scene();
+        vkCmdEndRenderingKHR(draw_cmd_buffer);
+
+        draw_ui(draw_cmd_buffer, i);
+
+        vkb::image_layout_transition(draw_cmd_buffer,
+                                        swapchain_buffers[i].image,
+                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                        range);
+        */
+    } else {
+
+        std::cout << "Dynamic rendering disbled" << std::endl;
+
+        vk::RenderPassBeginInfo renderPassBeginInfo(
+            renderPass,
+            framebuffers[currentBuffer.value],
+            vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()),
+            clearValues);
+
+        commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+        commandBuffer.bindDescriptorSets(
+            vk::PipelineBindPoint::eGraphics,
+            pipelineLayout,
+            0,
+            descriptorSet,
+            nullptr);
+
+        commandBuffer.bindVertexBuffers(0, vertexBufferData.getBuffer(), {0});
+        commandBuffer.setViewport(
+            0,
+            vk::Viewport(
+                0.0f,
+                0.0f,
+                static_cast<float>(window.getExtent().width),
+                static_cast<float>(window.getExtent().height),
+                0.0f,
+                1.0f));
+        commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()));
+
+        commandBuffer.draw(12 * 3, 1, 0, 0);
+        commandBuffer.endRenderPass();
+    }
+
     commandBuffer.end();
-
+    
     vk::Fence drawFence = device.createFence(vk::FenceCreateInfo());
 
     vk::PipelineStageFlags waitDestinationStageMask(
@@ -269,6 +358,8 @@ void RaiiApp::run() {
 
     while (vk::Result::eTimeout == device.waitForFences(drawFence, VK_TRUE, vk::su::FenceTimeout));
 
+    // TODO: Use at least two swap chains to resolve the validation error https://www.reddit.com/r/vulkan/comments/16lhh6d/error_pswapchains0_images_passed_to_present_must/
+   
     vk::Result result = presentQueue.presentKHR(
         vk::PresentInfoKHR({}, swapChainData.getSwapChain(), currentBuffer.value));
     switch (result) {

@@ -5,8 +5,8 @@
 
 namespace engine {
 
-Window::Window(const vk::Instance& instance, std::string name, int w, int h) : windowName{name}, width{w}, height{h} {
-  initWindow(instance);
+Window::Window(std::string name, int w, int h) : windowName{name}, width{w}, height{h} {
+  initWindow();
 }
 
 Window::~Window() {
@@ -14,7 +14,7 @@ Window::~Window() {
   glfwTerminate();
 }
 
-void Window::initWindow(const vk::Instance& instance) {
+void Window::initWindow() {
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -23,21 +23,24 @@ void Window::initWindow(const vk::Instance& instance) {
   glfwSetWindowUserPointer(window, this);
   glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
+  _extent = vk::Extent2D( static_cast<uint32_t>(width), static_cast<uint32_t>(height) );
+}
 
+
+void Window::createSurface(const vk::Instance& instance) {
   VkSurfaceKHR surface;
   VkResult     err = glfwCreateWindowSurface( instance, window, nullptr, &surface );
   if ( err != VK_SUCCESS )
     throw std::runtime_error( "Failed to create window!" );
   _surface = vk::SurfaceKHR( surface );
-  _extent = vk::Extent2D( static_cast<uint32_t>(width), static_cast<uint32_t>(height) );
 }
 
-std::vector<const char *>  Window::getRequiredExtensions() {
+std::vector<std::string>  Window::getRequiredExtensions() {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-  std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+  std::vector<std::string> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
   return extensions;
 }
 
