@@ -16,28 +16,27 @@
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> args(argv, argv+argc);
-  std::string appName = "VoxelApp";
+  std::string appName = "RaiiApp";
+  bool isDynamic = false;
   
   if (args.size() > 1) {
         appName = args[1];            
   }
 
-  //lve::VoxelApp app{};
-  //App app;
-  //RaiiApp app;
+  if (args.size() > 2) {
+      isDynamic = args[2] == "DYNAMIC";
+  }
 
   try {
+      std::cout << "Starting " << appName << std::endl;
      if (appName == "VoxelApp") {
-        std::cout << "Starting " << appName << std::endl;
         lve::VoxelApp app{};
         app.run();
      } else if (appName == "App") {
-        std::cout << "Starting " << appName << std::endl;     
         App app{};
         app.run();
      } else if (appName == "RaiiApp") {
-        std::cout << "Starting " << appName << std::endl;
-        RaiiApp app{};
+        RaiiApp app(isDynamic);
         app.run();
      } else {
         std::cerr << "App name not recognised: " << appName << std::endl;

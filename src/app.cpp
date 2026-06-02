@@ -118,7 +118,10 @@ void App::run() {
                                                                     vk::FrontFace::eClockwise,
                                                                     true,
                                                                     pipelineLayout,
-                                                                    renderPass );
+                                                                    renderPass,
+                                                                  swapChainData.colorFormat, 
+                                                                depthBufferData.format,
+                                                              false );
     /* VULKAN_KEY_START */
 
     // Get the index of the next available swapchain image:

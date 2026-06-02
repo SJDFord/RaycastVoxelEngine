@@ -36,7 +36,9 @@
 #include "glslang/Public/ShaderLang.h"
 #include "window.hpp"
 
-RaiiApp::RaiiApp() {}
+RaiiApp::RaiiApp(bool enableDynamicRendering): enableDynamicRendering{enableDynamicRendering} {
+ 
+}
 
 RaiiApp::~RaiiApp() {}
 
@@ -84,11 +86,25 @@ void RaiiApp::run() {
                             .build();
 
     vk::CommandPool commandPool = device.createCommandPool({{}, graphicsQueueIndex});
-    vk::CommandBuffer commandBuffer =
-        device
-            .allocateCommandBuffers(
-                vk::CommandBufferAllocateInfo(commandPool, vk::CommandBufferLevel::ePrimary, 1))
-            .front();
+    
+    /*
+    TODO: Multiple buffers
+    std::vector<vk::CommandBuffer> commandBuffers = device.allocateCommandBuffers(
+        vk::CommandBufferAllocateInfo(
+            commandPool, 
+            vk::CommandBufferLevel::ePrimary, 
+            static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)
+        )
+    );
+    */
+
+    vk::CommandBuffer commandBuffer = device.allocateCommandBuffers(
+        vk::CommandBufferAllocateInfo(
+            commandPool, 
+            vk::CommandBufferLevel::ePrimary,
+            1
+        )
+    ).front();
 
     vk::Queue graphicsQueue = device.getQueue(graphicsQueueIndex, 0);
     vk::Queue presentQueue = device.getQueue(presentQueueIndex, 0);
@@ -104,6 +120,28 @@ void RaiiApp::run() {
         graphicsQueueIndex,
         presentQueueIndex);
 
+    // TODO: Use these
+    /*
+    std::vector < std::shared_ptr<vk::raii::Semaphore>> imageAvailableSemaphores(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+    std::vector < std::shared_ptr<vk::raii::Semaphore>> renderFinishedSemaphores(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+    std::vector<std::shared_ptr<vk::raii::Fence>> inFlightFences(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+
+    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+
+    vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
+
+    vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo()
+        .setFlags(vk::FenceCreateFlagBits::eSignaled);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        imageAvailableSemaphores[i] = std::make_shared<vk::raii::Semaphore>(device.createSemaphore(semaphoreInfo));
+        renderFinishedSemaphores[i] = std::make_shared<vk::raii::Semaphore>(device.createSemaphore(semaphoreInfo));
+        inFlightFences[i] = std::make_shared<vk::raii::Fence>(device.createFence(fenceInfo));
+    }
+    */
+
     // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     
     engine::Image depthBufferData(
@@ -118,9 +156,6 @@ void RaiiApp::run() {
         vk::ImageAspectFlagBits::eDepth);
 
     engine::Texture textureData(physicalDevice, device);
-
-    commandBuffer.begin(vk::CommandBufferBeginInfo());
-    textureData.setImage(device, commandBuffer, engine::CheckerboardImageGenerator());
 
     // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
     engine::Buffer uniformBufferData(
@@ -203,7 +238,11 @@ void RaiiApp::run() {
         vk::FrontFace::eClockwise,
         true,
         pipelineLayout,
-        renderPass);
+        enableDynamicRendering ? VK_NULL_HANDLE : renderPass,
+        swapChainData.getFormat(),
+        depthBufferData.getFormat(),
+        enableDynamicRendering
+    );
     /* VULKAN_KEY_START */
 
     //engine::Renderer renderer(window, device);
@@ -223,131 +262,171 @@ void RaiiApp::run() {
     std::array<vk::ClearValue, 2> clearValues;
     clearValues[0].color = vk::ClearColorValue(0.2f, 0.2f, 0.2f, 0.2f);
     clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+    // TODO: Loop over command buffers
+
+        commandBuffer.begin(vk::CommandBufferBeginInfo());
+        textureData.setImage(device, commandBuffer, engine::CheckerboardImageGenerator());
     
+            
+        auto draw_scene = [&] {
+            commandBuffer.setViewport(
+                0,
+                vk::Viewport(
+                    0.0f,
+                    0.0f,
+                    static_cast<float>(window.getExtent().width),
+                    static_cast<float>(window.getExtent().height),
+                    0.0f,
+                    1.0f));
+            commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()));
 
-    bool enableDynamicRendering = true;
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                pipelineLayout,
+                0,
+                descriptorSet,
+                nullptr);
 
-    vk::ImageSubresourceRange range{};
-    range.aspectMask     = vk::ImageAspectFlagBits::eColor;
-    range.baseMipLevel   = 0;
-    range.levelCount     = VK_REMAINING_MIP_LEVELS;
-    range.baseArrayLayer = 0;
-    range.layerCount     = VK_REMAINING_ARRAY_LAYERS;
+            /*
+            // skybox
+            vkCmdBindPipeline(draw_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skybox_pipeline);
+            draw_model(skybox, draw_cmd_buffer);
 
-    vk::ImageSubresourceRange depthRange{range};
-    depthRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+            // object
+            vkCmdBindPipeline(draw_cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, model_pipeline);
+            draw_model(object, draw_cmd_buffer);
+            */
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-    std::cout << "Pre-render complete" << std::endl;
+            /*
+                VkDeviceSize offsets[1] = {0};
 
-    if (enableDynamicRendering) {
-        std::cout << "Dynamic rendering enabled" << std::endl;
-        engine::setImageLayout(
-            commandBuffer,
-            swapChainData.getImages()[0],
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            vk::AccessFlagBits::eNone,
-            vk::AccessFlagBits::eColorAttachmentWrite,
-            vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eColorAttachmentOptimal,
-            range
-        );
+        const auto &vertex_buffer = model->vertex_buffers.at("vertex_buffer");
+        auto       &index_buffer  = model->index_buffer;
 
-        engine::setImageLayout(
-            commandBuffer,
-            depthBufferData.getImage(),
-            vk::ImageLayout::eUndefined,
-            vk::ImageLayout::eDepthAttachmentOptimal,
-            depthRange
-        );
+        vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffer.get(), offsets);
+        vkCmdBindIndexBuffer(command_buffer, index_buffer->get_handle(), 0, model->index_type);
+        vkCmdDrawIndexed(command_buffer, model->vertex_indices, instance_count, 0, 0, 0);
+            */
 
-        vk::RenderingAttachmentInfoKHR colorAttachmentInfo; 
-        colorAttachmentInfo.imageView = swapChainData.getImageViews()[0];
-        colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-        colorAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
-        colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-        colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-        colorAttachmentInfo.clearValue = clearValues[0];
-        
-        vk::RenderingAttachmentInfoKHR depthAttachmentInfo;
-        depthAttachmentInfo.imageView = depthBufferData.getImageView();
-        depthAttachmentInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-        depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
-        depthAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-        depthAttachmentInfo.storeOp = vk::AttachmentStoreOp::eDontCare;
-        depthAttachmentInfo.clearValue = clearValues[1];
-        
-        vk::Rect2D renderArea = vk::Rect2D(vk::Offset2D(0, 0), window.getExtent());
-        vk::RenderingInfoKHR renderingInfo   = {};
-        renderingInfo.pNext                = VK_NULL_HANDLE;
-        renderingInfo.renderArea           = renderArea;
-        renderingInfo.layerCount           = 1;
-        renderingInfo.viewMask             = 0;
-        renderingInfo.setColorAttachments(colorAttachmentInfo);
-        renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
-        
-        /*
-        vk::Format depthFormat = depthBufferData.getFormat();
-        if (depthFormat == vk::Format::eD16Unorm || depthFormat == vk::Format::eD32Sfloat) {
-            renderingInfo.setPStencilAttachment(&depthAttachmentInfo);
-        } 
-        */
+            commandBuffer.draw(12 * 3, 1, 0, 0);
+        };
 
-        commandBuffer.beginRendering(renderingInfo);
-        // TODO: drawScene();
-        commandBuffer.endRendering();
-        // TODO: drawUI();
+        vk::ImageSubresourceRange range{};
+        range.aspectMask     = vk::ImageAspectFlagBits::eColor;
+        range.baseMipLevel   = 0;
+        range.levelCount     = VK_REMAINING_MIP_LEVELS;
+        range.baseArrayLayer = 0;
+        range.layerCount     = VK_REMAINING_ARRAY_LAYERS;
+
+        vk::ImageSubresourceRange depthRange{range};
+        depthRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+        std::cout << "Pre-render complete" << std::endl;
+
+        if (enableDynamicRendering) {
+            std::cout << "Dynamic rendering enabled" << std::endl;
+            engine::setImageLayout(
+                commandBuffer,
+                swapChainData.getImages()[0],
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eNone,
+                vk::AccessFlagBits::eColorAttachmentWrite,
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eColorAttachmentOptimal,
+                range
+            );
+
+            engine::setImageLayout(
+                commandBuffer,
+                depthBufferData.getImage(),
+                vk::ImageLayout::eUndefined,
+                vk::ImageLayout::eDepthAttachmentOptimal,
+                depthRange
+            );
+
+            vk::RenderingAttachmentInfoKHR colorAttachmentInfo; 
+            colorAttachmentInfo.imageView = swapChainData.getImageViews()[0];
+            colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+            colorAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+            colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+            colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+            colorAttachmentInfo.clearValue = clearValues[0];
+            
+            vk::RenderingAttachmentInfoKHR depthAttachmentInfo;
+            depthAttachmentInfo.imageView = depthBufferData.getImageView();
+            depthAttachmentInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+            depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+            depthAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+            depthAttachmentInfo.storeOp = vk::AttachmentStoreOp::eDontCare;
+            depthAttachmentInfo.clearValue = clearValues[1];
+            
+            vk::Rect2D renderArea = vk::Rect2D(vk::Offset2D(0, 0), window.getExtent());
+            vk::RenderingInfoKHR renderingInfo   = {};
+            renderingInfo.pNext                = VK_NULL_HANDLE;
+            renderingInfo.renderArea           = renderArea;
+            renderingInfo.layerCount           = 1;
+            renderingInfo.viewMask             = 0;
+            renderingInfo.setColorAttachments(colorAttachmentInfo);
+            renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
+            
+            vk::Format depthFormat = depthBufferData.getFormat();
+            
+            if (vk::su::isDepthOnlyFormat(depthBufferData.getFormat())) {
+                renderingInfo.setPStencilAttachment(&depthAttachmentInfo);
+            }
 
 
-        /*        
-        vkCmdBeginRenderingKHR(draw_cmd_buffer, &render_info);
-        draw_scene();
-        vkCmdEndRenderingKHR(draw_cmd_buffer);
+            commandBuffer.beginRendering(renderingInfo);
+            draw_scene();       
+            commandBuffer.endRendering();
+            // TODO: drawUI();
 
-        draw_ui(draw_cmd_buffer, i);
+            engine::setImageLayout(
+                commandBuffer,
+                swapChainData.getImages()[0],
+                vk::ImageLayout::eColorAttachmentOptimal,
+                vk::ImageLayout::ePresentSrcKHR,
+                range
+            );
+        } else {
 
-        vkb::image_layout_transition(draw_cmd_buffer,
-                                        swapchain_buffers[i].image,
-                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                        range);
-        */
-    } else {
+            std::cout << "Dynamic rendering disbled" << std::endl;
 
-        std::cout << "Dynamic rendering disbled" << std::endl;
+            vk::RenderPassBeginInfo renderPassBeginInfo(
+                renderPass,
+                framebuffers[currentBuffer.value],
+                vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()),
+                clearValues);
 
-        vk::RenderPassBeginInfo renderPassBeginInfo(
-            renderPass,
-            framebuffers[currentBuffer.value],
-            vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()),
-            clearValues);
+            commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                pipelineLayout,
+                0,
+                descriptorSet,
+                nullptr);
 
-        commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-        commandBuffer.bindDescriptorSets(
-            vk::PipelineBindPoint::eGraphics,
-            pipelineLayout,
-            0,
-            descriptorSet,
-            nullptr);
+            commandBuffer.bindVertexBuffers(0, vertexBufferData.getBuffer(), {0});
+            commandBuffer.setViewport(
+                0,
+                vk::Viewport(
+                    0.0f,
+                    0.0f,
+                    static_cast<float>(window.getExtent().width),
+                    static_cast<float>(window.getExtent().height),
+                    0.0f,
+                    1.0f));
+            commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()));
 
-        commandBuffer.bindVertexBuffers(0, vertexBufferData.getBuffer(), {0});
-        commandBuffer.setViewport(
-            0,
-            vk::Viewport(
-                0.0f,
-                0.0f,
-                static_cast<float>(window.getExtent().width),
-                static_cast<float>(window.getExtent().height),
-                0.0f,
-                1.0f));
-        commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), window.getExtent()));
+            commandBuffer.draw(12 * 3, 1, 0, 0);
+            commandBuffer.endRenderPass();
+        }
 
-        commandBuffer.draw(12 * 3, 1, 0, 0);
-        commandBuffer.endRenderPass();
-    }
-
-    commandBuffer.end();
+        commandBuffer.end();
     
     vk::Fence drawFence = device.createFence(vk::FenceCreateInfo());
 
@@ -417,3 +496,16 @@ void RaiiApp::run() {
   }
 }
 
+/*
+void RaiiApp::drawModel(std::unique_ptr<vkb::sg::SubMesh> &model, VkCommandBuffer command_buffer, uint32_t instance_count)
+{
+	VkDeviceSize offsets[1] = {0};
+
+	const auto &vertex_buffer = model->vertex_buffers.at("vertex_buffer");
+	auto       &index_buffer  = model->index_buffer;
+
+	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffer.get(), offsets);
+	vkCmdBindIndexBuffer(command_buffer, index_buffer->get_handle(), 0, model->index_type);
+	vkCmdDrawIndexed(command_buffer, model->vertex_indices, instance_count, 0, 0, 0);
+}
+*/

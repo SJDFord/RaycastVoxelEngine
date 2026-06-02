@@ -130,6 +130,10 @@ namespace vk
       return framebuffers;
     }
 
+    bool isDepthOnlyFormat(vk::Format format) {
+      return format == vk::Format::eD16Unorm || format == vk::Format::eD32Sfloat;
+    }
+
     vk::Pipeline createGraphicsPipeline( vk::Device const &                                                  device,
                                          vk::PipelineCache const &                                           pipelineCache,
                                          std::pair<vk::ShaderModule, vk::SpecializationInfo const *> const & vertexShaderData,
@@ -139,7 +143,10 @@ namespace vk
                                          vk::FrontFace                                                       frontFace,
                                          bool                                                                depthBuffered,
                                          vk::PipelineLayout const &                                          pipelineLayout,
-                                         vk::RenderPass const &                                              renderPass )
+                                         vk::RenderPass const &                                              renderPass,
+                                        vk::Format colorFormat,
+                                        vk::Format depthFormat,
+                                        bool enableDynamicRendering)
     {
       std::array<vk::PipelineShaderStageCreateInfo, 2> pipelineShaderStageCreateInfos = {
         vk::PipelineShaderStageCreateInfo(
@@ -197,10 +204,25 @@ namespace vk
                                                                                vk::BlendOp::eAdd,
                                                                                colorComponentFlags );
       vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-        vk::PipelineColorBlendStateCreateFlags(), false, vk::LogicOp::eNoOp, pipelineColorBlendAttachmentState, { { 1.0f, 1.0f, 1.0f, 1.0f } } );
+        vk::PipelineColorBlendStateCreateFlags(), 
+        false, 
+        vk::LogicOp::eNoOp, 
+        pipelineColorBlendAttachmentState, 
+        { { 1.0f, 1.0f, 1.0f, 1.0f } } 
+      );
+
+      std::cout << "vk::PipelineColorBlendStateCreateInfo: " << pipelineColorBlendStateCreateInfo.attachmentCount << std::endl;
 
       std::array<vk::DynamicState, 2>    dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
       vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo( vk::PipelineDynamicStateCreateFlags(), dynamicStates );
+      // Provide information for dynamic rendering
+    
+
+      vk::PipelineRenderingCreateInfoKHR pipelineCreate(0, 
+        colorFormat,
+        depthFormat,
+        isDepthOnlyFormat(depthFormat) ? depthFormat : vk::Format::eUndefined
+      );
 
       vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo( vk::PipelineCreateFlags(),
                                                                  pipelineShaderStageCreateInfos,
@@ -213,8 +235,15 @@ namespace vk
                                                                  &pipelineDepthStencilStateCreateInfo,
                                                                  &pipelineColorBlendStateCreateInfo,
                                                                  &pipelineDynamicStateCreateInfo,
-                                                                 pipelineLayout,
-                                                                 renderPass );
+                                                                 pipelineLayout );
+
+      if (enableDynamicRendering) {
+        graphicsPipelineCreateInfo.setPNext(&pipelineCreate);
+      } else {
+        graphicsPipelineCreateInfo.setRenderPass(renderPass);
+      }
+
+      //std::cout << "vk::GraphicsPipelineCreateInfo: " << graphicsPipelineCreateInfo.colorAttachmentCount << std::endl;
 
       auto result = device.createGraphicsPipeline( pipelineCache, graphicsPipelineCreateInfo );
       assert( result.result == vk::Result::eSuccess );

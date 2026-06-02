@@ -11,12 +11,16 @@ class RaiiApp {
  public:
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
+  static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-  RaiiApp();
+  RaiiApp(bool enableDynamicRendering);
   ~RaiiApp();
 
   RaiiApp(const RaiiApp &) = delete;
   RaiiApp &operator=(const RaiiApp &) = delete;
 
   void run();
+
+ private:
+  bool enableDynamicRendering = false;
 };

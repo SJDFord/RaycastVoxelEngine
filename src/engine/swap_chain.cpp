@@ -94,4 +94,8 @@ SwapChain::~SwapChain() {
       return _images;
     }
 
+    const vk::Format SwapChain::getFormat() const {
+      return _colorFormat;
+    }
+
 }

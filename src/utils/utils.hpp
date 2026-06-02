@@ -379,6 +379,7 @@ namespace vk
                                                      std::vector<vk::ImageView> const & imageViews,
                                                      vk::ImageView const &              depthImageView,
                                                      vk::Extent2D const &               extent );
+    bool isDepthOnlyFormat(vk::Format format); 
     vk::Pipeline                 createGraphicsPipeline( vk::Device const &                                                  device,
                                                          vk::PipelineCache const &                                           pipelineCache,
                                                          std::pair<vk::ShaderModule, vk::SpecializationInfo const *> const & vertexShaderData,
@@ -388,7 +389,10 @@ namespace vk
                                                          vk::FrontFace                                                       frontFace,
                                                          bool                                                                depthBuffered,
                                                          vk::PipelineLayout const &                                          pipelineLayout,
-                                                         vk::RenderPass const &                                              renderPass );
+                                                         vk::RenderPass const &                                              renderPass,
+                                                        vk::Format colorFormat,
+                                                      vk::Format depthFormat,
+                                                      bool enableDyanmicRendering);
     vk::Instance                 createInstance( std::string const &              appName,
                                                  std::string const &              engineName,
                                                  std::vector<std::string> const & layers     = {},
