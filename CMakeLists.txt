@@ -92,7 +92,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SOURCES})
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_26)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 

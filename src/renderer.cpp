@@ -62,7 +62,7 @@ const vk::raii::CommandBuffer& Renderer::beginFrame(bool& hasFrame) {
   if (vkResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
     hasFrame = false;
-    return VK_NULL_HANDLE;
+    throw std::runtime_error("no frame!");
   }
 
   if (vkResult != vk::Result::eSuccess && vkResult != vk::Result::eSuboptimalKHR) {

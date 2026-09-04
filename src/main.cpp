@@ -5,6 +5,7 @@
 #include "voxel_app.hpp"
 #include "app.hpp"
 #include "raii_app.hpp"
+#include "dynamic_app.hpp"
 
 // std
 #include <cstdlib>
@@ -37,6 +38,9 @@ int main(int argc, char *argv[]) {
         app.run();
      } else if (appName == "RaiiApp") {
         RaiiApp app(isDynamic);
+        app.run();
+     } else if (appName == "DynamicApp") {
+        DynamicApp app{};
         app.run();
      } else {
         std::cerr << "App name not recognised: " << appName << std::endl;

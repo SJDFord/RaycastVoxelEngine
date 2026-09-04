@@ -55,8 +55,8 @@ void Window::framebufferResizeCallback(GLFWwindow *window, int width, int height
   w->height = height;
 }
 
-void Window::pollEvents() { glfwPollEvents(); }
-void Window::waitEvents() { glfwWaitEvents(); }
+void Window::pollEvents() const { glfwPollEvents(); }
+void Window::waitEvents() const { glfwWaitEvents(); }
 
 void Window::setMouseMode(MouseMode mouseMode) {
   switch (mouseMode) { 

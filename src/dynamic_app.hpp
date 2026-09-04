@@ -7,20 +7,19 @@
 #include <optional>
 #include <iostream>
 
-class RaiiApp {
+class DynamicApp {
  public:
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
   static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-  RaiiApp(bool enableDynamicRendering);
-  ~RaiiApp();
+  DynamicApp();
+  ~DynamicApp();
 
-  RaiiApp(const RaiiApp &) = delete;
-  RaiiApp &operator=(const RaiiApp &) = delete;
+  DynamicApp(const DynamicApp &) = delete;
+  DynamicApp &operator=(const DynamicApp &) = delete;
 
   void run();
-
  private:
-  bool enableDynamicRendering = false;
+  void load();
 };

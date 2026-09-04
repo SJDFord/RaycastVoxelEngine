@@ -85,6 +85,17 @@ void RaiiApp::run() {
                             .setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
                             .build();
 
+    // TODO: New 'DynamicApp' with just the dynamic rendering code for simplicity
+    engine::Renderer renderer(
+        window, 
+        device, 
+        physicalDevice, 
+        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
+        graphicsQueueIndex,
+        presentQueueIndex,
+        MAX_FRAMES_IN_FLIGHT
+    );
+
     vk::CommandPool commandPool = device.createCommandPool({{}, graphicsQueueIndex});
     
     /*
@@ -109,16 +120,30 @@ void RaiiApp::run() {
     vk::Queue graphicsQueue = device.getQueue(graphicsQueueIndex, 0);
     vk::Queue presentQueue = device.getQueue(presentQueueIndex, 0);
 
+
+    /*
+    vk::PhysicalDevice const & physicalDevice,
+                     vk::Device const &         device,
+                     vk::SurfaceKHR const &     surface,
+                     vk::Extent2D const &       extent,
+                     vk::ImageUsageFlags        usage,
+                     uint32_t                   graphicsFamilyIndex,
+                     uint32_t                   presentFamilyIndex,
+                     uint32_t                   maxFramesInFlight,
+                     vk::SwapchainKHR const &   oldSwapChain
+    */
     // TODO: Maybe a builder for this?
     engine::SwapChain swapChainData(
-        physicalDevice,
+        physicalDevice, 
         device,
         window.getSurface(),
         window.getExtent(),
         vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
         {},
-        graphicsQueueIndex,
-        presentQueueIndex);
+        0,
+        0,
+        0
+    );
 
     // TODO: Use these
     /*

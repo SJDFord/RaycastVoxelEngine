@@ -41,12 +41,12 @@ class Window {
   void createSurface(const vk::Instance& instance); 
   std::vector<std::string> getRequiredExtensions();
   bool shouldClose() { return glfwWindowShouldClose(window); }
-  const vk::Extent2D& getExtent() { return _extent; }
+  const vk::Extent2D& getExtent() const { return _extent; }
   const vk::SurfaceKHR& getSurface();
-  bool wasWindowResized() { return framebufferResized; }
+  bool wasWindowResized() const { return framebufferResized; }
   void resetWindowResizedFlag() { framebufferResized = false; }
-  void pollEvents();
-  void waitEvents();
+  void pollEvents() const;
+  void waitEvents() const;
   void setMouseMode(MouseMode mouseMode);
   void setRawMouseMotion(bool enabled);
   void getMousePosition(glm::vec2 &result);
