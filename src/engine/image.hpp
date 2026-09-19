@@ -4,6 +4,9 @@
 #include "vulkan/vulkan_raii.hpp"
 
 #include "utils.hpp"
+#include "buffer.hpp"
+
+#include "stb/stb_image.h"
 
 namespace engine {
 
@@ -25,6 +28,14 @@ public:
 
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;
+
+    // TODO: Move to builder
+    void setTexture(        
+        vk::Device const &         device,
+        vk::PhysicalDevice const & physicalDevice,
+        vk::CommandBuffer const & commandBuffer,
+        const std::string &filepath
+    );
     
     const vk::Format& getFormat() const;
     const vk::ImageView& getImageView() const;
@@ -38,6 +49,7 @@ private:
     vk::Image        _image;
     vk::DeviceMemory _deviceMemory;
     vk::ImageView    _imageView;
+    vk::Sampler      _sampler;
 };
 
 }

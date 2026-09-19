@@ -44,6 +44,35 @@ class Renderer {
     auto extent = _window.getExtent();
     return static_cast<float>(extent.width) / static_cast<float>(extent.height);
   }
+
+  // TODO: Combine this and endOneTimeCommandBuffer into one single function that accepts a lambda func which operates on a command buffer
+  vk::CommandBuffer beginOneTimeCommandBuffer() {
+    auto buffers = _device.allocateCommandBuffers(
+        vk::CommandBufferAllocateInfo(
+            _commandPool,
+            vk::CommandBufferLevel::ePrimary,
+            1
+        )
+    );
+
+    auto buffer = buffers.front();
+    buffer.begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+
+    return buffer;
+  }
+
+  void endOneTimeCommandBuffer(vk::CommandBuffer buffer) {
+    buffer.end();
+    auto submitInfo = vk::SubmitInfo()
+      .setCommandBuffers(buffer);
+
+
+    auto graphicsQueue = _device.getQueue(_graphicsFamilyIndex, 0);
+    graphicsQueue.submit(submitInfo);
+    graphicsQueue.waitIdle();
+    
+   _device.freeCommandBuffers(_commandPool, buffer);
+  }
  
 private:
   engine::Window& _window;

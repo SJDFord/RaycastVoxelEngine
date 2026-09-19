@@ -5,8 +5,9 @@ namespace engine {
 RenderSystem::RenderSystem(
     vk::Device const &         device, 
     vk::PhysicalDevice const & physicalDevice,
+    vk::Pipeline const & pipeline,
     vk::DescriptorSetLayout globalSetLayout
-) : _device{device}, _physicalDevice{physicalDevice}, _descriptorSetLayout{globalSetLayout} {
+) : _device{device}, _physicalDevice{physicalDevice}, _pipeline{pipeline}, _descriptorSetLayout{globalSetLayout} {
   createPipelineLayout(globalSetLayout);
   createPipeline();
 }
@@ -123,34 +124,7 @@ void RenderSystem::createPipeline() {
                                                         .setPSpecializationInfo(nullptr);
     
     
-
-    //auto& bindingDescriptions = configInfo.bindingDescriptions;
-    //auto& attributeDescriptions = configInfo.attributeDescriptions;
-    /*
-    vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
-        .setVertexAttributeDescriptionCount(static_cast<uint32_t>(attributeDescriptions.size()))
-        .setVertexBindingDescriptionCount(static_cast<uint32_t>(bindingDescriptions.size()))
-        .setVertexAttributeDescriptions(attributeDescriptions)
-        .setVertexBindingDescriptions(bindingDescriptions);
-  
-    vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
-        .setStageCount(2)
-        .setStages(shaderStages)
-        .setPVertexInputState(&vertexInputInfo)
-        .setPInputAssemblyState(&configInfo.inputAssemblyInfo)
-        .setPViewportState(&configInfo.viewportInfo)
-        .setPRasterizationState(&configInfo.rasterizationInfo)
-        .setPMultisampleState(&configInfo.multisampleInfo)
-        .setPColorBlendState(&configInfo.colorBlendInfo)
-        .setPDepthStencilState(&configInfo.depthStencilInfo)
-        .setPDynamicState(&configInfo.dynamicStateInfo)
-        .setLayout(configInfo.pipelineLayout)
-        .setSubpass(configInfo.subpass)
-        .setBasePipelineIndex(-1)
-        .setBasePipelineHandle(VK_NULL_HANDLE);
-    
-    graphicsPipeline = device->device().createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
-    */
+    // TODO: Set input and attribute bindings and then create pipeline
 }
 
 }

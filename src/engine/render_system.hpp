@@ -29,6 +29,7 @@ public:
     RenderSystem(
         vk::Device const &         device, 
         vk::PhysicalDevice const & physicalDevice,
+        vk::Pipeline const & pipeline,
         vk::DescriptorSetLayout globalSetLayout
     );
     ~RenderSystem();
@@ -44,9 +45,9 @@ private:
 
   const vk::Device& _device;
   const vk::PhysicalDevice& _physicalDevice;
+  const vk::Pipeline& _pipeline;
   const vk::DescriptorSetLayout& _descriptorSetLayout; 
   
-  vk::Pipeline _pipeline;
   vk::PipelineLayout _pipelineLayout;
 };
 

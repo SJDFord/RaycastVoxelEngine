@@ -1,5 +1,8 @@
 #pragma once
 
+#include "./engine/window.hpp"
+#include "./engine/renderer.hpp"
+#include "./engine/descriptor_pool_builder.hpp"
 
 // std
 #include <memory>
@@ -9,6 +12,8 @@
 
 class DynamicApp {
  public:
+
+  static constexpr std::string APP_NAME = "Dynamic App";
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
   static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -21,5 +26,11 @@ class DynamicApp {
 
   void run();
  private:
+  engine::Window _window;
+  vk::PhysicalDevice _physicalDevice;
+  vk::Device _device;
+  std::unique_ptr<engine::Renderer> _renderer;
+
+  void init();
   void load();
 };

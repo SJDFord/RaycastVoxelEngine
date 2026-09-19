@@ -27,84 +27,40 @@
 #include "./engine/swap_chain.hpp"
 #include "./engine/texture.hpp"
 #include "./engine/utils.hpp"
-#include "./engine/window.hpp"
-#include "./engine/renderer.hpp"
-#include "./utils/geometries.hpp"
-#include "./utils/math.hpp"
-#include "./utils/shaders.hpp"
-#include "./utils/utils.hpp"
-#include "device.hpp"
-#include "glslang/Public/ShaderLang.h"
-#include "window.hpp"
+#include "./engine/pipeline_builder.hpp"
+#include "./engine/vertex.hpp"
+#include "./engine/render_system.hpp"
 
-DynamicApp::DynamicApp() {
- 
+#include "glslang/Public/ShaderLang.h"
+
+DynamicApp::DynamicApp() : _window{APP_NAME, WIDTH, HEIGHT} {
+  init();
 }
 
 DynamicApp::~DynamicApp() {}
 
 void DynamicApp::run() {
-    char const* AppName = "DynamicApp";
-    char const* EngineName = "TEST";
 
-    engine::Window window(AppName, 500, 500);
-    std::println("Window created...");
-    std::vector<std::string> extensions = window.getRequiredExtensions();
-
-    for (int i = 0; i < extensions.size(); i++) {
-        std::cout << "Extension required: " << extensions[i] << std::endl; 
-    }
-
-    vk::Instance instance = engine::InstanceBuilder(AppName, EngineName, VK_API_VERSION_1_3)
-                                .setExtensions(extensions)
-                                .build();
-
-    std::println("Instance created...");
-    window.createSurface(instance);
-
-#if !defined(NDEBUG)
-    // TODO: Do this in the InstanceBuilder instead
-    std::println("Debug messenger");
-    //vk::DebugUtilsMessengerEXT debugUtilsMessenger = instance.createDebugUtilsMessengerEXT(
-    //    vk::su::makeDebugUtilsMessengerCreateInfoEXT() 
-    //);
-#endif
-
-    const std::vector<vk::PhysicalDevice>& physicalDevices = instance.enumeratePhysicalDevices();
-    engine::RankedPhysicalDeviceStrategy physicalDeviceStrategy{};
-    vk::PhysicalDevice physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
-
-    std::pair<uint32_t, uint32_t> queueFamilyIndices =
-        engine::findGraphicsAndPresentQueueFamilyIndex(physicalDevice, window.getSurface());
-    uint32_t graphicsQueueIndex = queueFamilyIndices.first;
-    uint32_t presentQueueIndex = queueFamilyIndices.second;
-    std::println("Physical device created...");
-
-    vk::Device device = engine::DeviceBuilder(physicalDevice, graphicsQueueIndex)
-        .setExtensions({
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
-            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-        })
-        .setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
+    vk::DescriptorPool descriptorPool = engine::DescriptorPoolBuilder(_device)
+        .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
         .build();
 
-    std::println("Device created...");
+    std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < uboBuffers.size(); i++) {
+        vk::DeviceSize size = vk::DeviceSize(sizeof(engine::GlobalUbo));
+        uboBuffers[i] = std::make_unique<engine::Buffer>(
+            _physicalDevice,
+            _device,
+            size,
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eHostVisible);
+        uboBuffers[i]->map();
+    }
 
-    engine::Renderer renderer(
-        window, 
-        device, 
-        physicalDevice, 
-        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
-        graphicsQueueIndex,
-        presentQueueIndex,
-        MAX_FRAMES_IN_FLIGHT
-    );
-
-    std::println("Renderer created...");
-
-    /* TODO: Render pipeline/render system logic
     vk::DescriptorSetLayout descriptorSetLayout =
-        engine::DescriptorSetLayoutBuilder(device)
+        engine::DescriptorSetLayoutBuilder(_device)
             .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
             .addBinding(
                 vk::DescriptorType::eCombinedImageSampler,
@@ -112,60 +68,44 @@ void DynamicApp::run() {
                 vk::ShaderStageFlagBits::eFragment)
             .build();
 
-    vk::PipelineLayout pipelineLayout = device.createPipelineLayout(
-        vk::PipelineLayoutCreateInfo(vk::PipelineLayoutCreateFlags(), descriptorSetLayout));
+    /*
+    vk::PushConstantRange pushConstantRange{};
+    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    pushConstantRange.setOffset(0);
+    pushConstantRange.setSize(sizeof(engine::SimplePushConstantData));
 
-    std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
-    std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
-    vk::ShaderModule vertexShaderModule =
-        engine::ShaderModuleBuilder(device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
-            .build();
-    vk::ShaderModule fragmentShaderModule =
-        engine::ShaderModuleBuilder(device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
-            .build();
-
-    // TODO: Definitely builder pattern
-    vk::DescriptorPool descriptorPool = vk::su::createDescriptorPool(
-        device,
-        {{vk::DescriptorType::eUniformBuffer, 1}, {vk::DescriptorType::eCombinedImageSampler, 1}});
-    vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo(descriptorPool, descriptorSetLayout);
-    vk::DescriptorSet descriptorSet =
-        device.allocateDescriptorSets(descriptorSetAllocateInfo).front();
-
-    engine::updateDescriptorSets(
-        device,
-        descriptorSet,
-        {{vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {}}},
-        textureData);
-
-    vk::PipelineCache pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
-
-    // TODO: Definitely builder pattern
-    vk::Pipeline graphicsPipeline = vk::su::createGraphicsPipeline(
-        device,
-        pipelineCache,
-        std::make_pair(vertexShaderModule, nullptr),
-        std::make_pair(fragmentShaderModule, nullptr),
-        sizeof(texturedCubeData[0]),
-        {{vk::Format::eR32G32B32A32Sfloat, 0}, {vk::Format::eR32G32Sfloat, 16}},
-        vk::FrontFace::eClockwise,
-        true,
-        pipelineLayout,
-        VK_NULL_HANDLE,
-        swapChainData.getFormat(),
-        depthBufferData.getFormat(),
-        enableDynamicRendering
-    );
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.setSetLayouts(descriptorSetLayout);
+    pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
+    vk::PipelineLayout pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
     */
 
-    std::println("Render pipeline created");
+    // TODO: Align engine::Image with image.cpp (or allow creating an image from file path in another way)
+    //std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(_device, "../textures/jungle-brick-with-moss.png");
+    
+    /*
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image->getImageView();
+    imageInfo.sampler = image->getSampler();
+
+    std::vector<VkDescriptorSet> globalDescriptorSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < globalDescriptorSets.size(); i++) {
+        auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        LveDescriptorWriter(*globalSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &imageInfo)
+            .build(globalDescriptorSets[i]);
+    }
+    */
+
 
     auto currentTime = std::chrono::high_resolution_clock::now();
-    while (!window.shouldClose()) {
-        window.pollEvents();
+    while (!_window.shouldClose()) {
+        _window.pollEvents();
 
-        if (window.isKeyPressed(engine::KeyboardKey::ESCAPE)) {
-            window.close();
+        if (_window.isKeyPressed(engine::KeyboardKey::ESCAPE)) {
+            _window.close();
         }
 
         
@@ -174,12 +114,12 @@ void DynamicApp::run() {
             std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        float aspect = renderer.getAspectRatio();
+        float aspect = _renderer->getAspectRatio();
 
-        if (auto commandBuffer = renderer.beginFrame(/*hasFrame*/)) {
+        if (auto commandBuffer = _renderer->beginFrame(/*hasFrame*/)) {
 
             std::println("frame...");
-            int frameIndex = renderer.getFrameIndex();
+            int frameIndex = _renderer->getFrameIndex();
             /*
             FrameInfo frameInfo{
                 frameIndex,
@@ -206,12 +146,92 @@ void DynamicApp::run() {
             pointLightSystem.render(frameInfo);
             */
             //renderer.endSwapChainRenderPass(commandBuffer);
-            renderer.endFrame();
+            _renderer->endFrame();
         }
         
   }
 
-  device.waitIdle();
+  _device.waitIdle();
+}
+
+void DynamicApp::init() {
+    char const* EngineName = "TEST";
+    std::println("Window created...");
+    std::vector<std::string> extensions = _window.getRequiredExtensions();
+
+    for (int i = 0; i < extensions.size(); i++) {
+        std::cout << "Extension required: " << extensions[i] << std::endl; 
+    }
+
+    vk::Instance instance = engine::InstanceBuilder(APP_NAME, EngineName, VK_API_VERSION_1_3)
+                                .setExtensions(extensions)
+                                .build();
+
+    std::println("Instance created...");
+    _window.createSurface(instance);
+
+#if !defined(NDEBUG)
+    // TODO: Do this in the InstanceBuilder instead
+    std::println("Debug messenger");
+    //vk::DebugUtilsMessengerEXT debugUtilsMessenger = instance.createDebugUtilsMessengerEXT(
+    //    vk::su::makeDebugUtilsMessengerCreateInfoEXT() 
+    //);
+#endif
+
+    const std::vector<vk::PhysicalDevice>& physicalDevices = instance.enumeratePhysicalDevices();
+    engine::RankedPhysicalDeviceStrategy physicalDeviceStrategy{};
+    _physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
+
+    std::pair<uint32_t, uint32_t> queueFamilyIndices =
+        engine::findGraphicsAndPresentQueueFamilyIndex(_physicalDevice, _window.getSurface());
+    uint32_t graphicsQueueIndex = queueFamilyIndices.first;
+    uint32_t presentQueueIndex = queueFamilyIndices.second;
+    std::println("Physical device created...");
+
+    _device = engine::DeviceBuilder(_physicalDevice, graphicsQueueIndex)
+        .setExtensions({
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+        })
+        .setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
+        .build();
+
+    std::println("Device created...");
+
+    engine::Renderer renderer(
+        _window, 
+        _device, 
+        _physicalDevice, 
+        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
+        graphicsQueueIndex,
+        presentQueueIndex,
+        MAX_FRAMES_IN_FLIGHT
+    );
+
+    std::println("Renderer created...");
+
+
+    std::println("Pipeline layout created...");
+
+    std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
+    std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
+    vk::ShaderModule vertexShaderModule =
+        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
+            .build();
+    vk::ShaderModule fragmentShaderModule =
+        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
+            .build();
+    
+    std::println("Shaders created...");
+
+    vk::Pipeline pipeline = engine::PipelineBuilder(_device)
+                .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
+                .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
+                .setBindingDescriptions(engine::Vertex::getBindingDescriptions())
+                .setAttributeDescriptions(engine::Vertex::getAttributeDescriptions())
+                .build();
+
+    std::println("Pipeline created...");
 }
 
 

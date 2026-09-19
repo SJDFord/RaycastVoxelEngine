@@ -50,6 +50,9 @@ public:
   write<T>( &data, 1 );
 }
 
+    void map(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
+    void unmap();
+
     void clear( vk::Device const & device );
   
     const vk::Buffer& getBuffer() const { return _buffer; }
@@ -63,6 +66,7 @@ private:
 
     vk::Buffer _buffer;
     vk::DeviceMemory _memory;
+    void* _mapped = nullptr;
 };
 
 }

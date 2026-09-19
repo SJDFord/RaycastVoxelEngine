@@ -50,6 +50,33 @@ Buffer::~Buffer() {
     //clear();
 }
 
+/**
+ * Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
+ *
+ * @param size (Optional) Size of the memory range to map. Pass VK_WHOLE_SIZE to map the complete
+ * buffer range.
+ * @param offset (Optional) Byte offset from beginning
+ *
+ * @return VkResult of the buffer mapping call
+ */
+
+void Buffer::map(vk::DeviceSize size, vk::DeviceSize offset) {
+  _mapped = _device.mapMemory(_memory, offset, size, {});
+}
+
+/**
+ * Unmap a mapped memory range
+ *
+ * @note Does not return a result as vkUnmapMemory can't fail
+ */
+void Buffer::unmap() {
+  
+  if (_mapped) {
+    _device.unmapMemory(_memory);
+    _mapped = nullptr;
+  }
+}
+
 void Buffer::clear( vk::Device const & device )
 {
     device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
