@@ -18,6 +18,11 @@ struct GlobalUbo {
   //int numLights;
 };
 
+struct SimplePushConstantData {
+  glm::mat4 modelMatrix{1.f};
+  glm::mat4 normalMatrix{1.f};
+};
+
 vk::AccessFlags getAccessFlags(vk::ImageLayout layout);
 vk::PipelineStageFlags getPipelineStageFlags(vk::ImageLayout layout);
 
@@ -53,6 +58,10 @@ void setImageLayout(
     vk::ImageSubresourceRange const& subresourceRange
 );
 
+
+void copyBufferToImage(
+    vk::CommandBuffer const& commandBuffer,
+    vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 
 /*

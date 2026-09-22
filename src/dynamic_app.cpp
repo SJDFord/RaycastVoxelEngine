@@ -18,7 +18,7 @@
 #include "./engine/descriptor_set_layout_builder.hpp"
 #include "./engine/descriptor_set_utils.hpp"
 #include "./engine/device_builder.hpp"
-#include "./engine/image.hpp"
+#include "./engine/image_from_file.hpp"
 #include "./engine/image_generators.hpp"
 #include "./engine/instance_builder.hpp"
 #include "./engine/physical_device_strategy.hpp"
@@ -59,30 +59,31 @@ void DynamicApp::run() {
         uboBuffers[i]->map();
     }
 
-    vk::DescriptorSetLayout descriptorSetLayout =
-        engine::DescriptorSetLayoutBuilder(_device)
-            .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
-            .addBinding(
-                vk::DescriptorType::eCombinedImageSampler,
-                1,
-                vk::ShaderStageFlagBits::eFragment)
-            .build();
+    engine::Renderer renderer(
+        _window, 
+        _device, 
+        _physicalDevice, 
+        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
+        _graphicsQueueIndex,
+        _presentQueueIndex,
+        MAX_FRAMES_IN_FLIGHT
+    );
 
+    std::println("Renderer created");
     /*
-    vk::PushConstantRange pushConstantRange{};
-    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-    pushConstantRange.setOffset(0);
-    pushConstantRange.setSize(sizeof(engine::SimplePushConstantData));
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.setSetLayouts(descriptorSetLayout);
-    pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
-    vk::PipelineLayout pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
-    */
+    auto oneTimeCommandBuffer = renderer.beginOneTimeCommandBuffer();
 
     // TODO: Align engine::Image with image.cpp (or allow creating an image from file path in another way)
-    //std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(_device, "../textures/jungle-brick-with-moss.png");
+    engine::ImageFromFile image = engine::ImageFromFile(
+        _physicalDevice,
+        _device,
+        oneTimeCommandBuffer,
+        "../textures/jungle-brick-with-moss.png"
+    );
     
+    renderer.endOneTimeCommandBuffer(oneTimeCommandBuffer);
+    */
+
     /*
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -114,8 +115,15 @@ void DynamicApp::run() {
             std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        float aspect = _renderer->getAspectRatio();
+        std::println("aspect frame...");
 
+        //float aspect = _renderer->getAspectRatio();
+
+        auto extent = _window.getExtent();
+        float aspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+
+
+        std::println("beginning frame...");
         if (auto commandBuffer = _renderer->beginFrame(/*hasFrame*/)) {
 
             std::println("frame...");
@@ -184,11 +192,11 @@ void DynamicApp::init() {
 
     std::pair<uint32_t, uint32_t> queueFamilyIndices =
         engine::findGraphicsAndPresentQueueFamilyIndex(_physicalDevice, _window.getSurface());
-    uint32_t graphicsQueueIndex = queueFamilyIndices.first;
-    uint32_t presentQueueIndex = queueFamilyIndices.second;
+    _graphicsQueueIndex = queueFamilyIndices.first;
+    _presentQueueIndex = queueFamilyIndices.second;
     std::println("Physical device created...");
 
-    _device = engine::DeviceBuilder(_physicalDevice, graphicsQueueIndex)
+    _device = engine::DeviceBuilder(_physicalDevice, _graphicsQueueIndex)
         .setExtensions({
             VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
             VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
@@ -197,21 +205,6 @@ void DynamicApp::init() {
         .build();
 
     std::println("Device created...");
-
-    engine::Renderer renderer(
-        _window, 
-        _device, 
-        _physicalDevice, 
-        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
-        graphicsQueueIndex,
-        presentQueueIndex,
-        MAX_FRAMES_IN_FLIGHT
-    );
-
-    std::println("Renderer created...");
-
-
-    std::println("Pipeline layout created...");
 
     std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
     std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
@@ -224,7 +217,30 @@ void DynamicApp::init() {
     
     std::println("Shaders created...");
 
-    vk::Pipeline pipeline = engine::PipelineBuilder(_device)
+    vk::DescriptorSetLayout descriptorSetLayout =
+        engine::DescriptorSetLayoutBuilder(_device)
+            .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+            .addBinding(
+                vk::DescriptorType::eCombinedImageSampler,
+                1,
+                vk::ShaderStageFlagBits::eFragment)
+            .build();
+
+    vk::PushConstantRange pushConstantRange{};
+    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    pushConstantRange.setOffset(0);
+    pushConstantRange.setSize(sizeof(engine::SimplePushConstantData));
+
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{descriptorSetLayout};
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);
+    pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
+    auto pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
+
+    std::println("Pipeline Layout created...");
+
+    vk::Pipeline pipeline = engine::PipelineBuilder(_device, pipelineLayout)
                 .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
                 .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
                 .setBindingDescriptions(engine::Vertex::getBindingDescriptions())

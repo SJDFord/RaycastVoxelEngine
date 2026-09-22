@@ -1,8 +1,11 @@
 #include "pipeline_builder.hpp"
 
+
+#include <print>
+
 namespace engine {
 
-PipelineBuilder::PipelineBuilder(vk::Device const &device): _device{device} {
+PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pipelineLayout): _device{device}, _pipelineLayout{pipelineLayout} {
   // TODO: Setters for all of these to allow overriding default pipeline behaviour
   _inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
     .setTopology(vk::PrimitiveTopology::eTriangleList)
@@ -111,6 +114,8 @@ PipelineBuilder& PipelineBuilder::setAttributeDescriptions(std::vector<vk::Verte
 
 
 vk::Pipeline PipelineBuilder::build() {
+
+    std::println("Building pipeline...");
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
     .setVertexBindingDescriptions(_bindingDescriptions)
     .setVertexAttributeDescriptions(_attributeDescriptions);

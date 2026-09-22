@@ -1,6 +1,7 @@
 #include "swap_chain.hpp"
 
 #include <algorithm>
+#include <print>
 
 namespace engine {
 
@@ -136,8 +137,10 @@ namespace engine {
 
 
     vk::ResultValue<uint32_t> SwapChain::acquireNextImage() {
+      std::println("ani");
       _device.waitForFences(_inFlightFences[_currentFrame], true, 
           std::numeric_limits<uint64_t>::max());
+      std::println("wff");
 
       vk::AcquireNextImageInfoKHR acquireNextImageInfo =
           vk::AcquireNextImageInfoKHR()

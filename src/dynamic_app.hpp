@@ -29,6 +29,8 @@ class DynamicApp {
   engine::Window _window;
   vk::PhysicalDevice _physicalDevice;
   vk::Device _device;
+  uint32_t _graphicsQueueIndex;
+  uint32_t _presentQueueIndex;
   std::unique_ptr<engine::Renderer> _renderer;
 
   void init();

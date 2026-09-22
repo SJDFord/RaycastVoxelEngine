@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <print>
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
@@ -42,6 +43,7 @@ class Renderer {
 
   float getAspectRatio() {
     auto extent = _window.getExtent();
+    std::println("got extent");
     return static_cast<float>(extent.width) / static_cast<float>(extent.height);
   }
 

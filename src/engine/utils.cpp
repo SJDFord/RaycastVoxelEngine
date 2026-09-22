@@ -2,6 +2,26 @@
 
 namespace engine {
 
+void copyBufferToImage(
+    vk::CommandBuffer const& commandBuffer,
+    vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount) {
+  vk::BufferImageCopy region{};
+  region.bufferOffset = 0;
+  region.bufferRowLength = 0;
+  region.bufferImageHeight = 0;
+
+  region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;;
+  region.imageSubresource.mipLevel = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount = layerCount;
+
+
+  region.imageOffset = vk::Offset3D(0, 0, 0);
+  region.imageExtent = vk::Extent3D(width, height, 1);
+
+  commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
+}
+
 vk::PipelineStageFlags getPipelineStageFlags(vk::ImageLayout layout)
 {
 	switch (layout)

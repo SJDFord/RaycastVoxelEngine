@@ -21,7 +21,9 @@ Renderer::Renderer(
 
     std::println("Creating command pool");
     _commandPool = device.createCommandPool({{}, graphicsFamilyIndex});
+    std::println("Command pool created");
     recreateSwapChain();
+    std::println("Swap chain recreated");
     createCommandBuffers();
 }
 
@@ -31,10 +33,16 @@ Renderer::~Renderer() {
 }
 
 vk::CommandBuffer Renderer::beginFrame(/*bool &hasFrame*/) {
+  std::println("beginFrame pre assert");
+  if (_isFrameStarted) {
+    std::println("Can't call beginFrame while already in progress");
+  
+  }
   assert(!_isFrameStarted && "Can't call beginFrame while already in progress");
-
+  std::println("beginFrame");
 
   vk::ResultValue<uint32_t> nextImageResult = _swapChain->acquireNextImage();
+  std::println("next image");
   const vk::Result& vkResult = nextImageResult.result;
   if (vkResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
@@ -79,6 +87,7 @@ void Renderer::endFrame() {
 void Renderer::createCommandBuffers() {
   _commandBuffers.resize(_maxFramesInFlight);
 
+  std::println("Command buffers resized");
   _commandBuffers = _device.allocateCommandBuffers(
       vk::CommandBufferAllocateInfo(
           _commandPool,
@@ -86,6 +95,7 @@ void Renderer::createCommandBuffers() {
           _commandBuffers.size()
       )
   );
+  std::println("Command buffers created");
 
   /*
   VkCommandBufferAllocateInfo allocInfo{};
@@ -125,6 +135,7 @@ void Renderer::recreateSwapChain() {
       _presentFamilyIndex,
       _maxFramesInFlight,
       nullptr );
+    std::println("Made swap chain");
     return;
   }
   std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
@@ -140,6 +151,7 @@ void Renderer::recreateSwapChain() {
     oldSwapChain
   );
 
+  std::println("Remade swap chain");
   if (!oldSwapChain->compareSwapFormats(*_swapChain.get())) {
     throw std::runtime_error("Swap chain image(or depth) format has changed!");
   }

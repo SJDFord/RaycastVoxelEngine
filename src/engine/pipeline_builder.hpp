@@ -11,12 +11,11 @@ namespace engine {
 
 class PipelineBuilder {
  public:
-  PipelineBuilder(vk::Device const &device);
+  PipelineBuilder(vk::Device const &device, vk::PipelineLayout pipelineLayout);
   ~PipelineBuilder();
 
   PipelineBuilder(const PipelineBuilder&) = delete;
   PipelineBuilder& operator=(const PipelineBuilder&) = delete;
-
 
   PipelineBuilder& addShaderModule(vk::ShaderModule shaderModule, vk::ShaderStageFlagBits shaderStage);
 
@@ -44,6 +43,8 @@ class PipelineBuilder {
   vk::PipelineDepthStencilStateCreateInfo _depthStencilInfo;
   std::vector<vk::DynamicState> _dynamicStateEnables;
   vk::PipelineDynamicStateCreateInfo _dynamicStateInfo;
+
+  // TODO: Set pipeline layout
   vk::PipelineLayout _pipelineLayout;
   uint32_t _subpass = 0;
 

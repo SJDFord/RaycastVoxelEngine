@@ -68,30 +68,52 @@ void Image::setTexture(
         const std::string& path) {
 int texWidth, texHeight, texChannels;
   stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-  VkDeviceSize imageSize = texWidth * texHeight * 4;
+  vk::DeviceSize imageSize = texWidth * texHeight * 4;
   if (!pixels) {
     throw std::runtime_error("failed to load texture image!");
   }
 
-  /*
-  TODO: Buffer etc
   std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
       physicalDevice,
       device,
       imageSize,
-      1,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+      vk::BufferUsageFlagBits::eTransferSrc,
+      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
   buffer->map(imageSize, 0);
   buffer->write(pixels, static_cast<size_t>(imageSize));
   buffer->unmap();
   stbi_image_free(pixels);
+
+  /*
+  lveDevice.createImageWithInfo(
+      imageInfo,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      textureImage,
+      textureImageMemory);
   */
 
-  //buffer->
-
-  //buffer.copyBufferToImage(->getBuffer(), _image->getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion );
+  /*
+  lveDevice.transitionImageLayout(
+      textureImage,
+      VK_FORMAT_R8G8B8A8_SRGB,
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+   */
+   copyBufferToImage(
+      commandBuffer,
+      buffer->getBuffer(),
+      _image,
+      static_cast<uint32_t>(texWidth),
+      static_cast<uint32_t>(texHeight),
+      1);
+  /*
+  lveDevice.transitionImageLayout(
+      textureImage,
+      VK_FORMAT_R8G8B8A8_SRGB,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  */
 }
 
 const vk::Format& Image::getFormat() const {
