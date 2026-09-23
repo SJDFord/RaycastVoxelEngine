@@ -6,10 +6,10 @@
 namespace engine {
 
 
-    SwapChain::SwapChain( vk::PhysicalDevice const & physicalDevice,
-                                  vk::Device const &         device,
-                                  vk::SurfaceKHR const &     surface,
-                                  vk::Extent2D const &       extent,
+    SwapChain::SwapChain( vk::PhysicalDevice physicalDevice,
+                                  vk::Device          device,
+                                  vk::SurfaceKHR      surface,
+                                  vk::Extent2D       extent,
                                   vk::ImageUsageFlags        usage,
                                   uint32_t                   graphicsQueueFamilyIndex,
                                   uint32_t                   presentQueueFamilyIndex,
@@ -17,64 +17,15 @@ namespace engine {
                                   std::shared_ptr<SwapChain> previous): 
                                   _device{device}, 
                                   _physicalDevice{physicalDevice},
+                                  _extent{extent},
+                                  _usage{usage},
+                                  _surface{surface},
                                   _graphicsFamilyIndex{graphicsQueueFamilyIndex},
                                   _presentFamilyIndex{presentQueueFamilyIndex},
-                                  _maxFramesInFlight{maxFramesInFlight}
+                                  _maxFramesInFlight{maxFramesInFlight},
+                                  _oldSwapChain{previous}
     {
-      vk::SurfaceFormatKHR surfaceFormat = engine::pickSurfaceFormat( physicalDevice.getSurfaceFormatsKHR( surface ) );
-      _colorFormat = surfaceFormat.format;
-
-      vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR( surface );
-      if ( surfaceCapabilities.currentExtent.width == ( std::numeric_limits<uint32_t>::max )() )
-      {
-        // If the surface size is undefined, the size is set to the size of the images requested.
-        _extent.width  = std::clamp( extent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width );
-        _extent.height = std::clamp( extent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height );
-      }
-      else
-      {
-        // If the surface size is defined, the swap chain size must match
-        _extent = surfaceCapabilities.currentExtent;
-      }
-      vk::SurfaceTransformFlagBitsKHR preTransform = ( surfaceCapabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity )
-                                                     ? vk::SurfaceTransformFlagBitsKHR::eIdentity
-                                                     : surfaceCapabilities.currentTransform;
-      vk::CompositeAlphaFlagBitsKHR   compositeAlpha =
-        ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied )    ? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied
-          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied ) ? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
-          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit )        ? vk::CompositeAlphaFlagBitsKHR::eInherit
-                                                                                                             : vk::CompositeAlphaFlagBitsKHR::eOpaque;
-      vk::PresentModeKHR         presentMode = engine::pickPresentMode( physicalDevice.getSurfacePresentModesKHR( surface ) );
-      vk::SwapchainCreateInfoKHR swapChainCreateInfo(
-        {},
-        surface,
-        engine::clampSurfaceImageCount( 3u, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount ),
-        _colorFormat,
-        surfaceFormat.colorSpace,
-        _extent,
-        1,
-        usage,
-        vk::SharingMode::eExclusive,
-        {},
-        preTransform,
-        compositeAlpha,
-        presentMode,
-        true,
-        previous == nullptr ? VK_NULL_HANDLE : previous->getSwapChain());
-      if ( graphicsQueueFamilyIndex != presentQueueFamilyIndex )
-      {
-        uint32_t queueFamilyIndices[2] = { graphicsQueueFamilyIndex, presentQueueFamilyIndex };
-        // If the graphics and present queues are from different queue families, we either have to explicitly transfer
-        // ownership of images between the queues, or we have to create the swapchain with imageSharingMode as
-        // vk::SharingMode::eConcurrent
-        swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
-        swapChainCreateInfo.queueFamilyIndexCount = 2;
-        swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
-      }
-      _swapChain = device.createSwapchainKHR( swapChainCreateInfo );
-
-      _images = device.getSwapchainImagesKHR( _swapChain );
-
+      createSwapChain();
       _imageViews.reserve( _images.size() );
       vk::ImageViewCreateInfo imageViewCreateInfo( {}, {}, vk::ImageViewType::e2D, _colorFormat, {}, { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
       for ( auto image : _images )
@@ -85,6 +36,7 @@ namespace engine {
 
       createDepthResources();
       createSyncObjects();
+      _oldSwapChain = nullptr;
     }
 
     SwapChain::~SwapChain() {
@@ -127,7 +79,7 @@ namespace engine {
       return _images;
     }
 
-    const vk::Format SwapChain::getFormat() const {
+    vk::Format SwapChain::getFormat() const {
       return _colorFormat;
     }
 
@@ -195,6 +147,64 @@ namespace engine {
       _currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
 
       return result;
+    }
+
+    void SwapChain::createSwapChain() {
+      vk::SurfaceFormatKHR surfaceFormat = engine::pickSurfaceFormat( _physicalDevice.getSurfaceFormatsKHR( _surface ) );
+      _colorFormat = surfaceFormat.format;
+      std::println("Setting format");
+      std::printf("Format: %i", _colorFormat);
+
+      vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR( _surface );
+      if ( surfaceCapabilities.currentExtent.width == ( std::numeric_limits<uint32_t>::max )() )
+      {
+        // If the surface size is undefined, the size is set to the size of the images requested.
+        _extent.width  = std::clamp( _extent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width );
+        _extent.height = std::clamp( _extent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height );
+      }
+      else
+      {
+        // If the surface size is defined, the swap chain size must match
+        _extent = surfaceCapabilities.currentExtent;
+      }
+      vk::SurfaceTransformFlagBitsKHR preTransform = ( surfaceCapabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity )
+                                                     ? vk::SurfaceTransformFlagBitsKHR::eIdentity
+                                                     : surfaceCapabilities.currentTransform;
+      vk::CompositeAlphaFlagBitsKHR   compositeAlpha =
+        ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied )    ? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied
+          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied ) ? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
+          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit )        ? vk::CompositeAlphaFlagBitsKHR::eInherit
+                                                                                                             : vk::CompositeAlphaFlagBitsKHR::eOpaque;
+      vk::PresentModeKHR         presentMode = engine::pickPresentMode( _physicalDevice.getSurfacePresentModesKHR( _surface ) );
+      vk::SwapchainCreateInfoKHR swapChainCreateInfo(
+        {},
+        _surface,
+        engine::clampSurfaceImageCount( 3u, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount ),
+        _colorFormat,
+        surfaceFormat.colorSpace,
+        _extent,
+        1,
+        _usage,
+        vk::SharingMode::eExclusive,
+        {},
+        preTransform,
+        compositeAlpha,
+        presentMode,
+        true,
+        _oldSwapChain == nullptr ? VK_NULL_HANDLE : _oldSwapChain->getSwapChain());
+      if ( _graphicsFamilyIndex != _presentFamilyIndex )
+      {
+        uint32_t queueFamilyIndices[2] = { _graphicsFamilyIndex, _presentFamilyIndex };
+        // If the graphics and present queues are from different queue families, we either have to explicitly transfer
+        // ownership of images between the queues, or we have to create the swapchain with imageSharingMode as
+        // vk::SharingMode::eConcurrent
+        swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
+        swapChainCreateInfo.queueFamilyIndexCount = 2;
+        swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
+      }
+      _swapChain = _device.createSwapchainKHR( swapChainCreateInfo );
+
+      _images = _device.getSwapchainImagesKHR( _swapChain );
     }
 
     void SwapChain::createDepthResources() {

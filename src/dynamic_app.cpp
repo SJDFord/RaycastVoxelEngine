@@ -70,7 +70,7 @@ void DynamicApp::run() {
     );
 
     std::println("Renderer created");
-    /*
+    
     auto oneTimeCommandBuffer = renderer.beginOneTimeCommandBuffer();
 
     // TODO: Align engine::Image with image.cpp (or allow creating an image from file path in another way)
@@ -82,7 +82,8 @@ void DynamicApp::run() {
     );
     
     renderer.endOneTimeCommandBuffer(oneTimeCommandBuffer);
-    */
+    
+    std::println("ImageFromFile created");
 
     /*
     VkDescriptorImageInfo imageInfo{};
@@ -124,10 +125,12 @@ void DynamicApp::run() {
 
 
         std::println("beginning frame...");
-        if (auto commandBuffer = _renderer->beginFrame(/*hasFrame*/)) {
+        vk::CommandBuffer commandBuffer = renderer.beginFrame(/*hasFrame*/);
+
+        if (commandBuffer != VK_NULL_HANDLE) {
 
             std::println("frame...");
-            int frameIndex = _renderer->getFrameIndex();
+            int frameIndex = renderer.getFrameIndex();
             /*
             FrameInfo frameInfo{
                 frameIndex,
@@ -154,7 +157,7 @@ void DynamicApp::run() {
             pointLightSystem.render(frameInfo);
             */
             //renderer.endSwapChainRenderPass(commandBuffer);
-            _renderer->endFrame();
+            renderer.endFrame();
         }
         
   }

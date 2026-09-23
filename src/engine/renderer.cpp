@@ -5,8 +5,8 @@ namespace engine {
 
 Renderer::Renderer(
     engine::Window& window, 
-    vk::Device const& device,
-    vk::PhysicalDevice const & physicalDevice,
+    vk::Device device,
+    vk::PhysicalDevice physicalDevice,
     vk::ImageUsageFlags        usage,
     uint32_t                   graphicsFamilyIndex,
     uint32_t                   presentFamilyIndex,
@@ -17,7 +17,8 @@ Renderer::Renderer(
     _imageUsageFlags{usage}, 
     _graphicsFamilyIndex{graphicsFamilyIndex},
     _presentFamilyIndex{presentFamilyIndex},
-    _maxFramesInFlight{maxFramesInFlight} {
+    _maxFramesInFlight{maxFramesInFlight},
+    _isFrameStarted{false} {
 
     std::println("Creating command pool");
     _commandPool = device.createCommandPool({{}, graphicsFamilyIndex});
@@ -33,14 +34,8 @@ Renderer::~Renderer() {
 }
 
 vk::CommandBuffer Renderer::beginFrame(/*bool &hasFrame*/) {
-  std::println("beginFrame pre assert");
-  if (_isFrameStarted) {
-    std::println("Can't call beginFrame while already in progress");
+  assert(!_isFrameStarted);// && "Can't call beginFrame while already in progress");  
   
-  }
-  assert(!_isFrameStarted && "Can't call beginFrame while already in progress");
-  std::println("beginFrame");
-
   vk::ResultValue<uint32_t> nextImageResult = _swapChain->acquireNextImage();
   std::println("next image");
   const vk::Result& vkResult = nextImageResult.result;
@@ -65,7 +60,6 @@ vk::CommandBuffer Renderer::beginFrame(/*bool &hasFrame*/) {
   return commandBuffer;
 }
 void Renderer::endFrame() {
-
   assert(_isFrameStarted && "Can't call endFrame while frame is not in progress");
   auto commandBuffer = getCurrentCommandBuffer();
   commandBuffer.end();
@@ -133,8 +127,8 @@ void Renderer::recreateSwapChain() {
       _imageUsageFlags,
       _graphicsFamilyIndex,
       _presentFamilyIndex,
-      _maxFramesInFlight,
-      nullptr );
+      _maxFramesInFlight );
+    std::printf("Swap Chain PTR %p\n", _swapChain.get());
     std::println("Made swap chain");
     return;
   }

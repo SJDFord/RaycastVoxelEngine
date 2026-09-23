@@ -1,6 +1,7 @@
 #include "image_from_file.hpp"
 
 #include <iostream>
+#include <print>
 
 
 namespace engine {
@@ -48,6 +49,8 @@ int texWidth, texHeight, texChannels;
     throw std::runtime_error("failed to load texture image!");
   }
 
+  std::printf("Loaded %s (%ix%i) \n", path.c_str(), texWidth, texHeight);
+
   std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
       physicalDevice,
       device,
@@ -55,9 +58,12 @@ int texWidth, texHeight, texChannels;
       vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-  buffer->map(imageSize, 0);
+  //buffer->map(imageSize, 0);
+  //std::println("Mapped image to buffer");
   buffer->write(pixels, static_cast<size_t>(imageSize));
-  buffer->unmap();
+  std::println("Pixels written to buffer");
+  //buffer->unmap();
+  //std::println("Buffer unmapped");
   stbi_image_free(pixels);
 
   // Image

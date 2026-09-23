@@ -17,8 +17,8 @@ class Renderer {
  public:
   Renderer(
     engine::Window& window, 
-    vk::Device const& device,
-    vk::PhysicalDevice const & physicalDevice,
+    vk::Device device,
+    vk::PhysicalDevice physicalDevice,
     vk::ImageUsageFlags        usage,
     uint32_t                   graphicsFamilyIndex,
     uint32_t                   presentFamilyIndex,
@@ -78,8 +78,8 @@ class Renderer {
  
 private:
   engine::Window& _window;
-  const vk::Device& _device;
-  const vk::PhysicalDevice& _physicalDevice;
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
   const vk::ImageUsageFlags _imageUsageFlags;
   const uint32_t _graphicsFamilyIndex;
   const uint32_t _presentFamilyIndex;
@@ -95,7 +95,7 @@ private:
 
   uint32_t _currentImageIndex;
   int _currentFrameIndex{0};
-  bool _isFrameStarted{false};
+  bool _isFrameStarted;
 };
 
 }  // namespace engine

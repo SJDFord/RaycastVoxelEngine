@@ -13,10 +13,10 @@ struct ImageWithMemory {
 
 class SwapChain {
 public:
-    SwapChain( vk::PhysicalDevice const & physicalDevice,
-                     vk::Device const &         device,
-                     vk::SurfaceKHR const &     surface,
-                     vk::Extent2D const &       extent,
+    SwapChain( vk::PhysicalDevice physicalDevice,
+                     vk::Device         device,
+                     vk::SurfaceKHR     surface,
+                     vk::Extent2D       extent,
                      vk::ImageUsageFlags        usage,
                      uint32_t                   graphicsFamilyIndex,
                      uint32_t                   presentFamilyIndex,
@@ -40,7 +40,7 @@ public:
     const vk::SwapchainKHR& getSwapChain() const;
     const std::vector<vk::ImageView>& getImageViews() const;
     const std::vector<vk::Image>& getImages() const;
-    const vk::Format getFormat() const;
+    vk::Format getFormat() const;
     const vk::Format getDepthFormat() const;
     const uint32_t getMaxFramesInFlight() const { return _maxFramesInFlight; };
 
@@ -54,8 +54,10 @@ public:
     }
 
 private:
-    const vk::Device& _device;
-    const vk::PhysicalDevice& _physicalDevice;
+    vk::Device _device;
+    vk::PhysicalDevice _physicalDevice;
+    vk::SurfaceKHR _surface;
+    vk::ImageUsageFlags _usage;
     const uint32_t _graphicsFamilyIndex;
     const uint32_t _presentFamilyIndex;
     const uint32_t _maxFramesInFlight;
@@ -64,6 +66,7 @@ private:
     vk::Format                 _depthFormat;
     vk::Extent2D               _extent;
     vk::SwapchainKHR           _swapChain;
+    std::shared_ptr<SwapChain> _oldSwapChain;
 
     std::vector<vk::Image> _depthImages;
     std::vector<vk::DeviceMemory> _depthImageMemorys;
@@ -77,6 +80,8 @@ private:
     std::vector<vk::Fence> _imagesInFlight;
     size_t _currentFrame = 0;
 
+
+    void createSwapChain();
     void createDepthResources();
     void createSyncObjects();
       vk::Format findDepthFormat();
