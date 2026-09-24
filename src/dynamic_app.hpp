@@ -34,6 +34,8 @@ class DynamicApp {
   uint32_t _graphicsQueueIndex;
   uint32_t _presentQueueIndex;
   engine::GameObject::Map _gameObjects;
+  vk::PipelineLayout _pipelineLayout;
+  vk::Pipeline _pipeline;
   //std::unique_ptr<engine::Renderer> _renderer;
 
   void init();

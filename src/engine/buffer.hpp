@@ -53,6 +53,7 @@ public:
     void map(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
     void unmap();
 
+    void flush(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
     void clear( vk::Device const & device );
   
     const vk::Buffer& getBuffer() const { return _buffer; }

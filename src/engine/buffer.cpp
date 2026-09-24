@@ -77,6 +77,14 @@ void Buffer::unmap() {
   }
 }
 
+void Buffer::flush(vk::DeviceSize size, vk::DeviceSize offset) {
+  vk::MappedMemoryRange mappedRange = vk::MappedMemoryRange()
+    .setMemory(_memory)
+    .setOffset(offset)
+    .setSize(size);
+  _device.flushMappedMemoryRanges(mappedRange);
+}
+
 void Buffer::clear( vk::Device const & device )
 {
     device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory

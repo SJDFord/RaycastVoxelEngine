@@ -56,7 +56,7 @@ void DynamicApp::run() {
             size,
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible);
-        uboBuffers[i]->map();
+        //uboBuffers[i]->map();
     }
 
     engine::Renderer renderer(
@@ -140,6 +140,11 @@ void DynamicApp::run() {
 
             std::println("frame...");
             int frameIndex = renderer.getFrameIndex();
+
+            engine::GlobalUbo ubo{};
+            uboBuffers[frameIndex]->write(ubo);
+            uboBuffers[frameIndex]->flush();
+
             /*
             FrameInfo frameInfo{
                 frameIndex,
@@ -159,13 +164,37 @@ void DynamicApp::run() {
             uboBuffers[frameIndex]->flush();
 
             // render
-            //lveRenderer.beginSwapChainRenderPass(commandBuffer);
-
             // order here matters
-            simpleRenderSystem.renderGameObjects(frameInfo);
-            pointLightSystem.render(frameInfo);
+              lvePipeline->bind(frameInfo.commandBuffer);
+
+            vkCmdBindDescriptorSets(
+                frameInfo.commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipelineLayout,
+                0,
+                1,
+                &frameInfo.globalDescriptorSet,
+                0,
+                nullptr);
+
+            for (auto& kv : frameInfo.gameObjects) {
+                auto& obj = kv.second;
+                if (obj.model == nullptr) continue;
+                SimplePushConstantData push{};
+                push.modelMatrix = obj.transform.mat4();
+                push.normalMatrix = obj.transform.normalMatrix();
+
+                vkCmdPushConstants(
+                    frameInfo.commandBuffer,
+                    pipelineLayout,
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0,
+                    sizeof(SimplePushConstantData),
+                    &push);
+                obj.model->bind(frameInfo.commandBuffer);
+                obj.model->draw(frameInfo.commandBuffer);
+            }
             */
-            //renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
         }
         
@@ -248,11 +277,11 @@ void DynamicApp::init() {
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);
     pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
-    auto pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
+    _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
 
     std::println("Pipeline Layout created...");
 
-    vk::Pipeline pipeline = engine::PipelineBuilder(_device, pipelineLayout)
+    _pipeline = engine::PipelineBuilder(_device, _pipelineLayout)
                 .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
                 .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
                 .setBindingDescriptions(engine::Vertex::getBindingDescriptions())
