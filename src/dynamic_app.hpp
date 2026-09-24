@@ -4,6 +4,8 @@
 #include "./engine/renderer.hpp"
 #include "./engine/descriptor_pool_builder.hpp"
 
+#include "./engine/game_object.hpp"
+
 // std
 #include <memory>
 #include <vector>
@@ -31,6 +33,7 @@ class DynamicApp {
   vk::Device _device;
   uint32_t _graphicsQueueIndex;
   uint32_t _presentQueueIndex;
+  engine::GameObject::Map _gameObjects;
   //std::unique_ptr<engine::Renderer> _renderer;
 
   void init();

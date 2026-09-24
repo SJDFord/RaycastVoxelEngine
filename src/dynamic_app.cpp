@@ -80,7 +80,16 @@ void DynamicApp::run() {
         oneTimeCommandBuffer,
         "../textures/jungle-brick-with-moss.png"
     );
-    
+        
+    auto testGameObject = engine::GameObject::createGameObject();
+    glm::vec3 position = {1.0f, 1.0f, 1.0f};
+    auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
+    std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(_device, _physicalDevice, oneTimeCommandBuffer, testMesh);
+    testGameObject.model = testModel;
+    testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
+    testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
+    _gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
+
     renderer.endOneTimeCommandBuffer(oneTimeCommandBuffer);
     
     std::println("ImageFromFile created");
