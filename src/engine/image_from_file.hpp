@@ -29,6 +29,8 @@ public:
     vk::Image getImage() const;
     const vk::DeviceMemory& getDeviceMemory() const;
 
+    const vk::Sampler& getSampler() const;
+
     void clear( vk::Device const & device );
 
 private:

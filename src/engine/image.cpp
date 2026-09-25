@@ -81,7 +81,7 @@ int texWidth, texHeight, texChannels;
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
   buffer->map(imageSize, 0);
-  buffer->write(pixels, static_cast<size_t>(imageSize));
+  buffer->writeToBuffer(pixels, static_cast<size_t>(imageSize));
   buffer->unmap();
   stbi_image_free(pixels);
 

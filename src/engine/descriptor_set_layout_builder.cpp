@@ -19,8 +19,11 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::setFlags(
   return *this;
 }
 
-vk::DescriptorSetLayout DescriptorSetLayoutBuilder::build() {
-  std::vector<vk::DescriptorSetLayoutBinding> bindings(_bindingData.size());
+// TODO: This should be a "DescriptorSetLayoutBindingsBuilder" instead and return the vector of bindings
+vk::DescriptorSetLayout DescriptorSetLayoutBuilder::build(std::vector<vk::DescriptorSetLayoutBinding> &bindings) {
+  bindings.clear();
+  bindings.resize(_bindingData.size());
+  //std::vector<vk::DescriptorSetLayoutBinding> bindings(_bindingData.size());
   for (size_t i = 0; i < _bindingData.size(); i++) {
     bindings[i] = vk::DescriptorSetLayoutBinding(
         static_cast<uint32_t>(i),

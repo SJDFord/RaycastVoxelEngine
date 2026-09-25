@@ -30,6 +30,7 @@
 #include "./engine/pipeline_builder.hpp"
 #include "./engine/vertex.hpp"
 #include "./engine/render_system.hpp"
+#include "./engine/descriptors.hpp"
 
 #include "glslang/Public/ShaderLang.h"
 
@@ -56,7 +57,7 @@ void DynamicApp::run() {
             size,
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible);
-        //uboBuffers[i]->map();
+        uboBuffers[i]->map();
     }
 
     engine::Renderer renderer(
@@ -94,22 +95,21 @@ void DynamicApp::run() {
     
     std::println("ImageFromFile created");
 
-    /*
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = image->getImageView();
-    imageInfo.sampler = image->getSampler();
+    
+    vk::DescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    imageInfo.imageView = image.getImageView();
+    imageInfo.sampler = image.getSampler();
 
-    std::vector<VkDescriptorSet> globalDescriptorSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<vk::DescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        LveDescriptorWriter(*globalSetLayout, *globalPool)
+        //engine::
+        globalDescriptorSets[i] = engine::DescriptorWriter(_device, descriptorPool, _descriptorSetLayout, _descriptorSetLayoutBindings)
             .writeBuffer(0, &bufferInfo)
             .writeImage(1, &imageInfo)
-            .build(globalDescriptorSets[i]);
+            .build();
     }
-    */
-
 
     auto currentTime = std::chrono::high_resolution_clock::now();
     while (!_window.shouldClose()) {
@@ -142,9 +142,28 @@ void DynamicApp::run() {
             int frameIndex = renderer.getFrameIndex();
 
             engine::GlobalUbo ubo{};
-            uboBuffers[frameIndex]->write(ubo);
+            uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
-
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+            
+            /*
+            TODO: Descriptor sets
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                _pipelineLayout,
+                0,
+                des)
+            
+            vkCmdBindDescriptorSets(
+                frameInfo.commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipelineLayout,
+                0,
+                1,
+                &frameInfo.globalDescriptorSet,
+                0,
+                nullptr);
+                */
             /*
             FrameInfo frameInfo{
                 frameIndex,
@@ -258,21 +277,21 @@ void DynamicApp::init() {
     
     std::println("Shaders created...");
 
-    vk::DescriptorSetLayout descriptorSetLayout =
+    _descriptorSetLayout =
         engine::DescriptorSetLayoutBuilder(_device)
             .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
             .addBinding(
                 vk::DescriptorType::eCombinedImageSampler,
                 1,
                 vk::ShaderStageFlagBits::eFragment)
-            .build();
+            .build(_descriptorSetLayoutBindings);
 
     vk::PushConstantRange pushConstantRange{};
     pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
     pushConstantRange.setOffset(0);
     pushConstantRange.setSize(sizeof(engine::SimplePushConstantData));
 
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{descriptorSetLayout};
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{_descriptorSetLayout};
 
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);

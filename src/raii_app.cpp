@@ -189,8 +189,9 @@ void RaiiApp::run() {
         sizeof(glm::mat4x4),
         vk::BufferUsageFlagBits::eUniformBuffer);
     glm::mat4x4 mvpcMatrix = vk::su::createModelViewProjectionClipMatrix(window.getExtent());
-    uniformBufferData.write(mvpcMatrix);
+    uniformBufferData.writeToBuffer((void *) &mvpcMatrix);
 
+    std::vector<vk::DescriptorSetLayoutBinding> bindings;
     vk::DescriptorSetLayout descriptorSetLayout =
         engine::DescriptorSetLayoutBuilder(device)
             .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
@@ -198,7 +199,7 @@ void RaiiApp::run() {
                 vk::DescriptorType::eCombinedImageSampler,
                 1,
                 vk::ShaderStageFlagBits::eFragment)
-            .build();
+            .build(bindings);
 
     vk::PipelineLayout pipelineLayout = device.createPipelineLayout(
         vk::PipelineLayoutCreateInfo(vk::PipelineLayoutCreateFlags(), descriptorSetLayout));
@@ -232,8 +233,8 @@ void RaiiApp::run() {
         device,
         sizeof(texturedCubeData),
         vk::BufferUsageFlagBits::eVertexBuffer);
-    vertexBufferData.write(
-        texturedCubeData,
+    vertexBufferData.writeToBuffer(
+        (void *) &texturedCubeData,
         sizeof(texturedCubeData) / sizeof(texturedCubeData[0]));
 
     // TODO: Definitely builder pattern

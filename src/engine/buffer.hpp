@@ -20,6 +20,8 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
+
+    /*
     template <class T>
     void write( 
         T const * pData, 
@@ -49,12 +51,16 @@ public:
     {
   write<T>( &data, 1 );
 }
+    */
 
     void map(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
+    void writeToBuffer(void* data, vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
     void unmap();
 
     void flush(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
     void clear( vk::Device const & device );
+
+    vk::DescriptorBufferInfo descriptorInfo(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
   
     const vk::Buffer& getBuffer() const { return _buffer; }
     const vk::DeviceMemory& getDeviceMemory() const { return _memory; }

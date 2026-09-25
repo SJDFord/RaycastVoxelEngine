@@ -60,7 +60,9 @@ int texWidth, texHeight, texChannels;
 
   //buffer->map(imageSize, 0);
   //std::println("Mapped image to buffer");
-  buffer->write(pixels, static_cast<size_t>(imageSize));
+  buffer->map(imageSize, 0);
+  buffer->writeToBuffer(pixels, static_cast<size_t>(imageSize));
+  buffer->unmap();
   std::println("Pixels written to buffer");
   //buffer->unmap();
   //std::println("Buffer unmapped");
@@ -130,6 +132,11 @@ vk::Image ImageFromFile::getImage() const {
 
 const vk::DeviceMemory& ImageFromFile::getDeviceMemory() const {
     return _deviceMemory;
+}
+
+
+const vk::Sampler& ImageFromFile::getSampler() const {
+    return _sampler;
 }
 
 void ImageFromFile::clear( vk::Device const & device )

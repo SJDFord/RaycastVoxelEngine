@@ -20,10 +20,11 @@ class DescriptorSetLayoutBuilder {
   DescriptorSetLayoutBuilder& addBinding(
       vk::DescriptorType descriptorType, uint32_t descriptorCount, vk::ShaderStageFlags stageFlags);
   DescriptorSetLayoutBuilder& setFlags(vk::DescriptorSetLayoutCreateFlags flags);
-  vk::DescriptorSetLayout build();
+  vk::DescriptorSetLayout build(std::vector<vk::DescriptorSetLayoutBinding> &bindings);
 
  private:
   vk::Device _device;
+  //std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding>
   std::vector<std::tuple<vk::DescriptorType, uint32_t, vk::ShaderStageFlags>> _bindingData;
   vk::DescriptorSetLayoutCreateFlags _flags;
 };

@@ -1,11 +1,14 @@
 #include "instance_builder.hpp"
-
+#include <print>
+#include <iostream>
 
 static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugUtilsMessengerCallback(
     vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     vk::DebugUtilsMessageTypeFlagsEXT messageTypes,
     const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* /*pUserData*/) {
+    void* pUserData) {
+      std::println("DEBUG CALLBACK");
+  /*
 #if !defined(NDEBUG)
   switch (static_cast<uint32_t>(pCallbackData->messageIdNumber)) {
     case 0:
@@ -22,36 +25,36 @@ static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugUtilsMessengerCallback(
       return vk::False;
   }
 #endif
-
-  std::cerr << vk::to_string(messageSeverity) << ": " << vk::to_string(messageTypes) << ":\n";
-  std::cerr << std::string("\t") << "messageIDName   = <" << pCallbackData->pMessageIdName << ">\n";
-  std::cerr << std::string("\t") << "messageIdNumber = " << pCallbackData->messageIdNumber << "\n";
-  std::cerr << std::string("\t") << "message         = <" << pCallbackData->pMessage << ">\n";
+  */
+  std::println("{}:{}", vk::to_string(messageSeverity), vk::to_string(messageTypes));
+  std::cout << std::string("\t") << "messageIDName   = <" << pCallbackData->pMessageIdName << ">\n";
+  std::cout << std::string("\t") << "messageIdNumber = " << pCallbackData->messageIdNumber << "\n";
+  std::cout << std::string("\t") << "message         = <" << pCallbackData->pMessage << ">\n";
   if (0 < pCallbackData->queueLabelCount) {
-    std::cerr << std::string("\t") << "Queue Labels:\n";
+    std::cout << std::string("\t") << "Queue Labels:\n";
     for (uint32_t i = 0; i < pCallbackData->queueLabelCount; i++) {
-      std::cerr << std::string("\t\t") << "labelName = <"
+      std::cout << std::string("\t\t") << "labelName = <"
                 << pCallbackData->pQueueLabels[i].pLabelName << ">\n";
     }
   }
   if (0 < pCallbackData->cmdBufLabelCount) {
-    std::cerr << std::string("\t") << "CommandBuffer Labels:\n";
+    std::cout << std::string("\t") << "CommandBuffer Labels:\n";
     for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; i++) {
-      std::cerr << std::string("\t\t") << "labelName = <"
+      std::cout << std::string("\t\t") << "labelName = <"
                 << pCallbackData->pCmdBufLabels[i].pLabelName << ">\n";
     }
   }
   if (0 < pCallbackData->objectCount) {
-    std::cerr << std::string("\t") << "Objects:\n";
+    std::cout << std::string("\t") << "Objects:\n";
     for (uint32_t i = 0; i < pCallbackData->objectCount; i++) {
-      std::cerr << std::string("\t\t") << "Object " << i << "\n";
-      std::cerr << std::string("\t\t\t")
+      std::cout << std::string("\t\t") << "Object " << i << "\n";
+      std::cout << std::string("\t\t\t")
                 << "objectType   = " << vk::to_string(pCallbackData->pObjects[i].objectType)
                 << "\n";
-      std::cerr << std::string("\t\t\t")
+      std::cout << std::string("\t\t\t")
                 << "objectHandle = " << pCallbackData->pObjects[i].objectHandle << "\n";
       if (pCallbackData->pObjects[i].pObjectName) {
-        std::cerr << std::string("\t\t\t") << "objectName   = <"
+        std::cout << std::string("\t\t\t") << "objectName   = <"
                   << pCallbackData->pObjects[i].pObjectName << ">\n";
       }
     }
@@ -99,9 +102,18 @@ vk::Instance InstanceBuilder::build() {
 #endif
   );
 
+  
   vk::Instance instance = vk::createInstance(
       makeInstanceCreateInfoChain({}, applicationInfo, enabledLayers, enabledExtensions)
           .get<vk::InstanceCreateInfo>());
+  /*
+  vk::PFN_DebugReportCallbackEXT pfnCallback = vk::PFN_DebugReportCallbackEXT(&debugUtilsMessengerCallback);
+
+  vk::DebugReportCallbackCreateInfoEXT ci = vk::DebugReportCallbackCreateInfoEXT()
+    .setPfnCallback(pfnCallback);
+
+  instance.createDebugReportCallbackEXT(ci);
+  */
 
 #if (VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1)
   // initialize function pointers for instance
@@ -207,14 +219,18 @@ InstanceBuilder::makeInstanceCreateInfoChain(
   vk::StructureChain<vk::InstanceCreateInfo> instanceCreateInfo(
       {instanceCreateFlagBits, &applicationInfo, layers, extensions});
 #else
+  std::println("DEBUG MODE");
   // in debug mode, addionally use the debugUtilsMessengerCallback in instance creation!
   vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
       vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-      vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+      vk::DebugUtilsMessageSeverityFlagBitsEXT::eError /*| 
+      vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+      vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose*/);
   vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags(
       vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
       vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
-      vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
+      vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | 
+      vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding);
   vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT>
       instanceCreateInfo(
           {instanceCreateFlagBits, &applicationInfo, layers, extensions},

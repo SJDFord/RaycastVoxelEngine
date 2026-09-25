@@ -47,6 +47,8 @@ Buffer::Buffer(
 }
 
 Buffer::~Buffer() {
+    unmap();
+    clear(_device);
     //clear();
 }
 
@@ -61,9 +63,22 @@ Buffer::~Buffer() {
  */
 
 void Buffer::map(vk::DeviceSize size, vk::DeviceSize offset) {
+  assert(_buffer && _memory && "Called map on buffer before create");
   _mapped = _device.mapMemory(_memory, offset, size, {});
 }
 
+
+void Buffer::writeToBuffer(void* data, vk::DeviceSize size, vk::DeviceSize offset) {
+  assert(_mapped && "Cannot copy to unmapped buffer");
+
+  if (size == VK_WHOLE_SIZE) {
+    memcpy(_mapped, data, _size);
+  } else {
+    char *memOffset = (char *)_mapped;
+    memOffset += offset;
+    memcpy(memOffset, data, size);
+  }
+}
 /**
  * Unmap a mapped memory range
  *
@@ -89,6 +104,15 @@ void Buffer::clear( vk::Device const & device )
 {
     device.destroyBuffer( _buffer );  // to prevent some validation layer warning, the Buffer needs to be destroyed before the bound DeviceMemory
     device.freeMemory( _memory );
+}
+
+vk::DescriptorBufferInfo Buffer::descriptorInfo(vk::DeviceSize size, vk::DeviceSize offset) {
+  vk::DescriptorBufferInfo info = vk::DescriptorBufferInfo()
+    .setBuffer(_buffer)
+    .setOffset(size)
+    .setRange(offset);
+
+  return info;
 }
 
 }
