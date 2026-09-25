@@ -144,26 +144,30 @@ void DynamicApp::run() {
             engine::GlobalUbo ubo{};
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
+
+            // Begin render system code
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
-            
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelineLayout, 0, globalDescriptorSets, {});
+
+            for (auto& kv : _gameObjects) {
+                auto& obj = kv.second;
+                if (obj.model == nullptr) continue;
+                engine::SimplePushConstantData push{};
+                push.modelMatrix = obj.transform.mat4();
+                push.normalMatrix = obj.transform.normalMatrix();
+
+                commandBuffer.pushConstants(
+                    _pipelineLayout, 
+                    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                    0,
+                    sizeof(engine::SimplePushConstantData),
+                    &push);
+
+                obj.model->bind(commandBuffer);
+                obj.model->draw(commandBuffer);
+            }
+
             /*
-            TODO: Descriptor sets
-            commandBuffer.bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics,
-                _pipelineLayout,
-                0,
-                des)
-            
-            vkCmdBindDescriptorSets(
-                frameInfo.commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipelineLayout,
-                0,
-                1,
-                &frameInfo.globalDescriptorSet,
-                0,
-                nullptr);
-                */
             /*
             FrameInfo frameInfo{
                 frameIndex,
@@ -181,20 +185,6 @@ void DynamicApp::run() {
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
-
-            // render
-            // order here matters
-              lvePipeline->bind(frameInfo.commandBuffer);
-
-            vkCmdBindDescriptorSets(
-                frameInfo.commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipelineLayout,
-                0,
-                1,
-                &frameInfo.globalDescriptorSet,
-                0,
-                nullptr);
 
             for (auto& kv : frameInfo.gameObjects) {
                 auto& obj = kv.second;
@@ -214,6 +204,8 @@ void DynamicApp::run() {
                 obj.model->draw(frameInfo.commandBuffer);
             }
             */
+            // End render system code
+
             renderer.endFrame();
         }
         
