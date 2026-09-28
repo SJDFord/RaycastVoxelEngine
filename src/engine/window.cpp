@@ -91,6 +91,11 @@ void Window::setRawMouseMotion(bool enabled) {
   glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 
+
+bool Window::isRawMouseMotionSupported() {
+  return glfwRawMouseMotionSupported();
+}
+
 void Window::getMousePosition(glm::vec2 &result) {
   double x, y;
   glfwGetCursorPos(window, &x, &y);
@@ -150,6 +155,12 @@ bool Window::isKeyPressed(KeyboardKey key) {
     break;
   case KeyboardKey::ESCAPE:
     state = glfwGetKey(window, GLFW_KEY_ESCAPE);
+    break;
+  case KeyboardKey::C:
+    state = glfwGetKey(window, GLFW_KEY_C);
+    break;
+  case KeyboardKey::U:
+    state = glfwGetKey(window, GLFW_KEY_U);
     break;
   default:
     throw std::logic_error("Key not yet implemented");

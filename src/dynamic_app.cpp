@@ -31,6 +31,9 @@
 #include "./engine/vertex.hpp"
 #include "./engine/render_system.hpp"
 #include "./engine/descriptors.hpp"
+#include "./engine/fps_movement_controller.hpp"
+#include "./engine/camera.hpp"
+
 
 #include "glslang/Public/ShaderLang.h"
 
@@ -111,6 +114,11 @@ void DynamicApp::run() {
             .build();
     }
 
+    engine::Camera camera{};
+    auto viewerObject = engine::GameObject::createGameObject();
+    viewerObject.transform.translation.z = -2.5f;
+    engine::FpsMovementController cameraController{_window};
+
     auto currentTime = std::chrono::high_resolution_clock::now();
     while (!_window.shouldClose()) {
         _window.pollEvents();
@@ -125,29 +133,32 @@ void DynamicApp::run() {
             std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        std::println("aspect frame...");
+
+        cameraController.updateView(_window, frameTime, viewerObject);
+        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         //float aspect = _renderer->getAspectRatio();
 
         auto extent = _window.getExtent();
         float aspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
 
-        std::println("beginning frame...");
+
         vk::CommandBuffer commandBuffer = renderer.beginFrame(/*hasFrame*/);
 
         if (commandBuffer != VK_NULL_HANDLE) {
-
-            std::println("frame...");
             int frameIndex = renderer.getFrameIndex();
 
             engine::GlobalUbo ubo{};
+            ubo.projection = camera.getProjection();
+            ubo.view = camera.getView();
+            ubo.inverseView = camera.getInverseView();
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
-            // Begin render system code
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelineLayout, 0, globalDescriptorSets, {});
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
             for (auto& kv : _gameObjects) {
                 auto& obj = kv.second;
@@ -167,44 +178,6 @@ void DynamicApp::run() {
                 obj.model->draw(commandBuffer);
             }
 
-            /*
-            /*
-            FrameInfo frameInfo{
-                frameIndex,
-                frameTime,
-                commandBuffer,
-                camera,
-                globalDescriptorSets[frameIndex],
-                gameObjects};
-
-            // update
-            GlobalUbo ubo{};
-            ubo.projection = camera.getProjection();
-            ubo.view = camera.getView();
-            ubo.inverseView = camera.getInverseView();
-            pointLightSystem.update(frameInfo, ubo);
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
-
-            for (auto& kv : frameInfo.gameObjects) {
-                auto& obj = kv.second;
-                if (obj.model == nullptr) continue;
-                SimplePushConstantData push{};
-                push.modelMatrix = obj.transform.mat4();
-                push.normalMatrix = obj.transform.normalMatrix();
-
-                vkCmdPushConstants(
-                    frameInfo.commandBuffer,
-                    pipelineLayout,
-                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    0,
-                    sizeof(SimplePushConstantData),
-                    &push);
-                obj.model->bind(frameInfo.commandBuffer);
-                obj.model->draw(frameInfo.commandBuffer);
-            }
-            */
-            // End render system code
 
             renderer.endFrame();
         }
@@ -258,8 +231,8 @@ void DynamicApp::init() {
 
     std::println("Device created...");
 
-    std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
-    std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
+    std::string vertShaderGlsl = engine::readFileString("../shaders/simple_shader.vert");
+    std::string fragShaderGlsl = engine::readFileString("../shaders/simple_shader.frag");
     vk::ShaderModule vertexShaderModule =
         engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
             .build();

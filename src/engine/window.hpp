@@ -28,7 +28,9 @@ enum class KeyboardKey {
   RIGHT,
   UP,
   DOWN,
-  ESCAPE
+  ESCAPE,
+  C,
+  U
 };
 
 class Window {
@@ -49,6 +51,7 @@ class Window {
   void waitEvents() const;
   void setMouseMode(MouseMode mouseMode);
   void setRawMouseMotion(bool enabled);
+  bool isRawMouseMotionSupported();
   void getMousePosition(glm::vec2 &result);
   // TODO: method for registering a callback for mouse button presses
   bool isMouseButtonPressed(MouseButton mouseButton);
