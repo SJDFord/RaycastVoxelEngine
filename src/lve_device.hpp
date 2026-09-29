@@ -81,7 +81,6 @@ class LveDevice {
 
  private:
   void createInstance();
-  void setupDebugMessenger();
   void createSurface();
   //void pickPhysicalDevice();
   void createLogicalDevice();
@@ -89,10 +88,6 @@ class LveDevice {
 
   // helper functions
   bool isDeviceSuitable(VkPhysicalDevice device);
-  std::vector<const char *> getRequiredExtensions();
-  bool checkValidationLayerSupport();
-  void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-  void hasGflwRequiredInstanceExtensions();
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
