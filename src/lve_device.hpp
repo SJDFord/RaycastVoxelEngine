@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lve_window.hpp"
+#include "./engine/window.hpp"
 #include "graphics/vulkan/physical_device.hpp"
 
 // std lib headers
@@ -17,7 +17,7 @@ class LveDevice {
   const bool enableValidationLayers = false;
 #endif
 
-  LveDevice(LveWindow &window);
+  LveDevice(engine::Window &window);
   ~LveDevice();
 
   // Not copyable or movable
@@ -29,6 +29,7 @@ class LveDevice {
   VkCommandPool getCommandPool() { return commandPool; }
 
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
+  VkInstance getInstance() { return instance; }
   VkDevice device() { return device_; }
   VkSurfaceKHR surface() { return surface_; }
   VkQueue graphicsQueue() { return graphicsQueue_; }
@@ -97,7 +98,7 @@ class LveDevice {
 
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
-  LveWindow &window;
+  engine::Window &_window;
   VkCommandPool commandPool;
 
   VkDevice device_;

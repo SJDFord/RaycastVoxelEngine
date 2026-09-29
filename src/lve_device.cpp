@@ -47,7 +47,7 @@ void DestroyDebugUtilsMessengerEXT(
 }
 
 // class member functions
-LveDevice::LveDevice(LveWindow &window) : window{window} {
+LveDevice::LveDevice(engine::Window &window) : _window{window} {
   createInstance();
   setupDebugMessenger();
   createSurface();
@@ -107,6 +107,7 @@ void LveDevice::createInstance() {
   }
 
   hasGflwRequiredInstanceExtensions();
+  _window.createSurface(instance);
 }
 
 void LveDevice::createLogicalDevice() {
@@ -169,7 +170,7 @@ void LveDevice::createCommandPool() {
   }
 }
 
-void LveDevice::createSurface() { window.createWindowSurface(instance, &surface_); }
+void LveDevice::createSurface() { surface_ = _window.getSurface(); }
 
 void LveDevice::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
   createInfo = {};

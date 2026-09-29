@@ -83,14 +83,14 @@ void VoxelApp::run() {
 
   auto viewerObject = LveGameObject::createGameObject();
   viewerObject.transform.translation.z = -2.5f;
-  FpsMovementController cameraController{lveWindow.getGLFWwindow()};
+  FpsMovementController cameraController{_window};
 
   auto currentTime = std::chrono::high_resolution_clock::now();
-  while (!lveWindow.shouldClose()) {
-    glfwPollEvents();
+  while (!_window.shouldClose()) {
+    _window.pollEvents();
 
-    if (glfwGetKey(lveWindow.getGLFWwindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-      lveWindow.close();
+    if (_window.isKeyPressed(engine::KeyboardKey::ESCAPE)) {
+      _window.close();
     }
 
     auto newTime = std::chrono::high_resolution_clock::now();
@@ -98,7 +98,7 @@ void VoxelApp::run() {
         std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
     currentTime = newTime;
 
-    cameraController.updateView(lveWindow.getGLFWwindow(), frameTime, viewerObject);
+    cameraController.updateView(_window, frameTime, viewerObject);
     camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
     float aspect = lveRenderer.getAspectRatio();
@@ -148,26 +148,6 @@ void VoxelApp::run() {
 }
 
 void VoxelApp::loadGameObjects() {
-  srand(10);
-  std::vector<uint32_t> chunkData;
-  int chunkSize = 16;
-  for (int i = 0; i < chunkSize; i++) {
-    for (int j = 0; j < chunkSize; j++) {
-      for (int k = 0; k < chunkSize; k++) {
-        int x = i - chunkSize / 2;
-        int y = j - chunkSize / 2;
-        int z = k - chunkSize / 2;
-        // unsigned int distance = pow(x, 2) + pow(y, 2) + pow(z, 2);
-        // unsigned int blockValue= distance < 64 ? 1 : 0;  //rand() % 2;
-        uint32_t blockValue = rand() % 2;
-        chunkData.push_back(blockValue);
-      }
-    }
-  }
-
-  Chunk chunk1{{0.0f, 0.0f, 0.0f}, chunkSize, chunkData};
-  Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
-
   auto testGameObject = LveGameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   auto testMesh = createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);

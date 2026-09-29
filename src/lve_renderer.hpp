@@ -2,7 +2,7 @@
 
 #include "lve_device.hpp"
 #include "lve_swap_chain.hpp"
-#include "lve_window.hpp"
+#include "./engine/window.hpp"
 
 // std
 #include <cassert>
@@ -12,7 +12,7 @@
 namespace lve {
 class LveRenderer {
  public:
-  LveRenderer(LveWindow &window, LveDevice &device);
+  LveRenderer(engine::Window &window, LveDevice &device);
   ~LveRenderer();
 
   LveRenderer(const LveRenderer &) = delete;
@@ -42,7 +42,7 @@ class LveRenderer {
   void freeCommandBuffers();
   void recreateSwapChain();
 
-  LveWindow &lveWindow;
+  engine::Window &_window;
   LveDevice &lveDevice;
   std::unique_ptr<LveSwapChain> lveSwapChain;
   std::vector<VkCommandBuffer> commandBuffers;

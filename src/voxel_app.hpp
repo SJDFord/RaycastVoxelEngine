@@ -6,7 +6,8 @@
 #include "lve_device.hpp"
 #include "lve_game_object.hpp"
 #include "lve_renderer.hpp"
-#include "lve_window.hpp"
+#include "./engine/window.hpp"
+#include "./engine/renderer.hpp"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -18,8 +19,10 @@
 namespace lve {
 class VoxelApp {
  public:
+  static constexpr std::string APP_NAME = "Voxel App";
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
+  static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
   VoxelApp();
   ~VoxelApp();
@@ -32,9 +35,9 @@ class VoxelApp {
  private:
   void loadGameObjects();
 
-  LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Voxel Engine"};
-  LveDevice lveDevice{lveWindow};
-  LveRenderer lveRenderer{lveWindow, lveDevice};
+  engine::Window _window{APP_NAME, WIDTH, HEIGHT};
+  LveDevice lveDevice{_window};
+  LveRenderer lveRenderer{_window, lveDevice};
 
   // note: order of declarations matters
   std::unique_ptr<LveDescriptorPool> globalPool{};

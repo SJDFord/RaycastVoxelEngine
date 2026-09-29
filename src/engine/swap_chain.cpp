@@ -123,33 +123,30 @@ namespace engine {
     }
 
 
-    vk::ResultValue<uint32_t> SwapChain::acquireNextImage() {
+    void SwapChain::acquireNextImage(uint32_t *imageIndex) {
       _device.waitForFences(_inFlightFences[_currentFrame], true, 
           std::numeric_limits<uint64_t>::max());
 
-      vk::AcquireNextImageInfoKHR acquireNextImageInfo =
-          vk::AcquireNextImageInfoKHR()
-              .setSwapchain(_swapChain)
-              .setTimeout(std::numeric_limits<uint64_t>::max())
-              .setSemaphore(_imageAvailableSemaphores[_currentFrame])
-              .setFence(VK_NULL_HANDLE)
-              .setDeviceMask(1);
- 
-      vk::ResultValue<uint32_t> result = _device.acquireNextImage2KHR(acquireNextImageInfo);
-            
-      return result;
+      auto result = _device.acquireNextImageKHR(
+        _swapChain,
+        std::numeric_limits<uint64_t>::max(),
+        _imageAvailableSemaphores[_currentFrame],
+        VK_NULL_HANDLE,
+        imageIndex
+      );
+
     }
 
      vk::Result SwapChain::submitCommandBuffer(
-        vk::CommandBuffer buffer, uint32_t imageIndex) {
+        vk::CommandBuffer buffer, const uint32_t *imageIndex) {
       
-      if (_imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+      if (_imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         _device.waitForFences(
-            _imagesInFlight[imageIndex],
+            _imagesInFlight[*imageIndex],
             true,
             std::numeric_limits<uint64_t>::max());
       }
-      _imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];
+      _imagesInFlight[*imageIndex] = _inFlightFences[_currentFrame];
       //imagesInFlight.insert(imagesInFlight.begin() + imageIndex, inFlightFences[currentFrame]);
       vk::Semaphore signalSemaphore = _renderFinishedSemaphores[_currentFrame];
       vk::PipelineStageFlags waitFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -157,7 +154,8 @@ namespace engine {
       vk::SubmitInfo submitInfo = vk::SubmitInfo()
         .setWaitSemaphoreCount(1)
         .setWaitSemaphores(waitSemaphore)
-        .setWaitDstStageMask(waitFlags)
+        .setPWaitDstStageMask(&waitFlags)
+        //.setWaitDstStageMask(waitFlags)
         .setCommandBufferCount(1)
         .setCommandBuffers(buffer)
         .setSignalSemaphoreCount(1)
@@ -172,7 +170,7 @@ namespace engine {
           .setWaitSemaphores(signalSemaphore)
           .setSwapchainCount(1)
           .setSwapchains(_swapChain)
-          .setImageIndices(imageIndex);
+          .setPImageIndices(imageIndex);
 
       // TODO: Get present queue
       vk::Result result = _device.getQueue(_presentFamilyIndex, 0).presentKHR(presentInfo);

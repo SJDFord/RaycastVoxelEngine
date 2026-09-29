@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lve_game_object.hpp"
-#include "lve_window.hpp"
+#include "./engine/window.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -23,8 +23,8 @@ class FpsMovementController {
     int enableMouseCapture = GLFW_KEY_C;
     int disableMouseCapture = GLFW_KEY_U;
   };
-  FpsMovementController(GLFWwindow* window);
-  void updateView(GLFWwindow* window, float dt, LveGameObject& gameObject);
+  FpsMovementController(engine::Window &window);
+  void updateView(engine::Window &window, float dt, LveGameObject& gameObject);
 
   KeyMappings keys{};
   float moveSpeed{10.f};
@@ -33,7 +33,7 @@ class FpsMovementController {
   glm::vec2 lastMousePos{0, 0};
   float yaw{-90.0f};
   float pitch{0.0f};
-  void getMousePos(GLFWwindow* window, glm::vec2& result);
-  void setMouseCapture(GLFWwindow* window, bool capture);
+  void getMousePos(engine::Window &window, glm::vec2& result);
+  void setMouseCapture(engine::Window &window, bool capture);
 };
 }  // namespace lve

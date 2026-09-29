@@ -49,8 +49,8 @@ public:
     const uint32_t getMaxFramesInFlight() const { return _maxFramesInFlight; };
 
     size_t imageCount() { return _images.size(); }
-    vk::ResultValue<uint32_t> acquireNextImage();
-    vk::Result submitCommandBuffer(vk::CommandBuffer buffer, uint32_t imageIndex);
+    void acquireNextImage(uint32_t *imageIndex);
+    vk::Result submitCommandBuffer(vk::CommandBuffer buffer, const uint32_t *imageIndex);
 
     bool compareSwapFormats(const SwapChain &swapChain) const {
         return swapChain.getFormat() == getFormat() &&

@@ -5,12 +5,12 @@
 
 namespace lve {
 
-FpsMovementController::FpsMovementController(GLFWwindow* window) { 
+FpsMovementController::FpsMovementController(engine::Window &window) { 
     setMouseCapture(window, true);
 }
 
 void FpsMovementController::updateView(
-    GLFWwindow* window, float dt, LveGameObject& gameObject) {
+    engine::Window &window, float dt, LveGameObject& gameObject) {
   glm::vec2 mousePos;
   getMousePos(window, mousePos);
   glm::vec2 mousePosDelta = mousePos - lastMousePos;
@@ -32,16 +32,16 @@ void FpsMovementController::updateView(
   const glm::vec3 rightDir{forwardDir.z, 0.f, -forwardDir.x};
   const glm::vec3 upDir{0.f, -1.f, 0.f};
   glm::vec3 moveDir{0.f};
-  if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += forwardDir;
-  if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= forwardDir;
-  if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
-  if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
-  if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
-  if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
-  if (glfwGetKey(window, keys.enableMouseCapture) == GLFW_PRESS) {
+  if (window.isKeyPressed(engine::KeyboardKey::W)) moveDir += forwardDir;
+  if (window.isKeyPressed(engine::KeyboardKey::S)) moveDir -= forwardDir;
+  if (window.isKeyPressed(engine::KeyboardKey::D)) moveDir += rightDir;
+  if (window.isKeyPressed(engine::KeyboardKey::A)) moveDir -= rightDir;
+  if (window.isKeyPressed(engine::KeyboardKey::SPACE)) moveDir += upDir;
+  if (window.isKeyPressed(engine::KeyboardKey::LEFT_SHIFT)) moveDir -= upDir;
+  if (window.isKeyPressed(engine::KeyboardKey::C)) {
   	setMouseCapture(window, true);
   }
-  if (glfwGetKey(window, keys.disableMouseCapture) == GLFW_PRESS) {
+  if (window.isKeyPressed(engine::KeyboardKey::U)) {
   	setMouseCapture(window, false);
   }
 	
@@ -50,31 +50,24 @@ void FpsMovementController::updateView(
   }
 }
 
-  void FpsMovementController::getMousePos(GLFWwindow* window, glm::vec2& result) { 
-      double x, y;
-      glfwGetCursorPos(window, &x, &y);
-      //std::cout << "[RAW] RotX: " << x << ", RotY: " << y << std::endl;
-      result.x = x;
-      result.y = y;
+  void FpsMovementController::getMousePos(engine::Window &window, glm::vec2& result) { 
+    window.getMousePosition(result);
   }
   
   
-  void FpsMovementController::setMouseCapture(GLFWwindow* window, bool capture) {
-	if (capture) {
-	    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	    
-	    if (glfwRawMouseMotionSupported()) {
-		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-		//std::cout << "Enabling raw mouse motion" << std::endl;
-	    }
-	    
-	    getMousePos(window, lastMousePos);
-	    return;
-	}
+  void FpsMovementController::setMouseCapture(engine::Window &window, bool capture) {
+    if (capture) {
+        window.setMouseMode(engine::MouseMode::DISABLED);
+        
+        if (window.isRawMouseMotionSupported()) {
+          window.setRawMouseMotion(true);
+        }
+        
+        getMousePos(window, lastMousePos);
+        return;
+    }
 
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		
-		//glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+    window.setMouseMode(engine::MouseMode::NORMAL);
 		return;
   }
 

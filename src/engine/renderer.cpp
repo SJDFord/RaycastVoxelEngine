@@ -36,19 +36,22 @@ Renderer::~Renderer() {
 vk::CommandBuffer Renderer::beginFrame(/*bool &hasFrame*/) {
   assert(!_isFrameStarted);// && "Can't call beginFrame while already in progress");  
   
-  vk::ResultValue<uint32_t> nextImageResult = _swapChain->acquireNextImage();
+  _swapChain->acquireNextImage(&_currentImageIndex);
+  /*
   const vk::Result& vkResult = nextImageResult.result;
   if (vkResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
     //hasFrame = false;
     return VK_NULL_HANDLE;
   }
-
+  
 
   if (vkResult != vk::Result::eSuccess && vkResult != vk::Result::eSuboptimalKHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
-  _currentImageIndex = nextImageResult.value;
+    */
+
+  //_currentImageIndex = nextImageResult.value;
   _isFrameStarted = true;
 
   vk::CommandBuffer commandBuffer = getCurrentCommandBuffer();
@@ -63,7 +66,7 @@ void Renderer::endFrame() {
   auto commandBuffer = getCurrentCommandBuffer();
   commandBuffer.end();
   
-  auto result = _swapChain->submitCommandBuffer(commandBuffer, _currentImageIndex);
+  auto result = _swapChain->submitCommandBuffer(commandBuffer, &_currentImageIndex);
   // TODO: wasWindowResized should be an event rather than a flag that the caller has to reset - this is sloppy
   if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || _window.wasWindowResized()) {
     _window.resetWindowResizedFlag();
