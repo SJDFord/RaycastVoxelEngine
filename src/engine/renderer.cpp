@@ -37,7 +37,6 @@ vk::CommandBuffer Renderer::beginFrame(/*bool &hasFrame*/) {
   assert(!_isFrameStarted);// && "Can't call beginFrame while already in progress");  
   
   vk::ResultValue<uint32_t> nextImageResult = _swapChain->acquireNextImage();
-  std::println("next image");
   const vk::Result& vkResult = nextImageResult.result;
   if (vkResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
@@ -75,6 +74,53 @@ void Renderer::endFrame() {
 
   _isFrameStarted = false;
   _currentFrameIndex = (_currentFrameIndex + 1) % _swapChain->getMaxFramesInFlight();
+}
+
+
+vk::RenderPass Renderer::getSwapChainRenderPass() {
+  return _swapChain->getRenderPass();
+}
+
+void Renderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
+  assert(_isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
+  assert(
+      commandBuffer == getCurrentCommandBuffer() &&
+      "Can't begin render pass on command buffer from a different frame");
+
+  vk::Extent2D swapChainExtent = _swapChain->getExtent();
+  vk::Rect2D renderArea = vk::Rect2D({0, 0}, swapChainExtent);
+  std::array<vk::ClearValue, 2> clearValues{};
+  clearValues[0].color = vk::ClearColorValue(0.01f, 1.0f, 0.01f, 1.0f);
+  clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+  
+
+  vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
+    .setRenderPass(_swapChain->getRenderPass())
+    .setFramebuffer(_swapChain->getFrameBuffer(_currentImageIndex))
+    .setRenderArea(renderArea)
+    .setClearValues(clearValues);
+
+  commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+
+
+  vk::Viewport viewport = vk::Viewport()
+    .setX(0.0f)
+    .setY(0.0f)
+    .setWidth(swapChainExtent.width)
+    .setHeight(swapChainExtent.height)
+    .setMinDepth(0.0f)
+    .setMaxDepth(1.0f);
+  vk::Rect2D scissor{{0, 0}, swapChainExtent};
+  commandBuffer.setViewport(0, viewport);
+  commandBuffer.setScissor(0, scissor);
+}
+
+void Renderer::endSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
+  assert(_isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
+  assert(
+      commandBuffer == getCurrentCommandBuffer() &&
+      "Can't end render pass on command buffer from a different frame");
+  commandBuffer.endRenderPass();
 }
 
 // TODO: Command buffer set up

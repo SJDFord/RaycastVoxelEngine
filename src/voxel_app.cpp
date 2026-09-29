@@ -32,8 +32,6 @@ VoxelApp::VoxelApp() {
           .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
           .build();
-  _world = std::make_shared<World>();
-  _worldRenderer = std::make_unique<WorldRenderer>(lveDevice, _world);
 
   loadGameObjects();
 }
@@ -108,8 +106,6 @@ void VoxelApp::run() {
 
     if (auto commandBuffer = lveRenderer.beginFrame()) {
       int frameIndex = lveRenderer.getFrameIndex();
-      
-      std::unordered_map<glm::vec3, std::shared_ptr<lve::LveModel>> models = _worldRenderer->getModels(); 
 
       auto mainLight = LveGameObject::makePointLight(10.0f);
       mainLight.color = {1.0f, 1.0f, 1.0f};
@@ -171,7 +167,6 @@ void VoxelApp::loadGameObjects() {
 
   Chunk chunk1{{0.0f, 0.0f, 0.0f}, chunkSize, chunkData};
   Chunk chunk2{{0.2f, 0.0f, 0.0f}, chunkSize, chunkData};
-  World world{{chunk1, chunk2}};
 
   auto testGameObject = LveGameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};

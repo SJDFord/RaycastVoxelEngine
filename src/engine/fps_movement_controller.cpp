@@ -6,7 +6,7 @@
 namespace engine {
 
 FpsMovementController::FpsMovementController(Window& window) {
-   setMouseCapture(window, true);
+  //setMouseCapture(window, true);
 }
 
 void FpsMovementController::updateView(

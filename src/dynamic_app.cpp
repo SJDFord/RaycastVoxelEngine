@@ -74,10 +74,32 @@ void DynamicApp::run() {
     );
 
     std::println("Renderer created");
+
+    std::string vertShaderGlsl = engine::readFileString("../shaders/simple_shader.vert");
+    std::string fragShaderGlsl = engine::readFileString("../shaders/simple_shader.frag");
+    vk::ShaderModule vertexShaderModule =
+        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
+            .build();
+    vk::ShaderModule fragmentShaderModule =
+        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
+            .build();
+    
+    std::println("Shaders created...");
+    vk::RenderPass renderPass = renderer.getSwapChainRenderPass();
+    assert(renderPass != VK_NULL_HANDLE && "Render Pass is not initialised");
+
+    _pipeline = engine::PipelineBuilder(_device, _pipelineLayout)
+                .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
+                .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
+                .setRenderPass(renderPass)
+                .setBindingDescriptions(engine::Vertex::getBindingDescriptions())
+                .setAttributeDescriptions(engine::Vertex::getAttributeDescriptions())
+                .build();
+
+    std::println("Pipeline created...");
     
     auto oneTimeCommandBuffer = renderer.beginOneTimeCommandBuffer();
 
-    // TODO: Align engine::Image with image.cpp (or allow creating an image from file path in another way)
     engine::ImageFromFile image = engine::ImageFromFile(
         _physicalDevice,
         _device,
@@ -93,6 +115,7 @@ void DynamicApp::run() {
     testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
     testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
     _gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
+
 
     renderer.endOneTimeCommandBuffer(oneTimeCommandBuffer);
     
@@ -126,7 +149,6 @@ void DynamicApp::run() {
         if (_window.isKeyPressed(engine::KeyboardKey::ESCAPE)) {
             _window.close();
         }
-
         
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime =
@@ -157,9 +179,12 @@ void DynamicApp::run() {
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelineLayout, 0, globalDescriptorSets, {});
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
+            // render
+            renderer.beginSwapChainRenderPass(commandBuffer);
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelineLayout, 0, globalDescriptorSets, {});
+            
             for (auto& kv : _gameObjects) {
                 auto& obj = kv.second;
                 if (obj.model == nullptr) continue;
@@ -171,14 +196,14 @@ void DynamicApp::run() {
                     _pipelineLayout, 
                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
                     0,
-                    sizeof(engine::SimplePushConstantData),
-                    &push);
+                sizeof(engine::SimplePushConstantData),
+        &push);
 
                 obj.model->bind(commandBuffer);
                 obj.model->draw(commandBuffer);
             }
 
-
+            renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
         }
         
@@ -231,17 +256,6 @@ void DynamicApp::init() {
 
     std::println("Device created...");
 
-    std::string vertShaderGlsl = engine::readFileString("../shaders/simple_shader.vert");
-    std::string fragShaderGlsl = engine::readFileString("../shaders/simple_shader.frag");
-    vk::ShaderModule vertexShaderModule =
-        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eVertex, vertShaderGlsl)
-            .build();
-    vk::ShaderModule fragmentShaderModule =
-        engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
-            .build();
-    
-    std::println("Shaders created...");
-
     _descriptorSetLayout =
         engine::DescriptorSetLayoutBuilder(_device)
             .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
@@ -262,17 +276,6 @@ void DynamicApp::init() {
     pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);
     pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
     _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
-
-    std::println("Pipeline Layout created...");
-
-    _pipeline = engine::PipelineBuilder(_device, _pipelineLayout)
-                .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
-                .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
-                .setBindingDescriptions(engine::Vertex::getBindingDescriptions())
-                .setAttributeDescriptions(engine::Vertex::getAttributeDescriptions())
-                .build();
-
-    std::println("Pipeline created...");
 }
 
 

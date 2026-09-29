@@ -7,13 +7,17 @@ namespace engine {
 
 PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pipelineLayout): _device{device}, _pipelineLayout{pipelineLayout} {
   // TODO: Setters for all of these to allow overriding default pipeline behaviour
+  _renderPass = VK_NULL_HANDLE;
+  
   _inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
     .setTopology(vk::PrimitiveTopology::eTriangleList)
     .setPrimitiveRestartEnable(false);
 
   _viewportInfo = vk::PipelineViewportStateCreateInfo()
     .setViewportCount(1)
-    .setScissorCount(1);
+    .setPViewports(nullptr)
+    .setScissorCount(1)
+    .setPScissors(nullptr);
 
   _rasterizationInfo = vk::PipelineRasterizationStateCreateInfo()
     .setDepthClampEnable(false)
@@ -31,6 +35,7 @@ PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pi
     .setSampleShadingEnable(false)
     .setRasterizationSamples(vk::SampleCountFlagBits::e1)
     .setMinSampleShading(1.0f)
+    .setPSampleMask(nullptr)
     .setAlphaToCoverageEnable(false)
     .setAlphaToOneEnable(false);
 
@@ -93,6 +98,12 @@ PipelineBuilder& PipelineBuilder::addShaderModule(vk::ShaderModule shaderModule,
   return *this;
 }
 
+
+PipelineBuilder& PipelineBuilder::setRenderPass(vk::RenderPass renderPass) {
+  _renderPass = renderPass;
+  return *this;
+}
+
 PipelineBuilder& PipelineBuilder::addBindingDescription(vk::VertexInputBindingDescription bindingDescription) {
   _bindingDescriptions.push_back(bindingDescription);
   return *this;
@@ -120,6 +131,10 @@ vk::Pipeline PipelineBuilder::build() {
     .setVertexBindingDescriptions(_bindingDescriptions)
     .setVertexAttributeDescriptions(_attributeDescriptions);
 
+  if (_renderPass == VK_NULL_HANDLE) {
+    std::println("No render pass present");
+  }
+
   vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
     .setStages(_shaderStages)
     .setPVertexInputState(&vertexInputInfo)
@@ -131,6 +146,7 @@ vk::Pipeline PipelineBuilder::build() {
     .setPDepthStencilState(&_depthStencilInfo)
     .setPDynamicState(&_dynamicStateInfo)
     .setLayout(_pipelineLayout)
+    .setRenderPass(_renderPass)
     .setSubpass(_subpass)
     .setBasePipelineIndex(-1)
     .setBasePipelineHandle(VK_NULL_HANDLE);

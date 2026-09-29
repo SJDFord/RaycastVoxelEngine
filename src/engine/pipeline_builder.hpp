@@ -19,6 +19,9 @@ class PipelineBuilder {
 
   PipelineBuilder& addShaderModule(vk::ShaderModule shaderModule, vk::ShaderStageFlagBits shaderStage);
 
+
+  PipelineBuilder& setRenderPass(vk::RenderPass renderPass);
+
   PipelineBuilder& addBindingDescription(vk::VertexInputBindingDescription bindingDescription);
   PipelineBuilder& addAttributeDescription(vk::VertexInputAttributeDescription attributeDescription);
 
@@ -43,7 +46,7 @@ class PipelineBuilder {
   vk::PipelineDepthStencilStateCreateInfo _depthStencilInfo;
   std::vector<vk::DynamicState> _dynamicStateEnables;
   vk::PipelineDynamicStateCreateInfo _dynamicStateInfo;
-
+  vk::RenderPass _renderPass;
   // TODO: Set pipeline layout
   vk::PipelineLayout _pipelineLayout;
   uint32_t _subpass = 0;

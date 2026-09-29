@@ -31,6 +31,10 @@ class Renderer {
   vk::CommandBuffer beginFrame(/*bool &hasFrame*/);
   void endFrame();
 
+  vk::RenderPass getSwapChainRenderPass();
+  void beginSwapChainRenderPass(vk::CommandBuffer commandBuffer);
+  void endSwapChainRenderPass(vk::CommandBuffer commandBuffer);
+
   vk::CommandBuffer getCurrentCommandBuffer() const {
     assert(_isFrameStarted && "Cannot get command buffer when frame not in progress");
     return _commandBuffers[_currentFrameIndex];

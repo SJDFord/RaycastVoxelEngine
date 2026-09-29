@@ -35,8 +35,6 @@ class VoxelApp {
   LveWindow lveWindow{WIDTH, HEIGHT, "Vulkan Voxel Engine"};
   LveDevice lveDevice{lveWindow};
   LveRenderer lveRenderer{lveWindow, lveDevice};
-  std::shared_ptr<World> _world;
-  std::unique_ptr<WorldRenderer> _worldRenderer;
 
   // note: order of declarations matters
   std::unique_ptr<LveDescriptorPool> globalPool{};

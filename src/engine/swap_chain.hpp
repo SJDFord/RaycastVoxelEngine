@@ -37,10 +37,14 @@ public:
         _images.clear();
         device.destroySwapchainKHR( _swapChain );
     }
+
+    vk::Framebuffer getFrameBuffer(int index) { return _framebuffers[index]; }
+    vk::RenderPass getRenderPass() { return _renderPass; }
     const vk::SwapchainKHR& getSwapChain() const;
     const std::vector<vk::ImageView>& getImageViews() const;
     const std::vector<vk::Image>& getImages() const;
     vk::Format getFormat() const;
+    vk::Extent2D getExtent() const;
     const vk::Format getDepthFormat() const;
     const uint32_t getMaxFramesInFlight() const { return _maxFramesInFlight; };
 
@@ -49,7 +53,7 @@ public:
     vk::Result submitCommandBuffer(vk::CommandBuffer buffer, uint32_t imageIndex);
 
     bool compareSwapFormats(const SwapChain &swapChain) const {
-        return swapChain.getDepthFormat() == getDepthFormat() &&
+        return swapChain.getFormat() == getFormat() &&
            swapChain.getDepthFormat() == getDepthFormat();
     }
 
@@ -68,6 +72,8 @@ private:
     vk::SwapchainKHR           _swapChain;
     std::shared_ptr<SwapChain> _oldSwapChain;
 
+    std::vector<vk::Framebuffer> _framebuffers;
+    vk::RenderPass _renderPass;
     std::vector<vk::Image> _depthImages;
     std::vector<vk::DeviceMemory> _depthImageMemorys;
     std::vector<vk::ImageView> _depthImageViews;
@@ -82,8 +88,11 @@ private:
 
 
     void createSwapChain();
-    void createDepthResources();
+    void createDepthResources();    
+    void createRenderPass();
+    void createFramebuffers();
     void createSyncObjects();
+
       vk::Format findDepthFormat();
       vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates,
         vk::ImageTiling tiling,

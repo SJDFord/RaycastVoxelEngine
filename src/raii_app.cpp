@@ -189,6 +189,7 @@ void RaiiApp::run() {
         sizeof(glm::mat4x4),
         vk::BufferUsageFlagBits::eUniformBuffer);
     glm::mat4x4 mvpcMatrix = vk::su::createModelViewProjectionClipMatrix(window.getExtent());
+    uniformBufferData.map();
     uniformBufferData.writeToBuffer((void *) &mvpcMatrix);
 
     std::vector<vk::DescriptorSetLayoutBinding> bindings;
@@ -233,6 +234,7 @@ void RaiiApp::run() {
         device,
         sizeof(texturedCubeData),
         vk::BufferUsageFlagBits::eVertexBuffer);
+    vertexBufferData.map();
     vertexBufferData.writeToBuffer(
         (void *) &texturedCubeData,
         sizeof(texturedCubeData) / sizeof(texturedCubeData[0]));

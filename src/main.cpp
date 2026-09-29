@@ -6,6 +6,7 @@
 #include "app.hpp"
 #include "raii_app.hpp"
 #include "dynamic_app.hpp"
+#include "renderdoc_app.h"
 
 // std
 #include <cstdlib>

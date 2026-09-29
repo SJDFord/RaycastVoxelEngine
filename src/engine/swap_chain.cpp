@@ -34,7 +34,9 @@ namespace engine {
         _imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
       }
 
+      createRenderPass();
       createDepthResources();
+      createFramebuffers();
       createSyncObjects();
       _oldSwapChain = nullptr;
     }
@@ -64,6 +66,34 @@ namespace engine {
         _device.destroyFence(_inFlightFences[i]);
       }
       */
+
+      for (auto imageView : _imageViews) {
+        _device.destroyImageView(imageView);
+      }
+      _imageViews.clear();
+
+      if (_swapChain != nullptr) {
+        _device.destroySwapchainKHR(_swapChain);
+        _swapChain = nullptr;
+      }
+
+      for (int i = 0; i < _depthImages.size(); i++) {
+        _device.destroyImageView(_depthImageViews[i]);
+        _device.destroyImage(_depthImages[i]);
+        _device.freeMemory(_depthImageMemorys[i]);
+      }
+
+      for (auto framebuffer : _framebuffers) {
+        _device.destroyFramebuffer(framebuffer);
+      }
+
+      _device.destroyRenderPass(_renderPass);
+      // cleanup synchronization objects
+      for (size_t i = 0; i < _maxFramesInFlight; i++) {
+        _device.destroySemaphore(_renderFinishedSemaphores[i]);
+        _device.destroySemaphore(_imageAvailableSemaphores[i]);
+        _device.destroyFence(_inFlightFences[i]);
+      }
     }
 
 
@@ -81,6 +111,11 @@ namespace engine {
 
     vk::Format SwapChain::getFormat() const {
       return _colorFormat;
+    }
+
+
+    vk::Extent2D SwapChain::getExtent() const {
+      return _extent;
     }
 
     const vk::Format SwapChain::getDepthFormat() const {
@@ -248,6 +283,77 @@ namespace engine {
             .setFormat(depthFormat)
             .setSubresourceRange(subresourceRange);
         _depthImageViews[i] = _device.createImageView(viewInfo);
+      }
+    }
+
+
+    void SwapChain::createRenderPass() {
+      vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
+        .setFormat(findDepthFormat())
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+      vk::AttachmentReference depthAttachmentRef = vk::AttachmentReference()
+        .setAttachment(1)
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+      vk::AttachmentDescription colorAttachment = vk::AttachmentDescription()
+        .setFormat(getFormat())
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+      vk::AttachmentReference colorAttachmentRef = vk::AttachmentReference()
+        .setAttachment(1)
+        .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+      vk::SubpassDescription subpass = vk::SubpassDescription()
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setColorAttachmentCount(1)
+        .setPColorAttachments(&colorAttachmentRef)
+        .setPDepthStencilAttachment(&depthAttachmentRef);
+
+      vk::SubpassDependency dependency = vk::SubpassDependency()
+        .setDstSubpass(0)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+        .setSrcAccessMask(vk::AccessFlagBits::eNone)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
+
+      std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+      vk::RenderPassCreateInfo renderPassInfo = vk::RenderPassCreateInfo()
+        .setAttachments(attachments)
+        .setSubpassCount(1)
+        .setPSubpasses(&subpass)
+        .setDependencyCount(1)
+        .setPDependencies(&dependency);
+
+      _renderPass = _device.createRenderPass(renderPassInfo);
+    }
+
+    void SwapChain::createFramebuffers() {
+      _framebuffers.resize(imageCount());
+      for (size_t i = 0; i < imageCount(); i++) {
+        std::array<vk::ImageView, 2> attachments = {_imageViews[i], _depthImageViews[i]};
+
+        vk::FramebufferCreateInfo framebufferInfo = vk::FramebufferCreateInfo()
+          .setRenderPass(_renderPass)
+          .setAttachments(attachments)
+          .setWidth(_extent.width)
+          .setHeight(_extent.height)
+          .setLayers(1);
+
+        _framebuffers[i] = _device.createFramebuffer(framebufferInfo);
       }
     }
 
