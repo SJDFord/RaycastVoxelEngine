@@ -6,6 +6,10 @@
 #include <set>
 #include <unordered_set>
 #include "./engine/instance_builder.hpp"
+#include "./engine/utils.hpp"
+
+#include "./engine/physical_device_strategy.hpp"
+#include "./engine/ranked_physical_device_strategy.hpp"
 
 namespace lve {
 
@@ -13,7 +17,9 @@ namespace lve {
 LveDevice::LveDevice(engine::Window &window) : _window{window} {
   createInstance();
   createSurface();
-  physicalDevice = std::make_shared<PhysicalDevice>(instance);
+  const std::vector<vk::PhysicalDevice>& physicalDevices = _instance.enumeratePhysicalDevices();
+  engine::RankedPhysicalDeviceStrategy physicalDeviceStrategy{};
+  _physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
 
   createLogicalDevice();
   createCommandPool();
@@ -22,20 +28,20 @@ LveDevice::LveDevice(engine::Window &window) : _window{window} {
 LveDevice::~LveDevice() {
   vkDestroyCommandPool(device_, commandPool, nullptr);
   vkDestroyDevice(device_, nullptr);
-  vkDestroySurfaceKHR(instance, surface_, nullptr);
-  vkDestroyInstance(instance, nullptr);
+  vkDestroySurfaceKHR(_instance, surface_, nullptr);
+  vkDestroyInstance(_instance, nullptr);
 }
 
 void LveDevice::createInstance() {
   std::vector<std::string> extensions = _window.getRequiredExtensions();
-  instance = engine::InstanceBuilder("Voxel App", "RaycastVoxelEngine", VK_API_VERSION_1_3)
+  _instance = engine::InstanceBuilder("Voxel App", "RaycastVoxelEngine", VK_API_VERSION_1_3)
                               .setExtensions(extensions)
                               .build();
-  _window.createSurface(instance);
+  _window.createSurface(_instance);
 }
 
 void LveDevice::createLogicalDevice() {
-  QueueFamilyIndices indices = physicalDevice->findQueueFamilies(surface_);
+  QueueFamilyIndices indices = findQueueFamilies(surface_);
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::cout << "Found Graphics Index : " << std::to_string(indices.graphicsFamily)
@@ -74,7 +80,9 @@ void LveDevice::createLogicalDevice() {
     createInfo.enabledLayerCount = 0;
   }
 
-  physicalDevice->createLogicalDevice(&createInfo, &device_);
+  if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &device_) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create logical device!");
+  }
 
   vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
   vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
@@ -97,11 +105,43 @@ void LveDevice::createCommandPool() {
 void LveDevice::createSurface() { surface_ = _window.getSurface(); }
 
 SwapChainSupportDetails LveDevice::querySwapChainSupport(VkPhysicalDevice device) {
-  return physicalDevice->querySwapChainSupport(surface_);
+  SwapChainSupportDetails details;
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, surface_, &details.capabilities);
+
+  uint32_t formatCount;
+  vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, nullptr);
+
+  if (formatCount != 0) {
+    details.formats.resize(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, details.formats.data());
+  }
+
+  uint32_t presentModeCount;
+  vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, surface_, &presentModeCount, nullptr);
+
+  if (presentModeCount != 0) {
+    details.presentModes.resize(presentModeCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(
+        _physicalDevice,
+        surface_,
+        &presentModeCount,
+        details.presentModes.data());
+  }
+  return details;
 }
 
 uint32_t LveDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-  return physicalDevice->findMemoryType(typeFilter, properties);
+
+  VkPhysicalDeviceMemoryProperties memProperties;
+  vkGetPhysicalDeviceMemoryProperties(_physicalDevice, &memProperties);
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) &&
+        (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void LveDevice::createBuffer(
@@ -360,6 +400,37 @@ void LveDevice::destroyImage(VkImage image) {
 }
 void LveDevice::freeMemory(VkDeviceMemory deviceMemory) { 
     vkFreeMemory(device_, deviceMemory, nullptr); 
+}
+
+QueueFamilyIndices LveDevice::findQueueFamilies(VkSurfaceKHR surface) {
+  QueueFamilyIndices indices;
+
+  uint32_t queueFamilyCount = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(_physicalDevice, &queueFamilyCount, nullptr);
+
+  std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(_physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+  int i = 0;
+  for (const auto &queueFamily : queueFamilies) {
+    if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      indices.graphicsFamily = i;
+      indices.graphicsFamilyHasValue = true;
+    }
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice, i, surface, &presentSupport);
+    if (queueFamily.queueCount > 0 && presentSupport) {
+      indices.presentFamily = i;
+      indices.presentFamilyHasValue = true;
+    }
+    if (indices.isComplete()) {
+      break;
+    }
+
+    i++;
+  }
+
+  return indices;
 }
 
 }  // namespace lve

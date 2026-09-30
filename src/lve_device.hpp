@@ -29,18 +29,54 @@ class LveDevice {
   VkCommandPool getCommandPool() { return commandPool; }
 
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
-  VkInstance getInstance() { return instance; }
+  VkInstance getInstance() { return _instance; }
   VkDevice device() { return device_; }
   VkSurfaceKHR surface() { return surface_; }
   VkQueue graphicsQueue() { return graphicsQueue_; }
   VkQueue presentQueue() { return presentQueue_; }
 
-  SwapChainSupportDetails getSwapChainSupport() { return physicalDevice->querySwapChainSupport(surface_); };
+  SwapChainSupportDetails getSwapChainSupport() { 
+      SwapChainSupportDetails details;
+      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, surface_, &details.capabilities);
+
+      uint32_t formatCount;
+      vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, nullptr);
+
+      if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, details.formats.data());
+      }
+
+      uint32_t presentModeCount;
+      vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, surface_, &presentModeCount, nullptr);
+
+      if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            _physicalDevice,
+            surface_,
+            &presentModeCount,
+            details.presentModes.data());
+      }
+      return details;
+
+  };
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-  QueueFamilyIndices findPhysicalQueueFamilies() { return physicalDevice->findQueueFamilies(surface_); }
+  QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(surface_); }
   VkFormat findSupportedFormat(
       const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-        return physicalDevice->findSupportedFormat(candidates, tiling, features);
+for (VkFormat format : candidates) {
+  VkFormatProperties props; 
+  vkGetPhysicalDeviceFormatProperties(_physicalDevice, format, &props);
+
+  if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+    return format;
+  } else if (
+      tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+    return format;
+  }
+}
+throw std::runtime_error("failed to find supported format!");
       };
 
   // Buffer Helper Functions
@@ -90,8 +126,9 @@ class LveDevice {
   bool isDeviceSuitable(VkPhysicalDevice device);
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+  QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface);
 
-  VkInstance instance;
+  vk::Instance _instance;
   VkDebugUtilsMessengerEXT debugMessenger;
   engine::Window &_window;
   VkCommandPool commandPool;
@@ -101,7 +138,7 @@ class LveDevice {
   VkQueue graphicsQueue_;
   VkQueue presentQueue_;
 
-  std::shared_ptr<PhysicalDevice> physicalDevice;
+  vk::PhysicalDevice _physicalDevice;
 
   const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
   const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

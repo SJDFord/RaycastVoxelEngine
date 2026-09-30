@@ -249,9 +249,9 @@ void DynamicApp::init() {
     _device = engine::DeviceBuilder(_physicalDevice, _graphicsQueueIndex)
         .setExtensions({
             VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
-            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+            //VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
         })
-        .setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
+        //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
         .build();
 
     std::println("Device created...");
