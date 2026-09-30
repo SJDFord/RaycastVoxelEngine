@@ -44,8 +44,8 @@ class LveDevice {
   VkInstance getInstance() { return _instance; }
   VkDevice device() { return _device; }
   VkSurfaceKHR surface() { return _surface; }
-  VkQueue graphicsQueue() { return graphicsQueue_; }
-  VkQueue presentQueue() { return presentQueue_; }
+  VkQueue graphicsQueue() { return _graphicsQueue; }
+  VkQueue presentQueue() { return _presentQueue; }
 
   SwapChainSupportDetails getSwapChainSupport() { 
       SwapChainSupportDetails details;
@@ -98,8 +98,8 @@ throw std::runtime_error("failed to find supported format!");
       VkMemoryPropertyFlags properties,
       VkBuffer &buffer,
       VkDeviceMemory &bufferMemory);
-  VkCommandBuffer beginSingleTimeCommands();
-  void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+  vk::CommandBuffer beginSingleTimeCommands();
+  void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
   void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
   void copyBufferToImage(
       VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
@@ -147,8 +147,8 @@ throw std::runtime_error("failed to find supported format!");
 
   vk::Device _device;
   vk::SurfaceKHR _surface;
-  VkQueue graphicsQueue_;
-  VkQueue presentQueue_;
+  vk::Queue _graphicsQueue;
+  vk::Queue _presentQueue;
 
   vk::PhysicalDevice _physicalDevice;
 

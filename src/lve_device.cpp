@@ -52,8 +52,8 @@ void LveDevice::createLogicalDevice() {
     //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
     .build();
 
-  graphicsQueue_ = _device.getQueue(indices.graphicsFamily, 0);
-  presentQueue_ = _device.getQueue(indices.presentFamily, 0);
+  _graphicsQueue = _device.getQueue(indices.graphicsFamily, 0);
+  _presentQueue = _device.getQueue(indices.presentFamily, 0);
 }
 
 void LveDevice::createCommandPool() {
@@ -137,7 +137,7 @@ void LveDevice::createBuffer(
   vkBindBufferMemory(_device, buffer, bufferMemory, 0);
 }
 
-VkCommandBuffer LveDevice::beginSingleTimeCommands() {
+vk::CommandBuffer LveDevice::beginSingleTimeCommands() {
   vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
     .setLevel(vk::CommandBufferLevel::ePrimary)
     .setCommandPool(_commandPool)
@@ -151,22 +151,18 @@ VkCommandBuffer LveDevice::beginSingleTimeCommands() {
   return commandBuffer;
 }
 
-void LveDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
-  vkEndCommandBuffer(commandBuffer);
+void LveDevice::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
+  commandBuffer.end();
+  vk::SubmitInfo submitInfo = vk::SubmitInfo().setCommandBuffers(commandBuffer);
 
-  VkSubmitInfo submitInfo{};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &commandBuffer;
+  _graphicsQueue.submit(submitInfo, VK_NULL_HANDLE);
+  _graphicsQueue.waitIdle();
 
-  vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphicsQueue_);
-
-  _device.freeCommandBuffers(_commandPool, {commandBuffer});
+  _device.freeCommandBuffers(_commandPool, commandBuffer);
 }
 
 void LveDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+  vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkBufferCopy copyRegion{};
   copyRegion.srcOffset = 0;  // Optional
@@ -179,7 +175,7 @@ void LveDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize 
 
 void LveDevice::copyBufferToImage(
     VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) {
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+  vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkBufferImageCopy region{};
   region.bufferOffset = 0;
@@ -206,7 +202,7 @@ void LveDevice::copyBufferToImage(
 
 void LveDevice::transitionImageLayout(
     VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+  vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;

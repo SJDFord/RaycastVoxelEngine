@@ -74,7 +74,7 @@ class Renderer {
 
 
     auto graphicsQueue = _device.getQueue(_graphicsFamilyIndex, 0);
-    graphicsQueue.submit(submitInfo);
+    graphicsQueue.submit(submitInfo, VK_NULL_HANDLE);
     graphicsQueue.waitIdle();
     
    _device.freeCommandBuffers(_commandPool, buffer);
