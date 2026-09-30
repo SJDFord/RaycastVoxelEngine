@@ -18,9 +18,8 @@ namespace lve {
 LveDevice::LveDevice(engine::Window &window) : _window{window} {
   createInstance();
   createSurface();
-  const std::vector<vk::PhysicalDevice>& physicalDevices = _instance.enumeratePhysicalDevices();
-  engine::RankedPhysicalDeviceStrategy physicalDeviceStrategy{};
-  _physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
+  auto physicalDevices = _instance.enumeratePhysicalDevices();
+  _physicalDevice = engine::RankedPhysicalDeviceStrategy().pickPhysicalDevice(physicalDevices);
 
   createLogicalDevice();
   createCommandPool();
@@ -66,29 +65,11 @@ void LveDevice::createCommandPool() {
 
 void LveDevice::createSurface() { _surface = _window.getSurface(); }
 
-SwapChainSupportDetails LveDevice::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails LveDevice::querySwapChainSupport() {
   SwapChainSupportDetails details;
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &details.capabilities);
-
-  uint32_t formatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, nullptr);
-
-  if (formatCount != 0) {
-    details.formats.resize(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, details.formats.data());
-  }
-
-  uint32_t presentModeCount;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, _surface, &presentModeCount, nullptr);
-
-  if (presentModeCount != 0) {
-    details.presentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-        _physicalDevice,
-        _surface,
-        &presentModeCount,
-        details.presentModes.data());
-  }
+  details.capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
+  details.formats = _physicalDevice.getSurfaceFormatsKHR(_surface);
+  details.presentModes = _physicalDevice.getSurfacePresentModesKHR(_surface);
   return details;
 }
 
@@ -281,22 +262,16 @@ void LveDevice::createImageWithInfo(
   }
 }
 
-VkImageView LveDevice::createImageView(VkImage image, VkFormat format) {
-  VkImageViewCreateInfo viewInfo{};
-  viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  viewInfo.image = image;
-  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  viewInfo.format = format;
-  viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  viewInfo.subresourceRange.baseMipLevel = 0;
-  viewInfo.subresourceRange.levelCount = 1;
-  viewInfo.subresourceRange.baseArrayLayer = 0;
-  viewInfo.subresourceRange.layerCount = 1;
+VkImageView LveDevice::createImageView(vk::Image image, vk::Format format) {
+  vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
-  VkImageView imageView;
-  if (vkCreateImageView(_device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create image view!");
-  }
+  vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+    .setImage(image)
+    .setViewType(vk::ImageViewType::e2D)
+    .setFormat(format)
+    .setSubresourceRange(subresourceRange);
+
+  vk::ImageView imageView = _device.createImageView(viewInfo);
 
   return imageView;
 }

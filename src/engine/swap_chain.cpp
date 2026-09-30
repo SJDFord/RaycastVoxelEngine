@@ -1,5 +1,8 @@
 #include "swap_chain.hpp"
 
+#include "swapchain_builder.hpp"
+#include "render_pass_builder.hpp"
+
 #include <algorithm>
 #include <print>
 
@@ -198,42 +201,18 @@ namespace engine {
         // If the surface size is defined, the swap chain size must match
         _extent = surfaceCapabilities.currentExtent;
       }
-      vk::SurfaceTransformFlagBitsKHR preTransform = ( surfaceCapabilities.supportedTransforms & vk::SurfaceTransformFlagBitsKHR::eIdentity )
-                                                     ? vk::SurfaceTransformFlagBitsKHR::eIdentity
-                                                     : surfaceCapabilities.currentTransform;
-      vk::CompositeAlphaFlagBitsKHR   compositeAlpha =
-        ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePreMultiplied )    ? vk::CompositeAlphaFlagBitsKHR::ePreMultiplied
-          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::ePostMultiplied ) ? vk::CompositeAlphaFlagBitsKHR::ePostMultiplied
-          : ( surfaceCapabilities.supportedCompositeAlpha & vk::CompositeAlphaFlagBitsKHR::eInherit )        ? vk::CompositeAlphaFlagBitsKHR::eInherit
-                                                                                                             : vk::CompositeAlphaFlagBitsKHR::eOpaque;
       vk::PresentModeKHR         presentMode = engine::pickPresentMode( _physicalDevice.getSurfacePresentModesKHR( _surface ) );
-      vk::SwapchainCreateInfoKHR swapChainCreateInfo(
-        {},
-        _surface,
-        engine::clampSurfaceImageCount( 3u, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount ),
-        _colorFormat,
-        surfaceFormat.colorSpace,
-        _extent,
-        1,
-        _usage,
-        vk::SharingMode::eExclusive,
-        {},
-        preTransform,
-        compositeAlpha,
-        presentMode,
-        true,
-        _oldSwapChain == nullptr ? VK_NULL_HANDLE : _oldSwapChain->getSwapChain());
-      if ( _graphicsFamilyIndex != _presentFamilyIndex )
-      {
-        uint32_t queueFamilyIndices[2] = { _graphicsFamilyIndex, _presentFamilyIndex };
-        // If the graphics and present queues are from different queue families, we either have to explicitly transfer
-        // ownership of images between the queues, or we have to create the swapchain with imageSharingMode as
-        // vk::SharingMode::eConcurrent
-        swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
-        swapChainCreateInfo.queueFamilyIndexCount = 2;
-        swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
-      }
-      _swapChain = _device.createSwapchainKHR( swapChainCreateInfo );
+
+      _swapChain = engine::SwapchainBuilder(_device)
+        .setSurfaceCapabilities(surfaceCapabilities)
+        .setSurface(_surface)
+        .setSurfaceFormat(surfaceFormat)
+        .setExtent(_extent)
+        .setGraphicsQueueFamilyIndex(_graphicsFamilyIndex)
+        .setPresentQueueFamilyIndex(_presentFamilyIndex)
+        .setPresentMode(presentMode)
+        .setOldSwapchain(_oldSwapChain == nullptr ? VK_NULL_HANDLE : _oldSwapChain->getSwapChain())
+        .build();
 
       _images = _device.getSwapchainImagesKHR( _swapChain );
     }
@@ -286,57 +265,10 @@ namespace engine {
 
 
     void SwapChain::createRenderPass() {
-      vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
-        .setFormat(findDepthFormat())
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-      vk::AttachmentReference depthAttachmentRef = vk::AttachmentReference()
-        .setAttachment(1)
-        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-      vk::AttachmentDescription colorAttachment = vk::AttachmentDescription()
-        .setFormat(getFormat())
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
-      vk::AttachmentReference colorAttachmentRef = vk::AttachmentReference()
-        .setAttachment(1)
-        .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
-      vk::SubpassDescription subpass = vk::SubpassDescription()
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-        .setColorAttachmentCount(1)
-        .setPColorAttachments(&colorAttachmentRef)
-        .setPDepthStencilAttachment(&depthAttachmentRef);
-
-      vk::SubpassDependency dependency = vk::SubpassDependency()
-        .setDstSubpass(0)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-        .setSrcSubpass(VK_SUBPASS_EXTERNAL)
-        .setSrcAccessMask(vk::AccessFlagBits::eNone)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
-
-      std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-      vk::RenderPassCreateInfo renderPassInfo = vk::RenderPassCreateInfo()
-        .setAttachments(attachments)
-        .setSubpassCount(1)
-        .setPSubpasses(&subpass)
-        .setDependencyCount(1)
-        .setPDependencies(&dependency);
-
-      _renderPass = _device.createRenderPass(renderPassInfo);
+      _renderPass = engine::RenderPassBuilder(_device)
+        .setColorFormat(getFormat())
+        .setDepthFormat(findDepthFormat())
+        .build();
     }
 
     void SwapChain::createFramebuffers() {

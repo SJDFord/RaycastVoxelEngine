@@ -16,9 +16,9 @@ struct QueueFamilyIndices {
     bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
 };
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> presentModes;
 };
 
 class LveDevice {
@@ -42,49 +42,23 @@ class LveDevice {
 
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   VkInstance getInstance() { return _instance; }
-  VkDevice device() { return _device; }
+  vk::Device device() { return _device; }
   VkSurfaceKHR surface() { return _surface; }
   VkQueue graphicsQueue() { return _graphicsQueue; }
   VkQueue presentQueue() { return _presentQueue; }
 
-  SwapChainSupportDetails getSwapChainSupport() { 
-      SwapChainSupportDetails details;
-      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &details.capabilities);
-
-      uint32_t formatCount;
-      vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, nullptr);
-
-      if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, details.formats.data());
-      }
-
-      uint32_t presentModeCount;
-      vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, _surface, &presentModeCount, nullptr);
-
-      if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(
-            _physicalDevice,
-            _surface,
-            &presentModeCount,
-            details.presentModes.data());
-      }
-      return details;
-
-  };
+  SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(); };
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
   QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(_surface); }
-  VkFormat findSupportedFormat(
-      const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-for (VkFormat format : candidates) {
-  VkFormatProperties props; 
-  vkGetPhysicalDeviceFormatProperties(_physicalDevice, format, &props);
+  vk::Format findSupportedFormat(
+      const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+for (vk::Format format : candidates) {
+  auto props = _physicalDevice.getFormatProperties(format);
 
-  if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+  if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
     return format;
   } else if (
-      tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+      tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
     return format;
   }
 }
@@ -111,7 +85,7 @@ throw std::runtime_error("failed to find supported format!");
       VkMemoryPropertyFlags properties,
       VkImage &image,
       VkDeviceMemory &imageMemory);
-  VkImageView createImageView(VkImage image, VkFormat format);
+  VkImageView createImageView(vk::Image image, vk::Format format);
   VkSampler createSampler();
 
   void waitIdle();
@@ -137,7 +111,7 @@ throw std::runtime_error("failed to find supported format!");
   // helper functions
   bool isDeviceSuitable(VkPhysicalDevice device);
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+  SwapChainSupportDetails querySwapChainSupport();
   QueueFamilyIndices findQueueFamilies(vk::SurfaceKHR surface);
 
   vk::Instance _instance;
