@@ -34,7 +34,7 @@ LveBuffer::LveBuffer(
     VkDeviceSize instanceSize,
     uint32_t instanceCount,
     VkBufferUsageFlags usageFlags,
-    VkMemoryPropertyFlags memoryPropertyFlags,
+    vk::MemoryPropertyFlags memoryPropertyFlags,
     VkDeviceSize minOffsetAlignment)
     : lveDevice{device},
       instanceSize{instanceSize},

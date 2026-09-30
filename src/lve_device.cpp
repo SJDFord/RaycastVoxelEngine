@@ -73,13 +73,12 @@ SwapChainSupportDetails LveDevice::querySwapChainSupport() {
   return details;
 }
 
-uint32_t LveDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t LveDevice::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
 
-  VkPhysicalDeviceMemoryProperties memProperties;
-  vkGetPhysicalDeviceMemoryProperties(_physicalDevice, &memProperties);
-  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+  auto memoryProperties = _physicalDevice.getMemoryProperties();
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
     if ((typeFilter & (1 << i)) &&
-        (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
       return i;
     }
   }
@@ -90,7 +89,7 @@ uint32_t LveDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
 void LveDevice::createBuffer(
     VkDeviceSize size,
     VkBufferUsageFlags usage,
-    VkMemoryPropertyFlags properties,
+    vk::MemoryPropertyFlags properties,
     VkBuffer &buffer,
     VkDeviceMemory &bufferMemory) {
   VkBufferCreateInfo bufferInfo{};
@@ -238,7 +237,7 @@ void LveDevice::transitionImageLayout(
 
 void LveDevice::createImageWithInfo(
     const VkImageCreateInfo &imageInfo,
-    VkMemoryPropertyFlags properties,
+    vk::MemoryPropertyFlags properties,
     VkImage &image,
     VkDeviceMemory &imageMemory) {
   if (vkCreateImage(_device, &imageInfo, nullptr, &image) != VK_SUCCESS) {

@@ -28,7 +28,8 @@ void Image::createImage(const std::string &filepath) {
       imageSize,
       1,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+      vk::MemoryPropertyFlagBits::eHostVisible | 
+      vk::MemoryPropertyFlagBits::eHostCoherent);
 
   buffer->map(imageSize, 0);
   buffer->writeToBuffer(pixels, static_cast<size_t>(imageSize));
@@ -54,7 +55,7 @@ void Image::createImage(const std::string &filepath) {
 
   lveDevice.createImageWithInfo(
       imageInfo,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      vk::MemoryPropertyFlagBits::eDeviceLocal,
       textureImage,
       textureImageMemory);
 

@@ -229,7 +229,7 @@ void LveSwapChain::createDepthResources() {
 
     device.createImageWithInfo(
         imageInfo,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
         depthImages[i],
         depthImageMemorys[i]);
 

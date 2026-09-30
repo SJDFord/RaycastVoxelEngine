@@ -11,7 +11,7 @@ class LveBuffer {
       VkDeviceSize instanceSize,
       uint32_t instanceCount,
       VkBufferUsageFlags usageFlags,
-      VkMemoryPropertyFlags memoryPropertyFlags,
+      vk::MemoryPropertyFlags memoryPropertyFlags,
       VkDeviceSize minOffsetAlignment = 1);
   ~LveBuffer();
 
@@ -37,7 +37,7 @@ class LveBuffer {
   VkDeviceSize getInstanceSize() const { return instanceSize; }
   VkDeviceSize getAlignmentSize() const { return instanceSize; }
   VkBufferUsageFlags getUsageFlags() const { return usageFlags; }
-  VkMemoryPropertyFlags getMemoryPropertyFlags() const { return memoryPropertyFlags; }
+  vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return memoryPropertyFlags; }
   VkDeviceSize getBufferSize() const { return bufferSize; }
 
  private:
@@ -53,7 +53,7 @@ class LveBuffer {
   VkDeviceSize instanceSize;
   VkDeviceSize alignmentSize;
   VkBufferUsageFlags usageFlags;
-  VkMemoryPropertyFlags memoryPropertyFlags;
+  vk::MemoryPropertyFlags memoryPropertyFlags;
 };
 
 }  // namespace lve

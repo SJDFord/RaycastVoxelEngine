@@ -37,7 +37,7 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
       vertexSize,
       vertexCount,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
 
   stagingBuffer.map();
@@ -48,7 +48,7 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
       vertexSize,
       vertexCount,
       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   lveDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
@@ -69,7 +69,7 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
       indexSize,
       indexCount,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
 
   stagingBuffer.map();
@@ -80,7 +80,7 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
       indexSize,
       indexCount,
       VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   lveDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }

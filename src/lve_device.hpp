@@ -41,14 +41,14 @@ class LveDevice {
   vk::CommandPool getCommandPool() { return _commandPool; }
 
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
-  VkInstance getInstance() { return _instance; }
+  vk::Instance getInstance() { return _instance; }
   vk::Device device() { return _device; }
   VkSurfaceKHR surface() { return _surface; }
-  VkQueue graphicsQueue() { return _graphicsQueue; }
-  VkQueue presentQueue() { return _presentQueue; }
+  vk::Queue graphicsQueue() { return _graphicsQueue; }
+  vk::Queue presentQueue() { return _presentQueue; }
 
   SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(); };
-  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+  uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
   QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(_surface); }
   vk::Format findSupportedFormat(
       const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
@@ -69,7 +69,7 @@ throw std::runtime_error("failed to find supported format!");
   void createBuffer(
       VkDeviceSize size,
       VkBufferUsageFlags usage,
-      VkMemoryPropertyFlags properties,
+      vk::MemoryPropertyFlags properties,
       VkBuffer &buffer,
       VkDeviceMemory &bufferMemory);
   vk::CommandBuffer beginSingleTimeCommands();
@@ -82,7 +82,7 @@ throw std::runtime_error("failed to find supported format!");
 
   void createImageWithInfo(
       const VkImageCreateInfo &imageInfo,
-      VkMemoryPropertyFlags properties,
+      vk::MemoryPropertyFlags properties,
       VkImage &image,
       VkDeviceMemory &imageMemory);
   VkImageView createImageView(vk::Image image, vk::Format format);
@@ -104,13 +104,9 @@ throw std::runtime_error("failed to find supported format!");
  private:
   void createInstance();
   void createSurface();
-  //void pickPhysicalDevice();
   void createLogicalDevice();
   void createCommandPool();
 
-  // helper functions
-  bool isDeviceSuitable(VkPhysicalDevice device);
-  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   SwapChainSupportDetails querySwapChainSupport();
   QueueFamilyIndices findQueueFamilies(vk::SurfaceKHR surface);
 
@@ -125,9 +121,6 @@ throw std::runtime_error("failed to find supported format!");
   vk::Queue _presentQueue;
 
   vk::PhysicalDevice _physicalDevice;
-
-  const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
-  const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };
 
 }  // namespace lve
