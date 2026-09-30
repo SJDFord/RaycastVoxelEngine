@@ -27,7 +27,7 @@ LveDevice::LveDevice(engine::Window &window) : _window{window} {
 }
 
 LveDevice::~LveDevice() {
-  vkDestroyCommandPool(_device, commandPool, nullptr);
+  _device.destroyCommandPool(commandPool);
   vkDestroyDevice(_device, nullptr);
   vkDestroySurfaceKHR(_instance, surface_, nullptr);
   vkDestroyInstance(_instance, nullptr);
@@ -52,8 +52,8 @@ void LveDevice::createLogicalDevice() {
     //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
     .build();
 
-  vkGetDeviceQueue(_device, indices.graphicsFamily, 0, &graphicsQueue_);
-  vkGetDeviceQueue(_device, indices.presentFamily, 0, &presentQueue_);
+  graphicsQueue_ = _device.getQueue(indices.graphicsFamily, 0);
+  presentQueue_ = _device.getQueue(indices.presentFamily, 0);
 }
 
 void LveDevice::createCommandPool() {

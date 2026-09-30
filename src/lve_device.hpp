@@ -133,7 +133,7 @@ throw std::runtime_error("failed to find supported format!");
   engine::Window &_window;
   VkCommandPool commandPool;
 
-  VkDevice _device;
+  vk::Device _device;
   VkSurfaceKHR surface_;
   VkQueue graphicsQueue_;
   VkQueue presentQueue_;
