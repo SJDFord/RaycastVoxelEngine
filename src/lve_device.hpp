@@ -26,7 +26,7 @@ class LveDevice {
   LveDevice(LveDevice &&) = delete;
   LveDevice &operator=(LveDevice &&) = delete;
 
-  VkCommandPool getCommandPool() { return commandPool; }
+  vk::CommandPool getCommandPool() { return _commandPool; }
 
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   VkInstance getInstance() { return _instance; }
@@ -131,7 +131,7 @@ throw std::runtime_error("failed to find supported format!");
   vk::Instance _instance;
   VkDebugUtilsMessengerEXT debugMessenger;
   engine::Window &_window;
-  VkCommandPool commandPool;
+  vk::CommandPool _commandPool;
 
   vk::Device _device;
   VkSurfaceKHR surface_;

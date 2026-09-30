@@ -27,7 +27,7 @@ LveDevice::LveDevice(engine::Window &window) : _window{window} {
 }
 
 LveDevice::~LveDevice() {
-  _device.destroyCommandPool(commandPool);
+  _device.destroyCommandPool(_commandPool);
   vkDestroyDevice(_device, nullptr);
   vkDestroySurfaceKHR(_instance, surface_, nullptr);
   vkDestroyInstance(_instance, nullptr);
@@ -58,16 +58,10 @@ void LveDevice::createLogicalDevice() {
 
 void LveDevice::createCommandPool() {
   QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
-
-  VkCommandPoolCreateInfo poolInfo = {};
-  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-  poolInfo.flags =
-      VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-  if (vkCreateCommandPool(_device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool!");
-  }
+  _commandPool = _device.createCommandPool({
+    vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, 
+    queueFamilyIndices.graphicsFamily
+  });
 }
 
 void LveDevice::createSurface() { surface_ = _window.getSurface(); }
@@ -144,20 +138,16 @@ void LveDevice::createBuffer(
 }
 
 VkCommandBuffer LveDevice::beginSingleTimeCommands() {
-  VkCommandBufferAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandPool = commandPool;
-  allocInfo.commandBufferCount = 1;
+  vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
+    .setLevel(vk::CommandBufferLevel::ePrimary)
+    .setCommandPool(_commandPool)
+    .setCommandBufferCount(1);
 
-  VkCommandBuffer commandBuffer;
-  vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
 
-  VkCommandBufferBeginInfo beginInfo{};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  auto commandBuffers = _device.allocateCommandBuffers(allocInfo);
+  auto commandBuffer = commandBuffers.front();
 
-  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+  commandBuffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
   return commandBuffer;
 }
 
@@ -172,7 +162,7 @@ void LveDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
   vkQueueWaitIdle(graphicsQueue_);
 
-  vkFreeCommandBuffers(_device, commandPool, 1, &commandBuffer);
+  _device.freeCommandBuffers(_commandPool, {commandBuffer});
 }
 
 void LveDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {

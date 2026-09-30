@@ -21,7 +21,7 @@ Renderer::Renderer(
     _isFrameStarted{false} {
 
     std::println("Creating command pool");
-    _commandPool = device.createCommandPool({{}, graphicsFamilyIndex});
+    _commandPool = device.createCommandPool({vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, graphicsFamilyIndex});
     std::println("Command pool created");
     recreateSwapChain();
     std::println("Swap chain recreated");
