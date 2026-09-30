@@ -1,7 +1,6 @@
 #pragma once
 
 #include "./engine/window.hpp"
-#include "graphics/vulkan/physical_device.hpp"
 
 // std lib headers
 #include <string>
@@ -9,6 +8,19 @@
 #include <memory>
 
 namespace lve {
+struct QueueFamilyIndices {
+    uint32_t graphicsFamily;
+    uint32_t presentFamily;
+    bool graphicsFamilyHasValue = false;
+    bool presentFamilyHasValue = false;
+    bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
+};
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
 class LveDevice {
  public:
 #ifdef NDEBUG
@@ -31,30 +43,30 @@ class LveDevice {
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   VkInstance getInstance() { return _instance; }
   VkDevice device() { return _device; }
-  VkSurfaceKHR surface() { return surface_; }
+  VkSurfaceKHR surface() { return _surface; }
   VkQueue graphicsQueue() { return graphicsQueue_; }
   VkQueue presentQueue() { return presentQueue_; }
 
   SwapChainSupportDetails getSwapChainSupport() { 
       SwapChainSupportDetails details;
-      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, surface_, &details.capabilities);
+      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &details.capabilities);
 
       uint32_t formatCount;
-      vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, nullptr);
+      vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, nullptr);
 
       if (formatCount != 0) {
         details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, details.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, details.formats.data());
       }
 
       uint32_t presentModeCount;
-      vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, surface_, &presentModeCount, nullptr);
+      vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, _surface, &presentModeCount, nullptr);
 
       if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
         vkGetPhysicalDeviceSurfacePresentModesKHR(
             _physicalDevice,
-            surface_,
+            _surface,
             &presentModeCount,
             details.presentModes.data());
       }
@@ -62,7 +74,7 @@ class LveDevice {
 
   };
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-  QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(surface_); }
+  QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(_surface); }
   VkFormat findSupportedFormat(
       const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
 for (VkFormat format : candidates) {
@@ -126,7 +138,7 @@ throw std::runtime_error("failed to find supported format!");
   bool isDeviceSuitable(VkPhysicalDevice device);
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-  QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface);
+  QueueFamilyIndices findQueueFamilies(vk::SurfaceKHR surface);
 
   vk::Instance _instance;
   VkDebugUtilsMessengerEXT debugMessenger;
@@ -134,7 +146,7 @@ throw std::runtime_error("failed to find supported format!");
   vk::CommandPool _commandPool;
 
   vk::Device _device;
-  VkSurfaceKHR surface_;
+  vk::SurfaceKHR _surface;
   VkQueue graphicsQueue_;
   VkQueue presentQueue_;
 

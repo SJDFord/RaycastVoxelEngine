@@ -29,7 +29,7 @@ LveDevice::LveDevice(engine::Window &window) : _window{window} {
 LveDevice::~LveDevice() {
   _device.destroyCommandPool(_commandPool);
   vkDestroyDevice(_device, nullptr);
-  vkDestroySurfaceKHR(_instance, surface_, nullptr);
+  vkDestroySurfaceKHR(_instance, _surface, nullptr);
   vkDestroyInstance(_instance, nullptr);
 }
 
@@ -42,7 +42,7 @@ void LveDevice::createInstance() {
 }
 
 void LveDevice::createLogicalDevice() {
-  QueueFamilyIndices indices = findQueueFamilies(surface_);
+  QueueFamilyIndices indices = findQueueFamilies(_surface);
 
   _device = engine::DeviceBuilder(_physicalDevice, indices.graphicsFamily)
     .setExtensions({
@@ -64,28 +64,28 @@ void LveDevice::createCommandPool() {
   });
 }
 
-void LveDevice::createSurface() { surface_ = _window.getSurface(); }
+void LveDevice::createSurface() { _surface = _window.getSurface(); }
 
 SwapChainSupportDetails LveDevice::querySwapChainSupport(VkPhysicalDevice device) {
   SwapChainSupportDetails details;
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, surface_, &details.capabilities);
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &details.capabilities);
 
   uint32_t formatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, nullptr);
+  vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, nullptr);
 
   if (formatCount != 0) {
     details.formats.resize(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, surface_, &formatCount, details.formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(_physicalDevice, _surface, &formatCount, details.formats.data());
   }
 
   uint32_t presentModeCount;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, surface_, &presentModeCount, nullptr);
+  vkGetPhysicalDeviceSurfacePresentModesKHR(_physicalDevice, _surface, &presentModeCount, nullptr);
 
   if (presentModeCount != 0) {
     details.presentModes.resize(presentModeCount);
     vkGetPhysicalDeviceSurfacePresentModesKHR(
         _physicalDevice,
-        surface_,
+        _surface,
         &presentModeCount,
         details.presentModes.data());
   }
@@ -360,7 +360,7 @@ void LveDevice::freeMemory(VkDeviceMemory deviceMemory) {
     vkFreeMemory(_device, deviceMemory, nullptr); 
 }
 
-QueueFamilyIndices LveDevice::findQueueFamilies(VkSurfaceKHR surface) {
+QueueFamilyIndices LveDevice::findQueueFamilies(vk::SurfaceKHR surface) {
   QueueFamilyIndices indices;
 
   uint32_t queueFamilyCount = 0;
