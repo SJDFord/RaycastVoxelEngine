@@ -15,7 +15,7 @@ RenderPassBuilder& RenderPassBuilder::setColorFormat(vk::Format colorFormat) {
   return *this;
 }
 RenderPassBuilder& RenderPassBuilder::setDepthFormat(vk::Format depthFormat) {
-  _depthFormat = _depthFormat;
+  _depthFormat = depthFormat;
   return *this;
 }
 vk::RenderPass  RenderPassBuilder::build() {

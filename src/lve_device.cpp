@@ -261,8 +261,12 @@ void LveDevice::createImageWithInfo(
   }
 }
 
-VkImageView LveDevice::createImageView(vk::Image image, vk::Format format) {
-  vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+vk::ImageView LveDevice::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags flags) {
+  vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(flags)
+    .setBaseMipLevel(0)
+    .setLevelCount(1)
+    .setBaseArrayLayer(0)
+    .setLayerCount(1);
 
   vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
     .setImage(image)

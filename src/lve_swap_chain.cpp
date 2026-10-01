@@ -169,7 +169,7 @@ void LveSwapChain::createImageViews() {
   swapChainImageViews.resize(swapChainImages.size());
   for (size_t i = 0; i < swapChainImages.size(); i++) {
 
-    swapChainImageViews[i] = device.createImageView(swapChainImages[i], swapChainImageFormat);
+    swapChainImageViews[i] = device.createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor);
   }
 }
 
@@ -217,7 +217,7 @@ void LveSwapChain::createDepthResources() {
   for (int i = 0; i < depthImages.size(); i++) {
     vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
       .setImageType(vk::ImageType::e2D)
-      .setExtent(vk::Extent3D(swapChainExtent, 1.0f))
+      .setExtent(vk::Extent3D(swapChainExtent, 1))
       .setMipLevels(1)
       .setArrayLayers(1)
       .setFormat(depthFormat)
@@ -233,7 +233,7 @@ void LveSwapChain::createDepthResources() {
         depthImages[i],
         depthImageMemorys[i]);
 
-    depthImageViews[i] = device.createImageView(depthImages[i], depthFormat);
+    depthImageViews[i] = device.createImageView(depthImages[i], depthFormat, vk::ImageAspectFlagBits::eDepth);
   }
 }
 
@@ -310,8 +310,12 @@ vk::Extent2D LveSwapChain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &ca
 }
 
 vk::Format LveSwapChain::findDepthFormat() {
+  std::vector<vk::Format> formats;
+  formats.push_back(vk::Format::eD32Sfloat);
+  formats.push_back(vk::Format::eD32SfloatS8Uint);
+  formats.push_back(vk::Format::eD24UnormS8Uint);
   return device.findSupportedFormat(
-      {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+      formats,
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment
   );

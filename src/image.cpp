@@ -89,7 +89,7 @@ void Image::createImageView() {
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
-    textureImageView = lveDevice.createImageView(textureImage, vk::Format::eR8G8B8A8Srgb);
+    textureImageView = lveDevice.createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 }
 
 void Image::loadCubemap(lve::LveDevice &device, std::string filename, VkFormat format) {

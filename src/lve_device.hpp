@@ -85,7 +85,7 @@ throw std::runtime_error("failed to find supported format!");
       vk::MemoryPropertyFlags properties,
       VkImage &image,
       VkDeviceMemory &imageMemory);
-  VkImageView createImageView(vk::Image image, vk::Format format);
+  vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags flags);
   VkSampler createSampler();
 
   void waitIdle();
