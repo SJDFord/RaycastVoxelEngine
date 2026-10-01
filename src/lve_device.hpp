@@ -43,7 +43,7 @@ class LveDevice {
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   vk::Instance getInstance() { return _instance; }
   vk::Device device() { return _device; }
-  VkSurfaceKHR surface() { return _surface; }
+  vk::SurfaceKHR surface() { return _surface; }
   vk::Queue graphicsQueue() { return _graphicsQueue; }
   vk::Queue presentQueue() { return _presentQueue; }
 
@@ -67,26 +67,26 @@ throw std::runtime_error("failed to find supported format!");
 
   // Buffer Helper Functions
   void createBuffer(
-      VkDeviceSize size,
-      VkBufferUsageFlags usage,
+      vk::DeviceSize size,
+      vk::BufferUsageFlags usage,
       vk::MemoryPropertyFlags properties,
-      VkBuffer &buffer,
-      VkDeviceMemory &bufferMemory);
+      vk::Buffer &buffer,
+      vk::DeviceMemory &bufferMemory);
   vk::CommandBuffer beginSingleTimeCommands();
   void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
-  void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
   void copyBufferToImage(
-      VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+      vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount);
   void transitionImageLayout(
-      VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+      vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
   void createImageWithInfo(
-      const VkImageCreateInfo &imageInfo,
+      const vk::ImageCreateInfo &imageInfo,
       vk::MemoryPropertyFlags properties,
-      VkImage &image,
-      VkDeviceMemory &imageMemory);
+      vk::Image &image,
+      vk::DeviceMemory &imageMemory);
   vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags flags);
-  VkSampler createSampler();
+  vk::Sampler createSampler();
 
   void waitIdle();
 
@@ -99,7 +99,7 @@ throw std::runtime_error("failed to find supported format!");
   void destroyImage(VkImage image);
   void freeMemory(VkDeviceMemory deviceMemory);
 
-  VkPhysicalDeviceProperties properties;
+  vk::PhysicalDeviceProperties properties;
 
  private:
   void createInstance();

@@ -70,8 +70,8 @@ vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
   std::vector<VkFramebuffer> swapChainFramebuffers;
   VkRenderPass renderPass;
 
-  std::vector<VkImage> depthImages;
-  std::vector<VkDeviceMemory> depthImageMemorys;
+  std::vector<vk::Image> depthImages;
+  std::vector<vk::DeviceMemory> depthImageMemorys;
   std::vector<VkImageView> depthImageViews;
   std::vector<VkImage> swapChainImages;
   std::vector<VkImageView> swapChainImageViews;

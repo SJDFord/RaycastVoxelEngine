@@ -45,7 +45,7 @@ void VoxelApp::run() {
         lveDevice,
         sizeof(GlobalUbo),
         1,
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible);
     uboBuffers[i]->map();
   }

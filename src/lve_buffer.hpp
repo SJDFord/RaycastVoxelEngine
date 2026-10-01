@@ -8,11 +8,11 @@ class LveBuffer {
  public:
   LveBuffer(
       LveDevice& device,
-      VkDeviceSize instanceSize,
+      vk::DeviceSize instanceSize,
       uint32_t instanceCount,
-      VkBufferUsageFlags usageFlags,
+      vk::BufferUsageFlags usageFlags,
       vk::MemoryPropertyFlags memoryPropertyFlags,
-      VkDeviceSize minOffsetAlignment = 1);
+      vk::DeviceSize minOffsetAlignment = 1);
   ~LveBuffer();
 
   LveBuffer(const LveBuffer&) = delete;
@@ -31,28 +31,28 @@ class LveBuffer {
   VkDescriptorBufferInfo descriptorInfoForIndex(int index);
   VkResult invalidateIndex(int index);
 
-  VkBuffer getBuffer() const { return buffer; }
+  vk::Buffer getBuffer() const { return buffer; }
   void* getMappedMemory() const { return mapped; }
   uint32_t getInstanceCount() const { return instanceCount; }
-  VkDeviceSize getInstanceSize() const { return instanceSize; }
-  VkDeviceSize getAlignmentSize() const { return instanceSize; }
-  VkBufferUsageFlags getUsageFlags() const { return usageFlags; }
+  vk::DeviceSize getInstanceSize() const { return instanceSize; }
+  vk::DeviceSize getAlignmentSize() const { return instanceSize; }
+  vk::BufferUsageFlags getUsageFlags() const { return usageFlags; }
   vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return memoryPropertyFlags; }
-  VkDeviceSize getBufferSize() const { return bufferSize; }
+  vk::DeviceSize getBufferSize() const { return bufferSize; }
 
  private:
   static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 
   LveDevice& lveDevice;
   void* mapped = nullptr;
-  VkBuffer buffer = VK_NULL_HANDLE;
-  VkDeviceMemory memory = VK_NULL_HANDLE;
+  vk::Buffer buffer = VK_NULL_HANDLE;
+  vk::DeviceMemory memory = VK_NULL_HANDLE;
 
-  VkDeviceSize bufferSize;
+  vk::DeviceSize bufferSize;
   uint32_t instanceCount;
-  VkDeviceSize instanceSize;
-  VkDeviceSize alignmentSize;
-  VkBufferUsageFlags usageFlags;
+  vk::DeviceSize instanceSize;
+  vk::DeviceSize alignmentSize;
+  vk::BufferUsageFlags usageFlags;
   vk::MemoryPropertyFlags memoryPropertyFlags;
 };
 

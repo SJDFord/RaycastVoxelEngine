@@ -31,11 +31,11 @@ VkDeviceSize LveBuffer::getAlignment(VkDeviceSize instanceSize, VkDeviceSize min
 
 LveBuffer::LveBuffer(
     LveDevice &device,
-    VkDeviceSize instanceSize,
+    vk::DeviceSize instanceSize,
     uint32_t instanceCount,
-    VkBufferUsageFlags usageFlags,
+    vk::BufferUsageFlags usageFlags,
     vk::MemoryPropertyFlags memoryPropertyFlags,
-    VkDeviceSize minOffsetAlignment)
+    vk::DeviceSize minOffsetAlignment)
     : lveDevice{device},
       instanceSize{instanceSize},
       instanceCount{instanceCount},

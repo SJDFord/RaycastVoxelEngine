@@ -46,8 +46,8 @@ class Image {
   // void createIndexBuffers(const std::vector<uint32_t> &indices);
 
   lve::LveDevice &lveDevice;
-  VkImage textureImage = VK_NULL_HANDLE;
-  VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
+  vk::Image textureImage = VK_NULL_HANDLE;
+  vk::DeviceMemory textureImageMemory = VK_NULL_HANDLE;
   VkImageView textureImageView = VK_NULL_HANDLE;
   VkSampler textureSampler = VK_NULL_HANDLE;
 

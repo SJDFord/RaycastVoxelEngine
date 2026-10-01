@@ -29,14 +29,14 @@ std::unique_ptr<LveModel> LveModel::createModelFromFile(
 void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vertexCount = static_cast<uint32_t>(vertices.size());
   assert(vertexCount >= 3 && "Vertex count must be at least 3");
-  VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
+  vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
   uint32_t vertexSize = sizeof(vertices[0]);
 
   LveBuffer stagingBuffer{
       lveDevice,
       vertexSize,
       vertexCount,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
 
@@ -47,7 +47,7 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
       lveDevice,
       vertexSize,
       vertexCount,
-      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   lveDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
@@ -61,14 +61,14 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
     return;
   }
 
-  VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
+  vk::DeviceSize bufferSize = sizeof(indices[0]) * indexCount;
   uint32_t indexSize = sizeof(indices[0]);
 
   LveBuffer stagingBuffer{
       lveDevice,
       indexSize,
       indexCount,
-      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
 
@@ -79,7 +79,7 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
       lveDevice,
       indexSize,
       indexCount,
-      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   lveDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
