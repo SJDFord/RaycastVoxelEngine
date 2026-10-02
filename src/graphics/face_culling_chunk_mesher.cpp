@@ -4,9 +4,9 @@
 
 #include <cstdlib>
 
-Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
+engine::Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
     unsigned int size = chunk.Size;
-    std::vector<Vertex> vertices;
+    std::vector<engine::Vertex> vertices;
     unsigned int blockCount = 0;
     glm::vec3 chunkPosition = chunk.Position;
     glm::vec3 chunkFillColour = {1.0f, 1.0f, 1.0f};
@@ -58,8 +58,8 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
                 }
 
                 //glm::vec3 colour = isEdge ? chunkLineColor : chunkFillColour;
-                Mesh cubeMesh =
-                    createCubeMesh(position, colour, back, front, left, right, bottom, top);
+                engine::Mesh cubeMesh =
+                    engine::createCubeMesh(position, colour, back, front, left, right, bottom, top);
                 vertices.insert(vertices.end(), cubeMesh.Vertices.begin(), cubeMesh.Vertices.end());
             }
         }
@@ -81,7 +81,7 @@ Mesh FaceCullingChunkMesher::create(const Chunk& chunk) {
     );
     */
 
-    Mesh mesh = {vertices, {}};
+    engine::Mesh mesh = {vertices, {}};
 	return mesh;
 } 
 

@@ -11,7 +11,7 @@
 
 namespace lve {
 
-LveModel::LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh) : 
+LveModel::LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const engine::Mesh &mesh) : 
  _device{device}, _physicalDevice{physicalDevice} {
   createVertexBuffers(commandBuffer, mesh.Vertices);
   createIndexBuffers(commandBuffer, mesh.Indices);
@@ -19,7 +19,7 @@ LveModel::LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Com
 
 LveModel::~LveModel() {}
 
-void LveModel::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices) {
+void LveModel::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<engine::Vertex> &vertices) {
   vertexCount = static_cast<uint32_t>(vertices.size());
   assert(vertexCount >= 3 && "Vertex count must be at least 3");
   vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;

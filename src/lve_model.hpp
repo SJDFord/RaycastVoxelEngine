@@ -2,6 +2,9 @@
 
 #include "lve_device.hpp"
 #include "./engine/buffer.hpp"
+#include "engine/vertex.hpp"
+#include "engine/mesh.hpp"
+
 #include "graphics/vertex.hpp"
 #include "graphics/mesh.hpp"
 
@@ -18,7 +21,7 @@
 namespace lve {
 class LveModel {
  public:
-  LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh);
+  LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const engine::Mesh &mesh);
   ~LveModel();
 
   LveModel(const LveModel &) = delete;
@@ -28,7 +31,7 @@ class LveModel {
   void draw(vk::CommandBuffer commandBuffer);
 
  private:
-  void createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices);
+  void createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<engine::Vertex> &vertices);
   void createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vector<uint32_t> &indices);
 
   vk::Device _device;

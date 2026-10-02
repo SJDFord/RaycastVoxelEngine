@@ -165,7 +165,7 @@ void VoxelApp::run() {
 void VoxelApp::loadGameObjects() {
   auto testGameObject = LveGameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
-  auto testMesh = createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
+  auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
   auto commandBuffer = lveDevice.beginSingleTimeCommands();
   std::shared_ptr<LveModel> testModel = std::make_shared<LveModel>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh);
   testGameObject.model = testModel;
@@ -175,7 +175,7 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject2 = LveGameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
-  auto testMesh2 = createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
+  auto testMesh2 = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
   std::shared_ptr<LveModel> testModel2 = std::make_shared<LveModel>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh2);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
