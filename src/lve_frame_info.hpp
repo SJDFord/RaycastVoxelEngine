@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lve_camera.hpp"
-#include "lve_game_object.hpp"
+#include "./engine/game_object.hpp"
 
 // lib
 #include <vulkan/vulkan.h>
@@ -30,6 +30,6 @@ struct FrameInfo {
   VkCommandBuffer commandBuffer;
   LveCamera &camera;
   VkDescriptorSet globalDescriptorSet;
-  LveGameObject::Map &gameObjects;
+  engine::GameObject::Map &gameObjects;
 };
 }  // namespace lve

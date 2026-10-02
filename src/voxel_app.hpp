@@ -4,7 +4,7 @@
 #include "graphics/world_renderer.hpp"
 #include "lve_descriptors.hpp"
 #include "lve_device.hpp"
-#include "lve_game_object.hpp"
+#include "./engine/game_object.hpp"
 #include "lve_renderer.hpp"
 #include "./engine/window.hpp"
 #include "./engine/renderer.hpp"
@@ -41,6 +41,6 @@ class VoxelApp {
 
   // note: order of declarations matters
   std::unique_ptr<LveDescriptorPool> globalPool{};
-  LveGameObject::Map gameObjects;
+  engine::GameObject::Map gameObjects;
 };
 }  // namespace lve

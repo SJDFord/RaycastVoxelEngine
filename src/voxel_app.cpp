@@ -5,6 +5,7 @@
 #include "fps_movement_controller.hpp"
 #include "./engine/buffer.hpp"
 #include "./engine/descriptors.hpp"
+#include "./engine/model.hpp"
 
 #include "./engine/descriptor_set_layout_builder.hpp"
 #include "lve_camera.hpp"
@@ -163,27 +164,27 @@ void VoxelApp::run() {
 }
 
 void VoxelApp::loadGameObjects() {
-  auto testGameObject = LveGameObject::createGameObject();
+  auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
   auto commandBuffer = lveDevice.beginSingleTimeCommands();
-  std::shared_ptr<LveModel> testModel = std::make_shared<LveModel>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh);
+  std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh);
   testGameObject.model = testModel;
   testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
   gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
 
-  auto testGameObject2 = LveGameObject::createGameObject();
+  auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   auto testMesh2 = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
-  std::shared_ptr<LveModel> testModel2 = std::make_shared<LveModel>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh2);
+  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh2);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
   gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
   lveDevice.endSingleTimeCommands(commandBuffer);
 
-  auto mainLight = LveGameObject::makePointLight(10.0f);
+  auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {
       1.0f,
       1.0f,
