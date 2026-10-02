@@ -16,7 +16,6 @@
 
 #include "./engine/buffer.hpp"
 #include "./engine/descriptor_set_layout_builder.hpp"
-#include "./engine/descriptor_set_utils.hpp"
 #include "./engine/device_builder.hpp"
 #include "./engine/image_from_file.hpp"
 #include "./engine/image_generators.hpp"
@@ -25,11 +24,9 @@
 #include "./engine/ranked_physical_device_strategy.hpp"
 #include "./engine/shader_module_builder.hpp"
 #include "./engine/swap_chain.hpp"
-#include "./engine/texture.hpp"
 #include "./engine/utils.hpp"
 #include "./engine/pipeline_builder.hpp"
 #include "./engine/vertex.hpp"
-#include "./engine/render_system.hpp"
 #include "./engine/descriptors.hpp"
 #include "./engine/fps_movement_controller.hpp"
 #include "./engine/camera.hpp"
@@ -53,11 +50,11 @@ void DynamicApp::run() {
 
     std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++) {
-        vk::DeviceSize size = vk::DeviceSize(sizeof(engine::GlobalUbo));
         uboBuffers[i] = std::make_unique<engine::Buffer>(
-            _physicalDevice,
             _device,
-            size,
+            _physicalDevice,
+            sizeof(engine::GlobalUbo),
+            1,
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible);
         uboBuffers[i]->map();

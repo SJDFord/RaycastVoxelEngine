@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lve_buffer.hpp"
 #include "lve_device.hpp"
+#include "./engine/buffer.hpp"
 #include "graphics/vertex.hpp"
 #include "graphics/mesh.hpp"
 
@@ -27,8 +27,8 @@ class LveModel {
   static std::unique_ptr<LveModel> createModelFromFile(
       LveDevice &device, const std::string &filepath);
 
-  void bind(VkCommandBuffer commandBuffer);
-  void draw(VkCommandBuffer commandBuffer);
+  void bind(vk::CommandBuffer commandBuffer);
+  void draw(vk::CommandBuffer commandBuffer);
 
  private:
   void createVertexBuffers(const std::vector<Vertex> &vertices);
@@ -36,11 +36,11 @@ class LveModel {
 
   LveDevice &lveDevice;
 
-  std::unique_ptr<LveBuffer> vertexBuffer;
+  std::unique_ptr<engine::Buffer> vertexBuffer;
   uint32_t vertexCount;
 
   bool hasIndexBuffer = false;
-  std::unique_ptr<LveBuffer> indexBuffer;
+  std::unique_ptr<engine::Buffer> indexBuffer;
   uint32_t indexCount;
 };
 }  // namespace lve

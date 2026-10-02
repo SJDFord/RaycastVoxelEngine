@@ -7,73 +7,58 @@
 namespace engine {
 
 class Buffer {
-public:
-    Buffer(
-        const vk::PhysicalDevice& physicalDevice,      
-        const vk::Device& device,
-        vk::DeviceSize size,
-        vk::BufferUsageFlags usage,
-        vk::MemoryPropertyFlags propertyFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-    );
-    ~Buffer();
+ public:
+  Buffer(
+      vk::Device device,
+      vk::PhysicalDevice physicalDevice,
+      vk::DeviceSize instanceSize,
+      uint32_t instanceCount,
+      vk::BufferUsageFlags usageFlags,
+      vk::MemoryPropertyFlags memoryPropertyFlags,
+      vk::DeviceSize minOffsetAlignment = 1);
+  ~Buffer();
 
-    Buffer(const Buffer&) = delete;
-    Buffer& operator=(const Buffer&) = delete;
+  Buffer(const Buffer&) = delete;
+  Buffer& operator=(const Buffer&) = delete;
 
+  vk::Result map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  void unmap();
 
-    /*
-    template <class T>
-    void write( 
-        T const * pData, 
-        size_t count, 
-        vk::DeviceSize stride = sizeof( T ) ) {
-      assert( sizeof( T ) <= stride );
-      uint8_t * deviceData = static_cast<uint8_t *>( _device.mapMemory( _memory, 0, count * stride ) );
-      if ( stride == sizeof( T ) )
-      {
-        memcpy( deviceData, pData, count * sizeof( T ) );
-      }
-      else
-      {
-        for ( size_t i = 0; i < count; i++ )
-        {
-          memcpy( deviceData, &pData[i], sizeof( T ) );
-          deviceData += stride;
-        }
-      }
-      _device.unmapMemory( _memory );
-    }
+  void writeToBuffer(void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  vk::Result flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  vk::DescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  vk::Result invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-    template <class T>
-    void write( 
-        T const & data 
-    )
-    {
-  write<T>( &data, 1 );
-}
-    */
+  void writeToIndex(void* data, int index);
+  vk::Result flushIndex(int index);
+  vk::DescriptorBufferInfo descriptorInfoForIndex(int index);
+  vk::Result invalidateIndex(int index);
 
-    void map(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
-    void writeToBuffer(void* data, vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
-    void unmap();
+  vk::Buffer getBuffer() const { return _buffer; }
+  void* getMappedMemory() const { return _mapped; }
+  uint32_t getInstanceCount() const { return _instanceCount; }
+  vk::DeviceSize getInstanceSize() const { return _instanceSize; }
+  vk::DeviceSize getAlignmentSize() const { return _instanceSize; }
+  vk::BufferUsageFlags getUsageFlags() const { return _usageFlags; }
+  vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return _memoryPropertyFlags; }
+  vk::DeviceSize getBufferSize() const { return _bufferSize; }
 
-    void flush(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
-    void clear( vk::Device const & device );
+ private:
+  static vk::DeviceSize getAlignment(vk::DeviceSize instanceSize, vk::DeviceSize minOffsetAlignment);
 
-    vk::DescriptorBufferInfo descriptorInfo(vk::DeviceSize size = VK_WHOLE_SIZE, vk::DeviceSize offset = 0);
-  
-    const vk::Buffer& getBuffer() const { return _buffer; }
-    const vk::DeviceMemory& getDeviceMemory() const { return _memory; }
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
 
-private:
-    const vk::Device& _device;
-    vk::DeviceSize _size;
-    vk::BufferUsageFlags _usage;
-    vk::MemoryPropertyFlags _propertyFlags;
+  void* _mapped = nullptr;
+  vk::Buffer _buffer = VK_NULL_HANDLE;
+  vk::DeviceMemory _memory = VK_NULL_HANDLE;
 
-    vk::Buffer _buffer;
-    vk::DeviceMemory _memory;
-    void* _mapped = nullptr;
+  vk::DeviceSize _bufferSize;
+  uint32_t _instanceCount;
+  vk::DeviceSize _instanceSize;
+  vk::DeviceSize _alignmentSize;
+  vk::BufferUsageFlags _usageFlags;
+  vk::MemoryPropertyFlags _memoryPropertyFlags;
 };
 
 }

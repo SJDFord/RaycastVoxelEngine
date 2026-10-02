@@ -35,10 +35,10 @@ void Model::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vect
   uint32_t vertexSize = sizeof(vertices[0]);
 
   Buffer stagingBuffer{
-      _physicalDevice,
       _device,
+      _physicalDevice,
       vertexSize,
-      //vertexCount,
+      vertexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
@@ -47,10 +47,10 @@ void Model::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vect
   stagingBuffer.writeToBuffer((void *)vertices.data());
 
   vertexBuffer = std::make_unique<Buffer>(
-      _physicalDevice,
       _device,
+      _physicalDevice,
       vertexSize,
-      //vertexCount,
+      vertexCount,
       vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal
   );
@@ -76,10 +76,10 @@ void Model::createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vecto
   uint32_t indexSize = sizeof(indices[0]);
 
   Buffer stagingBuffer{
-      _physicalDevice,
       _device,
+      _physicalDevice,
       indexSize,
-      //vertexCount,
+      indexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
   };
@@ -90,10 +90,10 @@ void Model::createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vecto
   //stagingBuffer.write(indices.data());
 
   indexBuffer = std::make_unique<Buffer>(
-      _physicalDevice,
       _device,
+      _physicalDevice,
       indexSize,
-      //vertexCount,
+      indexCount,
       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal
   );

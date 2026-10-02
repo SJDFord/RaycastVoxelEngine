@@ -74,9 +74,10 @@ int texWidth, texHeight, texChannels;
   }
 
   std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
-      physicalDevice,
       device,
+      physicalDevice,
       imageSize,
+      1,
       vk::BufferUsageFlagBits::eTransferSrc,
       vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 

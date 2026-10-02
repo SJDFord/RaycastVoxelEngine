@@ -37,6 +37,7 @@ void RenderSystem::createPipelineLayout(vk::DescriptorSetLayout globalSetLayout)
 void RenderSystem::createPipeline() {
     assert(_pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
+    /*
     engine::Texture textureData(_physicalDevice, _device);
 
     // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
@@ -44,7 +45,9 @@ void RenderSystem::createPipeline() {
         _physicalDevice,
         _device,
         sizeof(glm::mat4x4),
+        1,
         vk::BufferUsageFlagBits::eUniformBuffer);
+    */
 
     std::string vertShaderGlsl = engine::readFileString("../shaders/vertexShaderText_PT_T.vert");
     std::string fragShaderGlsl = engine::readFileString("../shaders/fragmentShaderText_T_C.frag");
@@ -63,12 +66,13 @@ void RenderSystem::createPipeline() {
     vk::DescriptorSet descriptorSet =
         _device.allocateDescriptorSets(descriptorSetAllocateInfo).front();
 
+        /*
     engine::updateDescriptorSets(
         _device,
         descriptorSet,
         {{vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {}}},
         textureData);
-
+        */
     vk::PipelineCache pipelineCache = _device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
     // TODO: Definitely builder pattern

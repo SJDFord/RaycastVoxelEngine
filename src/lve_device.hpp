@@ -43,6 +43,7 @@ class LveDevice {
   // TODO: Wrap device functions so that we can delete this getter - no calling code should have access to the underlying Vulkan device
   vk::Instance getInstance() { return _instance; }
   vk::Device device() { return _device; }
+  vk::PhysicalDevice getPhysicalDevice() { return _physicalDevice; }
   vk::SurfaceKHR surface() { return _surface; }
   vk::Queue graphicsQueue() { return _graphicsQueue; }
   vk::Queue presentQueue() { return _presentQueue; }

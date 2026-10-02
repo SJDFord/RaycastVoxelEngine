@@ -5,6 +5,8 @@
 #include "fps_movement_controller.hpp"
 #include "lve_buffer.hpp"
 #include "lve_camera.hpp"
+#include "./engine/camera.hpp"
+#include "./engine/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
 #include "graphics/graphics_util.hpp"
@@ -56,7 +58,9 @@ void VoxelApp::run() {
           .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
           .build();
 
-  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/jungle-brick-with-moss.png");
+  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/hinoki_planks_diff_4k.jpg");
+  //std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/metal_plate_diff_4k.jpg");
+  
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   imageInfo.imageView = image->getImageView();
@@ -163,7 +167,7 @@ void VoxelApp::loadGameObjects() {
   std::shared_ptr<LveModel> testModel2 = std::make_shared<LveModel>(lveDevice, testMesh2);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
-  testGameObject2.transform.scale = {0.2f, 0.2f, 0.2f};
+  testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
   gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
 
   auto mainLight = LveGameObject::makePointLight(10.0f);

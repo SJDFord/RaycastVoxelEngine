@@ -32,8 +32,9 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
   vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
   uint32_t vertexSize = sizeof(vertices[0]);
 
-  LveBuffer stagingBuffer{
-      lveDevice,
+  engine::Buffer stagingBuffer{
+      lveDevice.device(),
+      lveDevice.getPhysicalDevice(),
       vertexSize,
       vertexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
@@ -43,8 +44,9 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
   stagingBuffer.map();
   stagingBuffer.writeToBuffer((void *)vertices.data());
 
-  vertexBuffer = std::make_unique<LveBuffer>(
-      lveDevice,
+  vertexBuffer = std::make_unique<engine::Buffer>(
+      lveDevice.device(),
+      lveDevice.getPhysicalDevice(),
       vertexSize,
       vertexCount,
       vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -64,8 +66,9 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
   vk::DeviceSize bufferSize = sizeof(indices[0]) * indexCount;
   uint32_t indexSize = sizeof(indices[0]);
 
-  LveBuffer stagingBuffer{
-      lveDevice,
+  engine::Buffer stagingBuffer{
+      lveDevice.device(),
+      lveDevice.getPhysicalDevice(),
       indexSize,
       indexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
@@ -75,8 +78,9 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
   stagingBuffer.map();
   stagingBuffer.writeToBuffer((void *)indices.data());
 
-  indexBuffer = std::make_unique<LveBuffer>(
-      lveDevice,
+  indexBuffer = std::make_unique<engine::Buffer>(
+      lveDevice.device(),
+      lveDevice.getPhysicalDevice(),
       indexSize,
       indexCount,
       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -85,7 +89,7 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
   lveDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
-void LveModel::draw(VkCommandBuffer commandBuffer) {
+void LveModel::draw(vk::CommandBuffer commandBuffer) {
   if (hasIndexBuffer) {
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
   } else {
@@ -93,7 +97,7 @@ void LveModel::draw(VkCommandBuffer commandBuffer) {
   }
 }
 
-void LveModel::bind(VkCommandBuffer commandBuffer) {
+void LveModel::bind(vk::CommandBuffer commandBuffer) {
   VkBuffer buffers[] = {vertexBuffer->getBuffer()};
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);

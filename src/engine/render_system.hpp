@@ -8,9 +8,7 @@
 #include "../utils/utils.hpp"
 
 #include "shader_module_builder.hpp"
-#include "texture.hpp"
 #include "buffer.hpp"
-#include "descriptor_set_utils.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS

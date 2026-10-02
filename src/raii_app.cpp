@@ -15,7 +15,6 @@
 
 #include "./engine/buffer.hpp"
 #include "./engine/descriptor_set_layout_builder.hpp"
-#include "./engine/descriptor_set_utils.hpp"
 #include "./engine/device_builder.hpp"
 #include "./engine/image.hpp"
 #include "./engine/image_generators.hpp"
@@ -24,7 +23,6 @@
 #include "./engine/ranked_physical_device_strategy.hpp"
 #include "./engine/shader_module_builder.hpp"
 #include "./engine/swap_chain.hpp"
-#include "./engine/texture.hpp"
 #include "./engine/utils.hpp"
 #include "./engine/window.hpp"
 #include "./engine/renderer.hpp"
@@ -180,6 +178,7 @@ void RaiiApp::run() {
         vk::MemoryPropertyFlagBits::eDeviceLocal,
         vk::ImageAspectFlagBits::eDepth);
 
+    /*
     engine::Texture textureData(physicalDevice, device);
 
     // TODO: Abstract into a builder pattern like InstanceBuilder for the vk::Instance
@@ -187,10 +186,12 @@ void RaiiApp::run() {
         physicalDevice,
         device,
         sizeof(glm::mat4x4),
+        1,
         vk::BufferUsageFlagBits::eUniformBuffer);
+    */
     glm::mat4x4 mvpcMatrix = vk::su::createModelViewProjectionClipMatrix(window.getExtent());
-    uniformBufferData.map();
-    uniformBufferData.writeToBuffer((void *) &mvpcMatrix);
+    //uniformBufferData.map();
+    //uniformBufferData.writeToBuffer((void *) &mvpcMatrix);
 
     std::vector<vk::DescriptorSetLayoutBinding> bindings;
     vk::DescriptorSetLayout descriptorSetLayout =
@@ -230,11 +231,12 @@ void RaiiApp::run() {
 
     // TODO: Builder pattern?
     engine::Buffer vertexBufferData(
-        physicalDevice,
         device,
+        physicalDevice,
         sizeof(texturedCubeData),
-        vk::BufferUsageFlagBits::eVertexBuffer);
-    vertexBufferData.map();
+        1,
+        vk::BufferUsageFlagBits::eVertexBuffer, {});
+        vertexBufferData.map();
     vertexBufferData.writeToBuffer(
         (void *) &texturedCubeData,
         sizeof(texturedCubeData) / sizeof(texturedCubeData[0]));
@@ -247,11 +249,13 @@ void RaiiApp::run() {
     vk::DescriptorSet descriptorSet =
         device.allocateDescriptorSets(descriptorSetAllocateInfo).front();
 
+    /*
     engine::updateDescriptorSets(
         device,
         descriptorSet,
         {{vk::DescriptorType::eUniformBuffer, uniformBufferData.getBuffer(), VK_WHOLE_SIZE, {}}},
         textureData);
+    */
 
     vk::PipelineCache pipelineCache = device.createPipelineCache(vk::PipelineCacheCreateInfo());
 
@@ -294,7 +298,7 @@ void RaiiApp::run() {
     // TODO: Loop over command buffers
 
         commandBuffer.begin(vk::CommandBufferBeginInfo());
-        textureData.setImage(device, commandBuffer, engine::CheckerboardImageGenerator());
+        //textureData.setImage(device, commandBuffer, engine::CheckerboardImageGenerator());
     
             
         auto draw_scene = [&] {
@@ -491,7 +495,7 @@ void RaiiApp::run() {
     device.destroyPipelineCache(pipelineCache);
     device.freeDescriptorSets(descriptorPool, descriptorSet);
     device.destroyDescriptorPool(descriptorPool);
-    vertexBufferData.clear(device);
+    //vertexBufferData.clear(device);
     for (auto framebuffer : framebuffers) {
       device.destroyFramebuffer(framebuffer);
     }
@@ -500,8 +504,10 @@ void RaiiApp::run() {
     device.destroyRenderPass(renderPass);
     device.destroyPipelineLayout(pipelineLayout);
     device.destroyDescriptorSetLayout(descriptorSetLayout);
+    /*
     uniformBufferData.clear(device);
     textureData.clear(device);
+    */
     depthBufferData.clear(device);
     swapChainData.clear(device);
     device.freeCommandBuffers(commandPool, commandBuffer);
