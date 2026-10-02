@@ -13,6 +13,7 @@
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
 #include "graphics/graphics_util.hpp"
+#include "./engine/descriptor_pool_builder.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -30,13 +31,12 @@
 
 namespace lve {
 
-VoxelApp::VoxelApp() {
-  globalPool =
-      LveDescriptorPool::Builder(lveDevice)
-          .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
-          .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
-          .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, LveSwapChain::MAX_FRAMES_IN_FLIGHT)
-          .build();
+VoxelApp::VoxelApp(): 
+  _globalPool{engine::DescriptorPoolBuilder(lveDevice.device())
+      .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+      .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+      .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+      .build()} {
 
   loadGameObjects();
 }
@@ -79,7 +79,7 @@ void VoxelApp::run() {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
     globalDescriptorSets[i] = engine::DescriptorWriter(
         lveDevice.device(), 
-        globalPool->getPoolCpp(),
+        _globalPool,
         globalSetLayout,
         bindings
       )

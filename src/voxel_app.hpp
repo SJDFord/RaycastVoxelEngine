@@ -40,7 +40,7 @@ class VoxelApp {
   LveRenderer lveRenderer{_window, lveDevice};
 
   // note: order of declarations matters
-  std::unique_ptr<LveDescriptorPool> globalPool{};
+  vk::DescriptorPool _globalPool;
   engine::GameObject::Map gameObjects;
 };
 }  // namespace lve
