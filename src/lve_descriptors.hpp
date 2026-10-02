@@ -35,6 +35,8 @@ class LveDescriptorSetLayout {
 
   VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
+  vk::DescriptorSetLayout getDescriptorSetLayoutCpp() const { return descriptorSetLayout; }
+
  private:
   LveDevice &lveDevice;
   VkDescriptorSetLayout descriptorSetLayout;
@@ -76,7 +78,9 @@ class LveDescriptorPool {
   void freeDescriptors(std::vector<VkDescriptorSet> &descriptors) const;
 
   void resetPool();
-
+  
+  VkDescriptorPool getPool() { return descriptorPool; }
+  vk::DescriptorPool getPoolCpp() { return descriptorPool; }
  private:
   LveDevice &lveDevice;
   VkDescriptorPool descriptorPool;

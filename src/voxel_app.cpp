@@ -3,7 +3,10 @@
 #include "voxel_app.hpp"
 #include "graphics/face_culling_chunk_mesher.hpp"
 #include "fps_movement_controller.hpp"
-#include "lve_buffer.hpp"
+#include "./engine/buffer.hpp"
+#include "./engine/descriptors.hpp"
+
+#include "./engine/descriptor_set_layout_builder.hpp"
 #include "lve_camera.hpp"
 #include "./engine/camera.hpp"
 #include "./engine/fps_movement_controller.hpp"
@@ -41,10 +44,11 @@ VoxelApp::VoxelApp() {
 VoxelApp::~VoxelApp() {}
 
 void VoxelApp::run() {
-  std::vector<std::unique_ptr<LveBuffer>> uboBuffers(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+  std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
-    uboBuffers[i] = std::make_unique<LveBuffer>(
-        lveDevice,
+    uboBuffers[i] = std::make_unique<engine::Buffer>(
+        lveDevice.device(),
+        lveDevice.getPhysicalDevice(),
         sizeof(GlobalUbo),
         1,
         vk::BufferUsageFlagBits::eUniformBuffer,
@@ -52,37 +56,44 @@ void VoxelApp::run() {
     uboBuffers[i]->map();
   }
 
+  std::vector<vk::DescriptorSetLayoutBinding> bindings;
   auto globalSetLayout =
-      LveDescriptorSetLayout::Builder(lveDevice)
-          .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-          .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-          .build();
+  engine::DescriptorSetLayoutBuilder(lveDevice.device())
+      .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+      .addBinding(
+          vk::DescriptorType::eCombinedImageSampler,
+          1,
+          vk::ShaderStageFlagBits::eFragment)
+      .build(bindings);
 
   std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/hinoki_planks_diff_4k.jpg");
   //std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/metal_plate_diff_4k.jpg");
   
-  VkDescriptorImageInfo imageInfo{};
-  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = image->getImageView();
-  imageInfo.sampler = image->getSampler();
+  vk::DescriptorImageInfo imageInfo = vk::DescriptorImageInfo()
+    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+    .setImageView(image->getImageView())
+    .setSampler(image->getSampler());
 
   std::vector<VkDescriptorSet> globalDescriptorSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
-    LveDescriptorWriter(*globalSetLayout, *globalPool)
+    globalDescriptorSets[i] = engine::DescriptorWriter(
+        lveDevice.device(), 
+        globalPool->getPoolCpp(),
+        globalSetLayout,
+        bindings
+      )
         .writeBuffer(0, &bufferInfo)
         .writeImage(1, &imageInfo)
-        .build(globalDescriptorSets[i]);
+        .build();
   }
 
   SimpleRenderSystem simpleRenderSystem{
       lveDevice,
-      lveRenderer.getSwapChainRenderPass(),
-      globalSetLayout->getDescriptorSetLayout()};
+      lveRenderer.getSwapChainRenderPass(), globalSetLayout};
   PointLightSystem pointLightSystem{
       lveDevice,
-      lveRenderer.getSwapChainRenderPass(),
-      globalSetLayout->getDescriptorSetLayout()};
+      lveRenderer.getSwapChainRenderPass(), globalSetLayout};
   LveCamera camera{};
 
   auto viewerObject = LveGameObject::createGameObject();

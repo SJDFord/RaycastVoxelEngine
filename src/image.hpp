@@ -6,7 +6,7 @@
 
 #include "graphics/mesh.hpp"
 #include "graphics/vertex.hpp"
-#include "lve_buffer.hpp"
+#include "./engine/buffer.hpp"
 #include "lve_device.hpp"
 
 // libs

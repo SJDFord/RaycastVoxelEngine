@@ -23,8 +23,9 @@ void Image::createImage(const std::string &filepath) {
     throw std::runtime_error("failed to load texture image!");
   }
 
-  std::unique_ptr<lve::LveBuffer> buffer = std::make_unique<lve::LveBuffer>(
-      lveDevice,
+  std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
+      lveDevice.device(),
+      lveDevice.getPhysicalDevice(),
       imageSize,
       1,
       vk::BufferUsageFlagBits::eTransferSrc,
