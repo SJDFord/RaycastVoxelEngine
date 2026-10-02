@@ -18,23 +18,21 @@
 namespace lve {
 class LveModel {
  public:
-  LveModel(LveDevice &device, const Mesh &mesh);
+  LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh);
   ~LveModel();
 
   LveModel(const LveModel &) = delete;
   LveModel &operator=(const LveModel &) = delete;
 
-  static std::unique_ptr<LveModel> createModelFromFile(
-      LveDevice &device, const std::string &filepath);
-
   void bind(vk::CommandBuffer commandBuffer);
   void draw(vk::CommandBuffer commandBuffer);
 
  private:
-  void createVertexBuffers(const std::vector<Vertex> &vertices);
-  void createIndexBuffers(const std::vector<uint32_t> &indices);
+  void createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices);
+  void createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vector<uint32_t> &indices);
 
-  LveDevice &lveDevice;
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
 
   std::unique_ptr<engine::Buffer> vertexBuffer;
   uint32_t vertexCount;

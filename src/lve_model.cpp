@@ -1,5 +1,4 @@
 #include "lve_model.hpp"
-#include "graphics/mesh_builder.hpp"
 
 // std
 #include <cassert>
@@ -12,29 +11,23 @@
 
 namespace lve {
 
-LveModel::LveModel(LveDevice &device, const Mesh &mesh) : lveDevice{device} {
-  createVertexBuffers(mesh.Vertices);
-  createIndexBuffers(mesh.Indices);
+LveModel::LveModel(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh) : 
+ _device{device}, _physicalDevice{physicalDevice} {
+  createVertexBuffers(commandBuffer, mesh.Vertices);
+  createIndexBuffers(commandBuffer, mesh.Indices);
 }
 
 LveModel::~LveModel() {}
 
-std::unique_ptr<LveModel> LveModel::createModelFromFile(
-    LveDevice &device, const std::string &filepath) {
-  MeshBuilder builder{};
-  Mesh mesh = builder.loadMesh(ENGINE_DIR + filepath);
-  return std::make_unique<LveModel>(device, mesh);
-}
-
-void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
+void LveModel::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices) {
   vertexCount = static_cast<uint32_t>(vertices.size());
   assert(vertexCount >= 3 && "Vertex count must be at least 3");
   vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
   uint32_t vertexSize = sizeof(vertices[0]);
 
   engine::Buffer stagingBuffer{
-      lveDevice.device(),
-      lveDevice.getPhysicalDevice(),
+      _device,
+      _physicalDevice,
       vertexSize,
       vertexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
@@ -45,17 +38,22 @@ void LveModel::createVertexBuffers(const std::vector<Vertex> &vertices) {
   stagingBuffer.writeToBuffer((void *)vertices.data());
 
   vertexBuffer = std::make_unique<engine::Buffer>(
-      lveDevice.device(),
-      lveDevice.getPhysicalDevice(),
+      _device,
+      _physicalDevice,
       vertexSize,
       vertexCount,
       vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-  lveDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
+  //vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+  vk::BufferCopy copyRegion = vk::BufferCopy()
+    .setSrcOffset(0)
+    .setDstOffset(0)
+    .setSize(bufferSize);
+  commandBuffer.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), copyRegion);
 }
 
-void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
+void LveModel::createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vector<uint32_t> &indices) {
   indexCount = static_cast<uint32_t>(indices.size());
   hasIndexBuffer = indexCount > 0;
 
@@ -67,8 +65,8 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
   uint32_t indexSize = sizeof(indices[0]);
 
   engine::Buffer stagingBuffer{
-      lveDevice.device(),
-      lveDevice.getPhysicalDevice(),
+      _device,
+      _physicalDevice,
       indexSize,
       indexCount,
       vk::BufferUsageFlagBits::eTransferSrc,
@@ -79,14 +77,18 @@ void LveModel::createIndexBuffers(const std::vector<uint32_t> &indices) {
   stagingBuffer.writeToBuffer((void *)indices.data());
 
   indexBuffer = std::make_unique<engine::Buffer>(
-      lveDevice.device(),
-      lveDevice.getPhysicalDevice(),
+      _device,
+      _physicalDevice,
       indexSize,
       indexCount,
       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-  lveDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+  vk::BufferCopy copyRegion = vk::BufferCopy()
+    .setSrcOffset(0)
+    .setDstOffset(0)
+    .setSize(bufferSize);
+  commandBuffer.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), copyRegion);
 }
 
 void LveModel::draw(vk::CommandBuffer commandBuffer) {

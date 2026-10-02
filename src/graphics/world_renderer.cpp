@@ -75,7 +75,7 @@ void WorldRenderer::update(lve::LveDevice& lveDevice, const glm::vec3& playerPos
                 FaceCullingChunkMesher chunkMesher;
                 Mesh chunkMesh = chunkMesher.create(chunk);
                 
-                std::shared_ptr<lve::LveModel> chunkModel = std::make_shared<lve::LveModel>(lveDevice, chunkMesh);
+                std::shared_ptr<lve::LveModel> chunkModel = std::make_shared<lve::LveModel>(lveDevice.device(), lveDevice.getPhysicalDevice(), lveDevice.beginSingleTimeCommands(), chunkMesh);
                 /*
                 auto chunkGameObject = lve::LveGameObject::createGameObject();
                 chunkGameObject.model = chunkModel;
