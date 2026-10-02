@@ -1,6 +1,7 @@
 #include "data/chunk.hpp"
 #include "data/world.hpp"
 #include "voxel_app.hpp"
+#include "./engine/utils.hpp"
 #include "graphics/face_culling_chunk_mesher.hpp"
 #include "./engine/buffer.hpp"
 #include "./engine/descriptors.hpp"
@@ -48,7 +49,7 @@ void VoxelApp::run() {
     uboBuffers[i] = std::make_unique<engine::Buffer>(
         lveDevice.device(),
         lveDevice.getPhysicalDevice(),
-        sizeof(GlobalUbo),
+        sizeof(engine::GlobalUbo),
         1,
         vk::BufferUsageFlagBits::eUniformBuffer,
         vk::MemoryPropertyFlagBits::eHostVisible);
@@ -137,7 +138,7 @@ void VoxelApp::run() {
           gameObjects};
 
       // update
-      GlobalUbo ubo{};
+      engine::GlobalUbo ubo{};
       ubo.projection = camera.getProjection();
       ubo.view = camera.getView();
       ubo.inverseView = camera.getInverseView();

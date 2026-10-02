@@ -71,6 +71,10 @@ class Window {
   GLFWwindow *window;
   vk::SurfaceKHR _surface; 
   vk::Extent2D _extent;
+
+
+  static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
+  static void cursorEnterCallback(GLFWwindow* window, int entered);
   
 };
 

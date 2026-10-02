@@ -35,5 +35,6 @@ class FpsMovementController {
   float pitch{0.0f};
   void getMousePos(Window& window, glm::vec2& result);
   void setMouseCapture(Window& window, bool capture);
+
 };
 }  // namespace lve

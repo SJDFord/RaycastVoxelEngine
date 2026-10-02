@@ -68,7 +68,7 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass) {
       pipelineConfig);
 }
 
-void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo) {
+void PointLightSystem::update(FrameInfo& frameInfo, engine::GlobalUbo& ubo) {
   auto rotateLight = glm::rotate(glm::mat4(1.f), 0.5f * frameInfo.frameTime, {0.f, -1.f, 0.f});
   int lightIndex = 0;
   for (auto& kv : frameInfo.gameObjects) {
@@ -91,7 +91,7 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo) {
 
 void PointLightSystem::render(FrameInfo& frameInfo) {
   // sort lights
-  std::map<float, LveGameObject::id_t> sorted;
+  std::map<float, engine::GameObject::id_t> sorted;
   for (auto& kv : frameInfo.gameObjects) {
     auto& obj = kv.second;
     if (obj.pointLight == nullptr) continue;

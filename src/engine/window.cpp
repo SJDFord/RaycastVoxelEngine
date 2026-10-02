@@ -2,6 +2,7 @@
 
 // std
 #include <stdexcept>
+#include <print>
 
 namespace engine {
 
@@ -22,6 +23,8 @@ void Window::initWindow() {
   window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
   glfwSetWindowUserPointer(window, this);
   glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+  glfwSetCursorPosCallback(window, cursorPositionCallback);
+  glfwSetCursorEnterCallback(window, cursorEnterCallback);
 
   _extent = vk::Extent2D( static_cast<uint32_t>(width), static_cast<uint32_t>(height) );
 }
@@ -170,5 +173,13 @@ bool Window::isKeyPressed(KeyboardKey key) {
 }
 
 void Window::close() { glfwSetWindowShouldClose(window, 1); }
+
+void Window::cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
+  //std::println("X Pos: {}", xpos);
+}
+
+void Window::cursorEnterCallback(GLFWwindow* window, int entered) {
+
+}
 
 }
