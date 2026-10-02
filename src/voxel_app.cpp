@@ -2,13 +2,11 @@
 #include "data/world.hpp"
 #include "voxel_app.hpp"
 #include "graphics/face_culling_chunk_mesher.hpp"
-#include "fps_movement_controller.hpp"
 #include "./engine/buffer.hpp"
 #include "./engine/descriptors.hpp"
 #include "./engine/model.hpp"
 
 #include "./engine/descriptor_set_layout_builder.hpp"
-#include "lve_camera.hpp"
 #include "./engine/camera.hpp"
 #include "./engine/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
@@ -95,11 +93,11 @@ void VoxelApp::run() {
   PointLightSystem pointLightSystem{
       lveDevice,
       lveRenderer.getSwapChainRenderPass(), globalSetLayout};
-  LveCamera camera{};
+  engine::Camera camera{};
 
-  auto viewerObject = LveGameObject::createGameObject();
+  auto viewerObject = engine::GameObject::createGameObject();
   viewerObject.transform.translation.z = -2.5f;
-  FpsMovementController cameraController{_window};
+  engine::FpsMovementController cameraController{_window};
 
   auto currentTime = std::chrono::high_resolution_clock::now();
   while (!_window.shouldClose()) {
@@ -123,7 +121,7 @@ void VoxelApp::run() {
     if (auto commandBuffer = lveRenderer.beginFrame()) {
       int frameIndex = lveRenderer.getFrameIndex();
 
-      auto mainLight = LveGameObject::makePointLight(10.0f);
+      auto mainLight = engine::GameObject::makePointLight(10.0f);
       mainLight.color = {1.0f, 1.0f, 1.0f};
 
       glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lve_camera.hpp"
+#include "./engine/camera.hpp"
 #include "./engine/game_object.hpp"
 
 // lib
@@ -28,7 +28,7 @@ struct FrameInfo {
   int frameIndex;
   float frameTime;
   VkCommandBuffer commandBuffer;
-  LveCamera &camera;
+  engine::Camera &camera;
   VkDescriptorSet globalDescriptorSet;
   engine::GameObject::Map &gameObjects;
 };
