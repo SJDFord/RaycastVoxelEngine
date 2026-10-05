@@ -25,8 +25,8 @@ void LveRenderer::recreateSwapChain() {
   lveDevice.waitIdle();
   
   auto indicies = lveDevice.findPhysicalQueueFamilies();
-  if (lveSwapChain == nullptr) {
-    lveSwapChain = std::make_unique<LveSwapChain>(
+  if (_swapChain == nullptr) {
+    _swapChain = std::make_unique<engine::SwapChain>(
       lveDevice.device(), 
       lveDevice.getPhysicalDevice(), 
       lveDevice.surface(), 
@@ -36,8 +36,8 @@ void LveRenderer::recreateSwapChain() {
       _maxFramesInFlight 
     );
   } else {
-    std::shared_ptr<LveSwapChain> oldSwapChain = std::move(lveSwapChain);
-    lveSwapChain = std::make_unique<LveSwapChain>(
+    std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
+    _swapChain = std::make_unique<engine::SwapChain>(
       lveDevice.device(), 
       lveDevice.getPhysicalDevice(), 
       lveDevice.surface(), 
@@ -48,7 +48,7 @@ void LveRenderer::recreateSwapChain() {
       oldSwapChain
     );
 
-    if (!oldSwapChain->compareSwapFormats(*lveSwapChain.get())) {
+    if (!oldSwapChain->compareSwapFormats(*_swapChain.get())) {
       throw std::runtime_error("Swap chain image(or depth) format has changed!");
     }
   }
@@ -73,7 +73,7 @@ void LveRenderer::freeCommandBuffers() {
 vk::CommandBuffer LveRenderer::beginFrame() {
   assert(!isFrameStarted && "Can't call beginFrame while already in progress");
 
-  auto result = lveSwapChain->acquireNextImage(&currentImageIndex);
+  auto result = _swapChain->acquireNextImage(&currentImageIndex);
   if (result == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
     return nullptr;
@@ -96,7 +96,7 @@ void LveRenderer::endFrame() {
   auto commandBuffer = getCurrentCommandBuffer();
   commandBuffer.end();
 
-  auto result = lveSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+  auto result = _swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
   if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
     _window.wasWindowResized() ) {
       _window.resetWindowResizedFlag();
@@ -115,15 +115,15 @@ void LveRenderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
       commandBuffer == getCurrentCommandBuffer() &&
       "Can't begin render pass on command buffer from a different frame");
 
-  vk::Rect2D renderArea = vk::Rect2D({0, 0}, lveSwapChain->getSwapChainExtent());
+  vk::Rect2D renderArea = vk::Rect2D({0, 0}, _swapChain->getSwapChainExtent());
 
   std::array<vk::ClearValue, 2> clearValues{};
   clearValues[0].color = vk::ClearColorValue(0.01f, 0.01f, 1.0f, 1.0f);
   clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
   vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
-    .setRenderPass(lveSwapChain->getRenderPass())
-    .setFramebuffer(lveSwapChain->getFrameBuffer(currentImageIndex))
+    .setRenderPass(_swapChain->getRenderPass())
+    .setFramebuffer(_swapChain->getFrameBuffer(currentImageIndex))
     .setRenderArea(renderArea)
     .setClearValues(clearValues);
 
@@ -132,11 +132,11 @@ void LveRenderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
   vk::Viewport viewport = vk::Viewport()
     .setX(0.0f)
     .setY(0.0f)
-    .setWidth(static_cast<float>(lveSwapChain->getSwapChainExtent().width))
-    .setHeight(static_cast<float>(lveSwapChain->getSwapChainExtent().height))
+    .setWidth(static_cast<float>(_swapChain->getSwapChainExtent().width))
+    .setHeight(static_cast<float>(_swapChain->getSwapChainExtent().height))
     .setMinDepth(0.0f)
     .setMaxDepth(1.0f);
-  vk::Rect2D scissor{{0, 0}, lveSwapChain->getSwapChainExtent()};
+  vk::Rect2D scissor{{0, 0}, _swapChain->getSwapChainExtent()};
   commandBuffer.setViewport(0, viewport);
   commandBuffer.setScissor(0, scissor);
 }

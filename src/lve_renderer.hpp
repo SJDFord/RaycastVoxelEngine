@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lve_device.hpp"
-#include "lve_swap_chain.hpp"
+#include "./engine/swap_chain.hpp"
 #include "./engine/window.hpp"
 
 // std
@@ -18,8 +18,8 @@ class LveRenderer {
   LveRenderer(const LveRenderer &) = delete;
   LveRenderer &operator=(const LveRenderer &) = delete;
 
-  vk::RenderPass getSwapChainRenderPass() const { return lveSwapChain->getRenderPass(); }
-  float getAspectRatio() const { return lveSwapChain->extentAspectRatio(); }
+  vk::RenderPass getSwapChainRenderPass() const { return _swapChain->getRenderPass(); }
+  float getAspectRatio() const { return _swapChain->extentAspectRatio(); }
   bool isFrameInProgress() const { return isFrameStarted; }
 
   vk::CommandBuffer getCurrentCommandBuffer() const {
@@ -44,7 +44,7 @@ class LveRenderer {
 
   engine::Window &_window;
   LveDevice &lveDevice;
-  std::unique_ptr<LveSwapChain> lveSwapChain;
+  std::unique_ptr<engine::SwapChain> _swapChain;
   std::vector<vk::CommandBuffer> commandBuffers;
 
   uint32_t _maxFramesInFlight;

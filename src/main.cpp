@@ -4,7 +4,6 @@
 
 #include "voxel_app.hpp"
 #include "app.hpp"
-#include "raii_app.hpp"
 #include "dynamic_app.hpp"
 #include "renderdoc_app.h"
 
@@ -18,7 +17,7 @@
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> args(argv, argv+argc);
-  std::string appName = "RaiiApp";
+  std::string appName = "VoxelApp";
   bool isDynamic = false;
   
   if (args.size() > 1) {
@@ -36,9 +35,6 @@ int main(int argc, char *argv[]) {
         app.run();
      } else if (appName == "App") {
         App app{};
-        app.run();
-     } else if (appName == "RaiiApp") {
-        RaiiApp app(isDynamic);
         app.run();
      } else if (appName == "DynamicApp") {
         DynamicApp app{};

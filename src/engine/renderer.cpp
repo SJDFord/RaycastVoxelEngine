@@ -66,7 +66,7 @@ void Renderer::endFrame() {
   auto commandBuffer = getCurrentCommandBuffer();
   commandBuffer.end();
   
-  auto result = _swapChain->submitCommandBuffer(commandBuffer, &_currentImageIndex);
+  auto result = _swapChain->submitCommandBuffers(&commandBuffer, &_currentImageIndex);
   // TODO: wasWindowResized should be an event rather than a flag that the caller has to reset - this is sloppy
   if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || _window.wasWindowResized()) {
     _window.resetWindowResizedFlag();
@@ -76,7 +76,7 @@ void Renderer::endFrame() {
   }
 
   _isFrameStarted = false;
-  _currentFrameIndex = (_currentFrameIndex + 1) % _swapChain->getMaxFramesInFlight();
+  _currentFrameIndex = (_currentFrameIndex + 1) % _maxFramesInFlight;
 }
 
 
@@ -90,7 +90,7 @@ void Renderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
       commandBuffer == getCurrentCommandBuffer() &&
       "Can't begin render pass on command buffer from a different frame");
 
-  vk::Extent2D swapChainExtent = _swapChain->getExtent();
+  vk::Extent2D swapChainExtent = _swapChain->getSwapChainExtent();
   vk::Rect2D renderArea = vk::Rect2D({0, 0}, swapChainExtent);
   std::array<vk::ClearValue, 2> clearValues{};
   clearValues[0].color = vk::ClearColorValue(0.01f, 1.0f, 0.01f, 1.0f);
@@ -169,11 +169,11 @@ void Renderer::recreateSwapChain() {
 
   if (_swapChain == nullptr) {
     _swapChain = std::make_unique<engine::SwapChain>(
-      _physicalDevice, 
-      _device, 
+      _device,
+      _physicalDevice,  
       _window.getSurface(),
       _window.getExtent(),
-      _imageUsageFlags,
+      /*_imageUsageFlags */
       _graphicsFamilyIndex,
       _presentFamilyIndex,
       _maxFramesInFlight );
@@ -183,11 +183,11 @@ void Renderer::recreateSwapChain() {
   }
   std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
   _swapChain = std::make_unique<engine::SwapChain>(
-    _physicalDevice, 
-    _device, 
+    _device,
+    _physicalDevice,  
     _window.getSurface(),
     _window.getExtent(),
-    _imageUsageFlags,
+    /* _imageUsageFlags, */
     _graphicsFamilyIndex,
     _presentFamilyIndex,
     _maxFramesInFlight,
