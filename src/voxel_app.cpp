@@ -33,7 +33,7 @@ namespace lve {
 
 VoxelApp::VoxelApp(): 
   _globalPool{engine::DescriptorPoolBuilder(lveDevice.device())
-      .setMaxSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT)
+      .setMaxSets(MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
       .build()} {
@@ -44,7 +44,7 @@ VoxelApp::VoxelApp():
 VoxelApp::~VoxelApp() {}
 
 void VoxelApp::run() {
-  std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+  std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
     uboBuffers[i] = std::make_unique<engine::Buffer>(
         lveDevice.device(),
@@ -74,7 +74,7 @@ void VoxelApp::run() {
     .setImageView(image->getImageView())
     .setSampler(image->getSampler());
 
-  std::vector<VkDescriptorSet> globalDescriptorSets(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+  std::vector<VkDescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
     globalDescriptorSets[i] = engine::DescriptorWriter(

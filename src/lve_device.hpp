@@ -52,19 +52,19 @@ class LveDevice {
   uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
   QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(_surface); }
   vk::Format findSupportedFormat(
-      const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
-for (vk::Format format : candidates) {
-  auto props = _physicalDevice.getFormatProperties(format);
+  const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+    for (vk::Format format : candidates) {
+      auto props = _physicalDevice.getFormatProperties(format);
 
-  if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
-    return format;
-  } else if (
-      tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
-    return format;
-  }
-}
-throw std::runtime_error("failed to find supported format!");
-      };
+      if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+        return format;
+      } else if (
+          tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+        return format;
+      }
+    }
+    throw std::runtime_error("failed to find supported format!");
+  };
 
   // Buffer Helper Functions
   void createBuffer(

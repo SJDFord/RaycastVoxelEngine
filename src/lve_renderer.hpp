@@ -12,7 +12,7 @@
 namespace lve {
 class LveRenderer {
  public:
-  LveRenderer(engine::Window &window, LveDevice &device);
+  LveRenderer(engine::Window &window, LveDevice &device, uint32_t maxFramesInFlight);
   ~LveRenderer();
 
   LveRenderer(const LveRenderer &) = delete;
@@ -47,6 +47,7 @@ class LveRenderer {
   std::unique_ptr<LveSwapChain> lveSwapChain;
   std::vector<vk::CommandBuffer> commandBuffers;
 
+  uint32_t _maxFramesInFlight;
   uint32_t currentImageIndex;
   int currentFrameIndex{0};
   bool isFrameStarted{false};

@@ -15,14 +15,29 @@
 
 namespace lve {
 
-LveSwapChain::LveSwapChain(LveDevice &deviceRef, vk::Extent2D extent)
-    : device{deviceRef}, windowExtent{extent} {
+LveSwapChain::LveSwapChain(
+    vk::Device         device,
+    vk::PhysicalDevice physicalDevice,
+    vk::SurfaceKHR     surface,
+    vk::Extent2D       extent,
+uint32_t                   graphicsFamilyIndex,
+                     uint32_t                   presentFamilyIndex,
+                     uint32_t                   maxFramesInFlight
+)
+    : _device{device}, _physicalDevice{physicalDevice}, _windowExtent{extent}, _surface{surface}, _graphicsFamilyIndex{graphicsFamilyIndex}, _presentFamilyIndex{presentFamilyIndex}, _maxFramesInFlight(maxFramesInFlight) {
   init();
 }
 
 LveSwapChain::LveSwapChain(
-    LveDevice &deviceRef, vk::Extent2D extent, std::shared_ptr<LveSwapChain> previous)
-    : device{deviceRef}, windowExtent{extent}, oldSwapChain{previous} {
+    vk::Device         device,
+    vk::PhysicalDevice physicalDevice,
+    vk::SurfaceKHR     surface,
+    vk::Extent2D       extent,
+uint32_t                   graphicsFamilyIndex,
+                     uint32_t                   presentFamilyIndex,
+                     uint32_t                   maxFramesInFlight,
+    std::shared_ptr<LveSwapChain> previous)
+    : _device{device}, _physicalDevice{physicalDevice}, _windowExtent{extent}, _surface{surface}, _graphicsFamilyIndex{graphicsFamilyIndex}, _presentFamilyIndex{presentFamilyIndex}, _maxFramesInFlight(maxFramesInFlight), oldSwapChain{previous} {
   init();
   oldSwapChain = nullptr;
 }
@@ -38,43 +53,43 @@ void LveSwapChain::init() {
 
 LveSwapChain::~LveSwapChain() {
   for (auto imageView : swapChainImageViews) {
-    vkDestroyImageView(device.device(), imageView, nullptr);
+    _device.destroyImageView(imageView); 
   }
   swapChainImageViews.clear();
 
   if (swapChain != nullptr) {
-    vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
+    _device.destroySwapchainKHR(swapChain);
     swapChain = nullptr;
   }
 
   for (int i = 0; i < depthImages.size(); i++) {
-    vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
-    device.destroyImage(depthImages[i]);
-    device.freeMemory(depthImageMemorys[i]);
+    _device.destroyImageView(depthImageViews[i]);
+    _device.destroyImage(depthImages[i]);
+    _device.freeMemory(depthImageMemorys[i]);
   }
 
   for (auto framebuffer : swapChainFramebuffers) {
-    vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+    _device.destroyFramebuffer(framebuffer);
   }
 
-  vkDestroyRenderPass(device.device(), renderPass, nullptr);
+  _device.destroyRenderPass(renderPass);
 
   // cleanup synchronization objects
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
-    vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
-    vkDestroyFence(device.device(), inFlightFences[i], nullptr);
+  for (size_t i = 0; i < _maxFramesInFlight; i++) {
+    _device.destroySemaphore(renderFinishedSemaphores[i]);
+    _device.destroySemaphore(imageAvailableSemaphores[i]);
+    _device.destroyFence(inFlightFences[i]);
   }
 }
 
 vk::Result LveSwapChain::acquireNextImage(uint32_t *imageIndex) {
-  device.device().waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
-  return device.device().acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, imageIndex);
+  _device.waitForFences(inFlightFences[currentFrame], true, std::numeric_limits<uint64_t>::max());
+  return _device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, imageIndex);
 }
 
 vk::Result LveSwapChain::submitCommandBuffers(const vk::CommandBuffer *buffers, uint32_t *imageIndex) {
   if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-    device.device().waitForFences(imagesInFlight[*imageIndex], true, UINT64_MAX);
+    _device.waitForFences(imagesInFlight[*imageIndex], true, UINT64_MAX);
   }
   imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
@@ -86,36 +101,37 @@ vk::Result LveSwapChain::submitCommandBuffers(const vk::CommandBuffer *buffers, 
     .setPCommandBuffers(buffers)
     .setSignalSemaphores(renderFinishedSemaphores[currentFrame]);
  
-  device.device().resetFences(inFlightFences[currentFrame]);
-  device.graphicsQueue().submit(submitInfo, inFlightFences[currentFrame]);
+  _device.resetFences(inFlightFences[currentFrame]);
+  _device.getQueue(_graphicsFamilyIndex, 0).submit(submitInfo, inFlightFences[currentFrame]);
   
   vk::PresentInfoKHR presentInfo = vk::PresentInfoKHR()
     .setWaitSemaphores(renderFinishedSemaphores[currentFrame])
     .setSwapchains(swapChain)
     .setPImageIndices(imageIndex);
 
-  auto result = device.presentQueue().presentKHR(presentInfo);
+  auto result = _device.getQueue(_presentFamilyIndex, 0).presentKHR(presentInfo);
 
-  currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+  currentFrame = (currentFrame + 1) % _maxFramesInFlight;
 
   return result;
 }
 
 void LveSwapChain::createSwapChain() {
-  SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
+  auto capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
+  auto formats = _physicalDevice.getSurfaceFormatsKHR(_surface);
+  auto presentModes = _physicalDevice.getSurfacePresentModesKHR(_surface);
+  vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(formats);
+  vk::PresentModeKHR presentMode = chooseSwapPresentMode(presentModes);
+  vk::Extent2D extent = chooseSwapExtent(capabilities);
+  //QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
 
-  vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-  vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-  vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-  QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
-
-  swapChain = engine::SwapchainBuilder(device.device())
-    .setSurfaceCapabilities(swapChainSupport.capabilities)
-    .setSurface(device.surface())
+  swapChain = engine::SwapchainBuilder(_device)
+    .setSurfaceCapabilities(capabilities)
+    .setSurface(_surface)
     .setSurfaceFormat(surfaceFormat)
     .setExtent(extent)
-    .setGraphicsQueueFamilyIndex(indices.graphicsFamily)
-    .setPresentQueueFamilyIndex(indices.presentFamily)
+    .setGraphicsQueueFamilyIndex(_graphicsFamilyIndex)
+    .setPresentQueueFamilyIndex(_presentFamilyIndex)
     .setPresentMode(presentMode)
     .setOldSwapchain(oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain)
     .build();
@@ -125,7 +141,7 @@ void LveSwapChain::createSwapChain() {
   // images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
   // retrieve the handles.
   
-  swapChainImages = device.device().getSwapchainImagesKHR(swapChain);
+  swapChainImages = _device.getSwapchainImagesKHR(swapChain);
   swapChainImageFormat = surfaceFormat.format;
   swapChainExtent = extent;
 }
@@ -133,13 +149,24 @@ void LveSwapChain::createSwapChain() {
 void LveSwapChain::createImageViews() {
   swapChainImageViews.resize(swapChainImages.size());
   for (size_t i = 0; i < swapChainImages.size(); i++) {
+      vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor)
+        .setBaseMipLevel(0)
+        .setLevelCount(1)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
 
-    swapChainImageViews[i] = device.createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor);
+      vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+        .setImage(swapChainImages[i])
+        .setViewType(vk::ImageViewType::e2D)
+        .setFormat(swapChainImageFormat)
+        .setSubresourceRange(subresourceRange);
+
+      swapChainImageViews[i] = _device.createImageView(viewInfo);
   }
 }
 
 void LveSwapChain::createRenderPass() {
-  renderPass = engine::RenderPassBuilder(device.device())
+  renderPass = engine::RenderPassBuilder(_device)
     .setColorFormat(getSwapChainImageFormat())
     .setDepthFormat(findDepthFormat())
     .build();
@@ -158,7 +185,7 @@ void LveSwapChain::createFramebuffers() {
       .setHeight(swapChainExtent.height)
       .setLayers(1);
 
-    swapChainFramebuffers[i] = device.device().createFramebuffer(framebufferInfo);
+    swapChainFramebuffers[i] = _device.createFramebuffer(framebufferInfo);
   }
 }
 
@@ -184,29 +211,46 @@ void LveSwapChain::createDepthResources() {
       .setSamples(vk::SampleCountFlagBits::e1)
       .setSharingMode(vk::SharingMode::eExclusive);
 
-    device.createImageWithInfo(
-        imageInfo,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        depthImages[i],
-        depthImageMemorys[i]);
+    depthImages[i] = _device.createImage(imageInfo);
+    vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(depthImages[i]);
 
-    depthImageViews[i] = device.createImageView(depthImages[i], depthFormat, vk::ImageAspectFlagBits::eDepth);
+    vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
+      .setAllocationSize(memRequirements.size)
+      .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+    depthImageMemorys[i] = _device.allocateMemory(allocInfo);
+
+    _device.bindImageMemory(depthImages[i], depthImageMemorys[i], 0);
+
+      vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth)
+      .setBaseMipLevel(0)
+      .setLevelCount(1)
+      .setBaseArrayLayer(0)
+      .setLayerCount(1);
+
+    vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+      .setImage(depthImages[i])
+      .setViewType(vk::ImageViewType::e2D)
+      .setFormat(depthFormat)
+      .setSubresourceRange(subresourceRange);
+
+    depthImageViews[i] = _device.createImageView(viewInfo);
   }
 }
 
 void LveSwapChain::createSyncObjects() {
-  imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+  imageAvailableSemaphores.resize(_maxFramesInFlight);
+  renderFinishedSemaphores.resize(_maxFramesInFlight);
+  inFlightFences.resize(_maxFramesInFlight);
   imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
 
   vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
   vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
 
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    imageAvailableSemaphores[i] = device.device().createSemaphore(semaphoreInfo);
-    renderFinishedSemaphores[i] = device.device().createSemaphore(semaphoreInfo);
-    inFlightFences[i] = device.device().createFence(fenceInfo);
+  for (size_t i = 0; i < _maxFramesInFlight; i++) {
+    imageAvailableSemaphores[i] = _device.createSemaphore(semaphoreInfo);
+    renderFinishedSemaphores[i] = _device.createSemaphore(semaphoreInfo);
+    inFlightFences[i] = _device.createFence(fenceInfo);
   }
 }
 
@@ -246,7 +290,7 @@ vk::Extent2D LveSwapChain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &ca
   if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
   } else {
-    vk::Extent2D actualExtent = windowExtent;
+    vk::Extent2D actualExtent = _windowExtent;
     actualExtent.width = std::max(
         capabilities.minImageExtent.width,
         std::min(capabilities.maxImageExtent.width, actualExtent.width));
@@ -263,11 +307,39 @@ vk::Format LveSwapChain::findDepthFormat() {
   formats.push_back(vk::Format::eD32Sfloat);
   formats.push_back(vk::Format::eD32SfloatS8Uint);
   formats.push_back(vk::Format::eD24UnormS8Uint);
-  return device.findSupportedFormat(
+  return findSupportedFormat(
       formats,
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment
   );
 }
+
+uint32_t LveSwapChain::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+
+  auto memoryProperties = _physicalDevice.getMemoryProperties();
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) &&
+        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("failed to find suitable memory type!");
+}
+
+  vk::Format LveSwapChain::findSupportedFormat(
+  const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+    for (vk::Format format : candidates) {
+      auto props = _physicalDevice.getFormatProperties(format);
+
+      if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+        return format;
+      } else if (
+          tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+        return format;
+      }
+    }
+    throw std::runtime_error("failed to find supported format!");
+  };
 
 }  // namespace lve

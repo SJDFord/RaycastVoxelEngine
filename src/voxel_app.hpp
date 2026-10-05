@@ -37,7 +37,7 @@ class VoxelApp {
 
   engine::Window _window{APP_NAME, WIDTH, HEIGHT};
   LveDevice lveDevice{_window};
-  LveRenderer lveRenderer{_window, lveDevice};
+  LveRenderer lveRenderer{_window, lveDevice, MAX_FRAMES_IN_FLIGHT};
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;

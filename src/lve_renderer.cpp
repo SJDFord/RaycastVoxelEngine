@@ -7,8 +7,8 @@
 
 namespace lve {
 
-LveRenderer::LveRenderer(engine::Window& window, LveDevice& device)
-    : _window{window}, lveDevice{device} {
+LveRenderer::LveRenderer(engine::Window& window, LveDevice& device, uint32_t maxFramesInFlight)
+    : _window{window}, lveDevice{device}, _maxFramesInFlight{maxFramesInFlight} {
   recreateSwapChain();
   createCommandBuffers();
 }
@@ -24,11 +24,29 @@ void LveRenderer::recreateSwapChain() {
 
   lveDevice.waitIdle();
   
+  auto indicies = lveDevice.findPhysicalQueueFamilies();
   if (lveSwapChain == nullptr) {
-    lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent);
+    lveSwapChain = std::make_unique<LveSwapChain>(
+      lveDevice.device(), 
+      lveDevice.getPhysicalDevice(), 
+      lveDevice.surface(), 
+      _window.getExtent(),
+      indicies.graphicsFamily, 
+      indicies.presentFamily, 
+      _maxFramesInFlight 
+    );
   } else {
     std::shared_ptr<LveSwapChain> oldSwapChain = std::move(lveSwapChain);
-    lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent, oldSwapChain);
+    lveSwapChain = std::make_unique<LveSwapChain>(
+      lveDevice.device(), 
+      lveDevice.getPhysicalDevice(), 
+      lveDevice.surface(), 
+      _window.getExtent(),
+      indicies.graphicsFamily, 
+      indicies.presentFamily, 
+      _maxFramesInFlight,
+      oldSwapChain
+    );
 
     if (!oldSwapChain->compareSwapFormats(*lveSwapChain.get())) {
       throw std::runtime_error("Swap chain image(or depth) format has changed!");
@@ -37,7 +55,7 @@ void LveRenderer::recreateSwapChain() {
 }
 
 void LveRenderer::createCommandBuffers() {
-  commandBuffers.resize(LveSwapChain::MAX_FRAMES_IN_FLIGHT);
+  commandBuffers.resize(_maxFramesInFlight);
 
   vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
     .setLevel(vk::CommandBufferLevel::ePrimary)
@@ -88,7 +106,7 @@ void LveRenderer::endFrame() {
   }
 
   isFrameStarted = false;
-  currentFrameIndex = (currentFrameIndex + 1) % LveSwapChain::MAX_FRAMES_IN_FLIGHT;
+  currentFrameIndex = (currentFrameIndex + 1) % _maxFramesInFlight;
 }
 
 void LveRenderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {

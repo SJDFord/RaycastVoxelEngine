@@ -14,11 +14,25 @@ namespace lve {
 
 class LveSwapChain {
  public:
-  static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
-  LveSwapChain(LveDevice &deviceRef, vk::Extent2D windowExtent);
   LveSwapChain(
-      LveDevice &deviceRef, vk::Extent2D windowExtent, std::shared_ptr<LveSwapChain> previous);
+    vk::Device         device,
+    vk::PhysicalDevice physicalDevice,
+    vk::SurfaceKHR     surface,
+    vk::Extent2D       extent,
+                     uint32_t                   graphicsFamilyIndex,
+                     uint32_t                   presentFamilyIndex,
+                     uint32_t                   maxFramesInFlight
+  );
+  LveSwapChain(
+    vk::Device         device,
+    vk::PhysicalDevice physicalDevice,
+    vk::SurfaceKHR     surface,
+    vk::Extent2D       extent,
+                      uint32_t                   graphicsFamilyIndex,
+                     uint32_t                   presentFamilyIndex,
+                     uint32_t                   maxFramesInFlight,
+    std::shared_ptr<LveSwapChain> previous
+  );
 
   ~LveSwapChain();
 
@@ -63,6 +77,13 @@ vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
       const std::vector<vk::PresentModeKHR> &availablePresentModes);
   vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
 
+uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
+                     uint32_t                   _graphicsFamilyIndex;
+                     uint32_t                   _presentFamilyIndex;
+                     uint32_t                   _maxFramesInFlight;
+
   vk::Format swapChainImageFormat;
   vk::Format swapChainDepthFormat;
   vk::Extent2D swapChainExtent;
@@ -76,8 +97,10 @@ vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
   std::vector<vk::Image> swapChainImages;
   std::vector<vk::ImageView> swapChainImageViews;
 
-  LveDevice &device;
-  vk::Extent2D windowExtent;
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
+  vk::SurfaceKHR _surface;
+  vk::Extent2D _windowExtent;
 
   vk::SwapchainKHR swapChain;
   std::shared_ptr<LveSwapChain> oldSwapChain;
