@@ -90,10 +90,10 @@ void VoxelApp::run() {
 
   SimpleRenderSystem simpleRenderSystem{
       lveDevice,
-      lveRenderer.getSwapChainRenderPass(), globalSetLayout};
+      _renderer.getSwapChainRenderPass(), globalSetLayout};
   PointLightSystem pointLightSystem{
       lveDevice,
-      lveRenderer.getSwapChainRenderPass(), globalSetLayout};
+      _renderer.getSwapChainRenderPass(), globalSetLayout};
   engine::Camera camera{};
 
   auto viewerObject = engine::GameObject::createGameObject();
@@ -116,11 +116,11 @@ void VoxelApp::run() {
     cameraController.updateView(_window, frameTime, viewerObject);
     camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
-    float aspect = lveRenderer.getAspectRatio();
+    float aspect = _renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
-    if (auto commandBuffer = lveRenderer.beginFrame()) {
-      int frameIndex = lveRenderer.getFrameIndex();
+    if (auto commandBuffer = _renderer.beginFrame()) {
+      int frameIndex = _renderer.getFrameIndex();
 
       auto mainLight = engine::GameObject::makePointLight(10.0f);
       mainLight.color = {1.0f, 1.0f, 1.0f};
@@ -147,14 +147,14 @@ void VoxelApp::run() {
       uboBuffers[frameIndex]->flush();
 
       // render
-      lveRenderer.beginSwapChainRenderPass(commandBuffer);
+      _renderer.beginSwapChainRenderPass(commandBuffer);
 
       // order here matters
       simpleRenderSystem.renderGameObjects(frameInfo);
       pointLightSystem.render(frameInfo);
 
-      lveRenderer.endSwapChainRenderPass(commandBuffer);
-      lveRenderer.endFrame();
+      _renderer.endSwapChainRenderPass(commandBuffer);
+      _renderer.endFrame();
     }
   }
 

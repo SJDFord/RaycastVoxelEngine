@@ -5,7 +5,7 @@
 #include "lve_descriptors.hpp"
 #include "lve_device.hpp"
 #include "./engine/game_object.hpp"
-#include "lve_renderer.hpp"
+#include "./engine/renderer.hpp"
 #include "./engine/window.hpp"
 #include "./engine/renderer.hpp"
 #include <imgui/imgui.h>
@@ -37,7 +37,7 @@ class VoxelApp {
 
   engine::Window _window{APP_NAME, WIDTH, HEIGHT};
   LveDevice lveDevice{_window};
-  LveRenderer lveRenderer{_window, lveDevice, MAX_FRAMES_IN_FLIGHT};
+  engine::Renderer _renderer{_window, lveDevice.device(), lveDevice.getPhysicalDevice(), lveDevice.getCommandPool(), lveDevice.findPhysicalQueueFamilies().graphicsFamily, lveDevice.findPhysicalQueueFamilies().presentFamily, MAX_FRAMES_IN_FLIGHT};
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;

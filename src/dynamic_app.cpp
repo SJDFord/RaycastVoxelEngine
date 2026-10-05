@@ -60,11 +60,13 @@ void DynamicApp::run() {
         uboBuffers[i]->map();
     }
 
+    auto commandPool = _device.createCommandPool({vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _graphicsQueueIndex});
+
     engine::Renderer renderer(
         _window, 
         _device, 
         _physicalDevice, 
-        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
+        commandPool,
         _graphicsQueueIndex,
         _presentQueueIndex,
         MAX_FRAMES_IN_FLIGHT
@@ -95,7 +97,16 @@ void DynamicApp::run() {
 
     std::println("Pipeline created...");
     
-    auto oneTimeCommandBuffer = renderer.beginOneTimeCommandBuffer();
+    auto buffers = _device.allocateCommandBuffers(
+        vk::CommandBufferAllocateInfo(
+            commandPool,
+            vk::CommandBufferLevel::ePrimary,
+            1
+        )
+    );
+
+    auto oneTimeCommandBuffer = buffers.front();
+    oneTimeCommandBuffer.begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
 
     engine::ImageFromFile image = engine::ImageFromFile(
         _physicalDevice,
@@ -113,9 +124,12 @@ void DynamicApp::run() {
     testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
     _gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
 
-
-    renderer.endOneTimeCommandBuffer(oneTimeCommandBuffer);
-    
+    oneTimeCommandBuffer.end();
+    auto submitInfo = vk::SubmitInfo().setCommandBuffers(oneTimeCommandBuffer);
+    auto graphicsQueue = _device.getQueue(_graphicsQueueIndex, 0);
+    graphicsQueue.submit(submitInfo, VK_NULL_HANDLE);
+    graphicsQueue.waitIdle();
+   _device.freeCommandBuffers(commandPool, oneTimeCommandBuffer);
     std::println("ImageFromFile created");
 
     

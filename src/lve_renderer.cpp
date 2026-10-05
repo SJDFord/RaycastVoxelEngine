@@ -7,8 +7,19 @@
 
 namespace lve {
 
-LveRenderer::LveRenderer(engine::Window& window, LveDevice& device, uint32_t maxFramesInFlight)
-    : _window{window}, lveDevice{device}, _maxFramesInFlight{maxFramesInFlight} {
+LveRenderer::LveRenderer(engine::Window& window,     vk::Device device,
+    vk::PhysicalDevice physicalDevice, vk::CommandPool commandPool, 
+    uint32_t graphicsFamilyIndex,
+    uint32_t presentFamilyIndex,
+    uint32_t maxFramesInFlight)
+    : 
+    _window{window}, 
+    _device{device}, 
+    _physicalDevice{physicalDevice}, 
+    _commandPool{commandPool}, 
+    _graphicsFamilyIndex{graphicsFamilyIndex},
+    _presentFamilyIndex{presentFamilyIndex},
+    _maxFramesInFlight{maxFramesInFlight} {
   recreateSwapChain();
   createCommandBuffers();
 }
@@ -22,28 +33,27 @@ void LveRenderer::recreateSwapChain() {
     _window.waitEvents();
   }
 
-  lveDevice.waitIdle();
+  _device.waitIdle();
   
-  auto indicies = lveDevice.findPhysicalQueueFamilies();
   if (_swapChain == nullptr) {
     _swapChain = std::make_unique<engine::SwapChain>(
-      lveDevice.device(), 
-      lveDevice.getPhysicalDevice(), 
-      lveDevice.surface(), 
+      _device,
+      _physicalDevice,
+      _window.getSurface(), 
       _window.getExtent(),
-      indicies.graphicsFamily, 
-      indicies.presentFamily, 
+      _graphicsFamilyIndex,
+      _presentFamilyIndex, 
       _maxFramesInFlight 
     );
   } else {
     std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
     _swapChain = std::make_unique<engine::SwapChain>(
-      lveDevice.device(), 
-      lveDevice.getPhysicalDevice(), 
-      lveDevice.surface(), 
+      _device,
+      _physicalDevice,
+      _window.getSurface(),
       _window.getExtent(),
-      indicies.graphicsFamily, 
-      indicies.presentFamily, 
+      _graphicsFamilyIndex,
+      _presentFamilyIndex, 
       _maxFramesInFlight,
       oldSwapChain
     );
@@ -59,14 +69,14 @@ void LveRenderer::createCommandBuffers() {
 
   vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
     .setLevel(vk::CommandBufferLevel::ePrimary)
-    .setCommandPool(lveDevice.getCommandPool())
+    .setCommandPool(_commandPool)
     .setCommandBufferCount(commandBuffers.size());
 
-  commandBuffers = lveDevice.device().allocateCommandBuffers(allocInfo);
+  commandBuffers = _device.allocateCommandBuffers(allocInfo);
 }
 
 void LveRenderer::freeCommandBuffers() {
-  lveDevice.device().freeCommandBuffers(lveDevice.getCommandPool(), commandBuffers);
+  _device.freeCommandBuffers(_commandPool, commandBuffers);
   commandBuffers.clear();
 }
 

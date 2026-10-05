@@ -12,7 +12,14 @@
 namespace lve {
 class LveRenderer {
  public:
-  LveRenderer(engine::Window &window, LveDevice &device, uint32_t maxFramesInFlight);
+  LveRenderer(
+    engine::Window &window, 
+    vk::Device device,
+    vk::PhysicalDevice physicalDevice, 
+    vk::CommandPool commandPool,
+    uint32_t graphicsFamilyIndex,
+    uint32_t presentFamilyIndex,
+    uint32_t maxFramesInFlight);
   ~LveRenderer();
 
   LveRenderer(const LveRenderer &) = delete;
@@ -43,10 +50,14 @@ class LveRenderer {
   void recreateSwapChain();
 
   engine::Window &_window;
-  LveDevice &lveDevice;
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
   std::unique_ptr<engine::SwapChain> _swapChain;
+  vk::CommandPool _commandPool;
   std::vector<vk::CommandBuffer> commandBuffers;
 
+  uint32_t _graphicsFamilyIndex;
+  uint32_t _presentFamilyIndex;
   uint32_t _maxFramesInFlight;
   uint32_t currentImageIndex;
   int currentFrameIndex{0};
