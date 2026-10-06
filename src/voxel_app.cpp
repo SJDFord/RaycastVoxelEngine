@@ -1,8 +1,5 @@
-#include "data/chunk.hpp"
-#include "data/world.hpp"
 #include "voxel_app.hpp"
 #include "./engine/utils.hpp"
-#include "graphics/face_culling_chunk_mesher.hpp"
 #include "./engine/buffer.hpp"
 #include "./engine/descriptors.hpp"
 #include "./engine/model.hpp"
@@ -12,7 +9,6 @@
 #include "./engine/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
-#include "graphics/graphics_util.hpp"
 #include "./engine/descriptor_pool_builder.hpp"
 
 // libs
@@ -66,7 +62,12 @@ void VoxelApp::run() {
           vk::ShaderStageFlagBits::eFragment)
       .build(bindings);
 
-  std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/hinoki_planks_diff_4k.jpg");
+  std::unique_ptr<Image> image = std::make_unique<Image>(
+    lveDevice.device(), 
+    lveDevice.getPhysicalDevice(), 
+    _oneTimeCommandSubmitter,
+    "../textures/hinoki_planks_diff_4k.jpg"
+  );
   //std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/metal_plate_diff_4k.jpg");
   
   vk::DescriptorImageInfo imageInfo = vk::DescriptorImageInfo()
@@ -166,8 +167,7 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
-  auto commandBuffer = lveDevice.beginSingleTimeCommands();
-  std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh);
+  std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), _oneTimeCommandSubmitter, testMesh);
   testGameObject.model = testModel;
   testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
@@ -176,13 +176,12 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   auto testMesh2 = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
-  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), commandBuffer, testMesh2);
+  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), _oneTimeCommandSubmitter, testMesh2);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
   gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
-  lveDevice.endSingleTimeCommands(commandBuffer);
-
+  
   auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {
       1.0f,

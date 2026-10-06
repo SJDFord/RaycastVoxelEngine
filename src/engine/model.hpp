@@ -3,6 +3,7 @@
 #include "buffer.hpp"
 #include "vertex.hpp"
 #include "mesh.hpp"
+#include "one_time_command_submitter.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -17,7 +18,7 @@
 namespace engine {
 class Model {
  public:
-  Model(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh);
+  Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const Mesh &mesh);
   ~Model();
 
   Model(const Model &) = delete;
@@ -32,8 +33,8 @@ class Model {
   void draw(vk::CommandBuffer commandBuffer);
 
  private:
-  void createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices);
-  void createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vector<uint32_t> &indices);
+  void createVertexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Vertex> &vertices);
+  void createIndexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<uint32_t> &indices);
 
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;

@@ -12,9 +12,9 @@
 
 namespace engine {
 
-Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, vk::CommandBuffer commandBuffer, const Mesh &mesh) : _device{device}, _physicalDevice{physicalDevice} {
-  createVertexBuffers(commandBuffer, mesh.Vertices);
-  createIndexBuffers(commandBuffer, mesh.Indices);
+Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const Mesh &mesh) : _device{device}, _physicalDevice{physicalDevice} {
+  createVertexBuffers(commandSubmitter, mesh.Vertices);
+  createIndexBuffers(commandSubmitter, mesh.Indices);
 }
 
 Model::~Model() {}
@@ -28,7 +28,7 @@ std::unique_ptr<LveModel> LveModel::createModelFromFile(
 }
 */
 
-void Model::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vector<Vertex> &vertices) {
+void Model::createVertexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Vertex> &vertices) {
   vertexCount = static_cast<uint32_t>(vertices.size());
   assert(vertexCount >= 3 && "Vertex count must be at least 3");
   vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
@@ -61,10 +61,14 @@ void Model::createVertexBuffers(vk::CommandBuffer commandBuffer, const std::vect
     .setDstOffset(0)
     .setSize(bufferSize);
 
-  commandBuffer.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), copyRegion);
+  auto srcBuffer = stagingBuffer.getBuffer();
+  auto dstBuffer = vertexBuffer->getBuffer();
+  commandSubmitter.submit([srcBuffer, dstBuffer, copyRegion](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+  });
 }
 
-void Model::createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vector<uint32_t> &indices) {
+void Model::createIndexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<uint32_t> &indices) {
   indexCount = static_cast<uint32_t>(indices.size());
   hasIndexBuffer = indexCount > 0;
 
@@ -103,7 +107,12 @@ void Model::createIndexBuffers(vk::CommandBuffer commandBuffer, const std::vecto
     .setDstOffset(0)
     .setSize(bufferSize);
 
-  commandBuffer.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), copyRegion);
+
+  auto srcBuffer = stagingBuffer.getBuffer();
+  auto dstBuffer = indexBuffer->getBuffer();
+  commandSubmitter.submit([srcBuffer, dstBuffer, copyRegion](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+  });
 }
 
 void Model::draw(vk::CommandBuffer commandBuffer) {

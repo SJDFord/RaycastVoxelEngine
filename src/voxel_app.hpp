@@ -1,8 +1,5 @@
 #pragma once
 
-#include "data/world.hpp"
-#include "graphics/world_renderer.hpp"
-#include "lve_descriptors.hpp"
 #include "lve_device.hpp"
 #include "./engine/game_object.hpp"
 #include "./engine/renderer.hpp"
@@ -11,6 +8,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
+#include "./engine/one_time_command_submitter.hpp"
 
 // std
 #include <memory>
@@ -37,6 +35,7 @@ class VoxelApp {
 
   engine::Window _window{APP_NAME, WIDTH, HEIGHT};
   LveDevice lveDevice{_window};
+  engine::OneTimeCommandSubmitter _oneTimeCommandSubmitter{lveDevice.device(), lveDevice.getCommandPool(), lveDevice.findPhysicalQueueFamilies().graphicsFamily};
   engine::Renderer _renderer{_window, lveDevice.device(), lveDevice.getPhysicalDevice(), lveDevice.getCommandPool(), lveDevice.findPhysicalQueueFamilies().graphicsFamily, lveDevice.findPhysicalQueueFamilies().presentFamily, MAX_FRAMES_IN_FLIGHT};
 
   // note: order of declarations matters

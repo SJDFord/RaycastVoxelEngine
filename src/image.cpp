@@ -1,21 +1,43 @@
 #include "image.hpp"
 
 
-Image::Image(lve::LveDevice &device, const std::string &filepath) : lveDevice{device} {
-    createImage(filepath);
+Image::Image(
+    vk::Device const &         device,
+    vk::PhysicalDevice const & physicalDevice,
+    engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    const std::string &filepath) : _device{device}, _physicalDevice{physicalDevice} {
+    createImage(oneTimeCommandSubmitter, filepath);
     createImageView();
-    textureSampler = lveDevice.createSampler();
+
+    vk::SamplerCreateInfo samplerInfo = vk::SamplerCreateInfo(vk::SamplerCreateFlags())
+      .setMagFilter(vk::Filter::eLinear)
+      .setMinFilter(vk::Filter::eLinear)
+      .setAddressModeU(vk::SamplerAddressMode::eRepeat)
+      .setAddressModeV(vk::SamplerAddressMode::eRepeat)
+      .setAddressModeW(vk::SamplerAddressMode::eRepeat)
+      .setAnisotropyEnable(false)
+      .setMaxAnisotropy(1.0f)
+      .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+      .setUnnormalizedCoordinates(false)
+      .setCompareEnable(false)
+      .setCompareOp(vk::CompareOp::eAlways)
+      .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+      .setMipLodBias(0.0f)
+      .setMinLod(0.0f)
+      .setMaxLod(0.0f);
+
+    textureSampler = _device.createSampler(samplerInfo);
 }
 
 Image::~Image() {
-    lveDevice.destroySampler(textureSampler);
-    lveDevice.destroyImageView(textureImageView);
-    lveDevice.destroyImage(textureImage);
-    lveDevice.freeMemory(textureImageMemory);
+    _device.destroySampler(textureSampler);
+    _device.destroyImageView(textureImageView);
+    _device.destroyImage(textureImage);
+    _device.freeMemory(textureImageMemory);
 }
 
 
-void Image::createImage(const std::string &filepath) {
+void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath) {
   int texWidth, texHeight, texChannels;
   stbi_uc *pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
   vk::DeviceSize imageSize = texWidth * texHeight * 4;
@@ -24,8 +46,8 @@ void Image::createImage(const std::string &filepath) {
   }
 
   std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
-      lveDevice.device(),
-      lveDevice.getPhysicalDevice(),
+      _device,
+      _physicalDevice,
       imageSize,
       1,
       vk::BufferUsageFlagBits::eTransferSrc,
@@ -37,41 +59,46 @@ void Image::createImage(const std::string &filepath) {
   buffer->unmap();
   stbi_image_free(pixels);
 
-  VkImageCreateInfo imageInfo{};
-  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  imageInfo.imageType = VK_IMAGE_TYPE_2D;
-  imageInfo.extent.width = static_cast<uint32_t>(texWidth);
-  imageInfo.extent.height = static_cast<uint32_t>(texHeight);
-  imageInfo.extent.depth = 1;
-  imageInfo.mipLevels = 1;
-  imageInfo.arrayLayers = 1;
+  vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
+    .setImageType(vk::ImageType::e2D)
+    .setExtent(vk::Extent3D(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1))
+    .setMipLevels(1)
+    .setArrayLayers(1)
+    .setFormat(vk::Format::eR8G8B8A8Srgb)
+    .setTiling(vk::ImageTiling::eOptimal)
+    .setInitialLayout(vk::ImageLayout::eUndefined)
+    .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
+    .setSamples(vk::SampleCountFlagBits::e1)
+    .setFlags({});
 
-  imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-  imageInfo.flags = 0;  // Optional
 
-  lveDevice.createImageWithInfo(
-      imageInfo,
-      vk::MemoryPropertyFlagBits::eDeviceLocal,
-      textureImage,
-      textureImageMemory);
+  textureImage = _device.createImage(imageInfo);
+  vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(textureImage);
 
-  lveDevice.transitionImageLayout(
+  vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
+    .setAllocationSize(memRequirements.size)
+    .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+  textureImageMemory = _device.allocateMemory(allocInfo);
+
+  _device.bindImageMemory(textureImage, textureImageMemory, 0);
+
+  transitionImageLayout(
+      oneTimeCommandSubmitter,
       textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eTransferDstOptimal);
-  lveDevice.copyBufferToImage(
+
+  copyBufferToImage(
+      oneTimeCommandSubmitter,
       buffer->getBuffer(),
       textureImage,
       static_cast<uint32_t>(texWidth),
       static_cast<uint32_t>(texHeight),
       1);
-  lveDevice.transitionImageLayout(
+  transitionImageLayout(
+      oneTimeCommandSubmitter,
       textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eTransferDstOptimal,
@@ -79,23 +106,96 @@ void Image::createImage(const std::string &filepath) {
 }
 
 void Image::createImageView() {
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = textureImage;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
+    vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor)
+        .setBaseMipLevel(0)
+        .setLevelCount(1)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
 
-    textureImageView = lveDevice.createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+    vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+        .setImage(textureImage)
+        .setViewType(vk::ImageViewType::e2D)
+        .setFormat(vk::Format::eR8G8B8A8Srgb)
+        .setSubresourceRange(subresourceRange);
+
+    textureImageView = _device.createImageView(viewInfo);
 }
 
-void Image::loadCubemap(lve::LveDevice &device, std::string filename, VkFormat format) {
-	
+vk::ImageView Image::getImageView() { return textureImageView; }
+vk::Sampler Image::getSampler() { return textureSampler; }
+
+uint32_t Image::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+
+  auto memoryProperties = _physicalDevice.getMemoryProperties();
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) &&
+        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("failed to find suitable memory type!");
 }
 
-VkImageView Image::getImageView() { return textureImageView; }
-VkSampler Image::getSampler() { return textureSampler; }
+void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
+  vk::ImageSubresourceRange subresource = vk::ImageSubresourceRange()
+      .setAspectMask(vk::ImageAspectFlagBits::eColor)
+      .setBaseMipLevel(0)
+      .setLevelCount(1)
+      .setBaseArrayLayer(0)
+      .setLayerCount(1);
+  
+  vk::ImageMemoryBarrier barrier = vk::ImageMemoryBarrier()
+    .setOldLayout(oldLayout)
+    .setNewLayout(newLayout)
+    .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+    .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+    .setImage(image)
+    .setSubresourceRange(subresource);
+
+  vk::PipelineStageFlags sourceStage;
+  vk::PipelineStageFlags destinationStage;
+
+  if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+    destinationStage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (
+      oldLayout == vk::ImageLayout::eTransferDstOptimal &&
+      newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;;
+
+    sourceStage = vk::PipelineStageFlagBits::eTransfer;
+    destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else {
+    throw std::invalid_argument("unsupported layout transition!");
+  }
+
+  oneTimeCommandSubmitter.submit([sourceStage, destinationStage, barrier](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.pipelineBarrier(sourceStage, destinationStage, vk::DependencyFlags(), {}, {}, barrier);
+  });
+}
+
+void Image::copyBufferToImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount) {
+  vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
+      .setAspectMask(vk::ImageAspectFlagBits::eColor)
+      .setMipLevel(0)
+      .setBaseArrayLayer(0)
+      .setLayerCount(layerCount);
+  vk::BufferImageCopy region = vk::BufferImageCopy()
+    .setBufferOffset(0)
+    .setBufferRowLength(0)
+    .setBufferImageHeight(0)
+    .setImageSubresource(subresource)
+    .setImageOffset({0, 0, 0})
+    .setImageExtent({width, height, 1});
+  
+  oneTimeCommandSubmitter.submit([buffer, image, region](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
+  });
+}

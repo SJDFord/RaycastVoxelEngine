@@ -3,11 +3,8 @@
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-
-#include "graphics/mesh.hpp"
-#include "graphics/vertex.hpp"
+#include "./engine/one_time_command_submitter.hpp"
 #include "./engine/buffer.hpp"
-#include "lve_device.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -15,8 +12,8 @@
 #include <glm/glm.hpp>
 
 // std
+#include <functional>
 #include <iostream>
-#include <lve_device.hpp>
 #include <memory>
 #include <vector>
 
@@ -25,7 +22,12 @@
 class Image {
  public:
   // TODO: Other ways to create an image
-  Image(lve::LveDevice &device, const std::string &filepath);
+  Image(
+    vk::Device const &         device,
+    vk::PhysicalDevice const & physicalDevice,
+    engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    const std::string &filepath
+  );
   ~Image();
 
   Image(const Image &) = delete;
@@ -38,22 +40,26 @@ class Image {
 
   // void bind(VkCommandBuffer commandBuffer);
   // void draw(VkCommandBuffer commandBuffer);
-  VkImageView getImageView();
-  VkSampler getSampler();
+  vk::ImageView getImageView();
+  vk::Sampler getSampler();
 
  private:
   // void createVertexBuffers(const std::vector<Vertex> &vertices);
   // void createIndexBuffers(const std::vector<uint32_t> &indices);
-
-  lve::LveDevice &lveDevice;
+  vk::Device _device;
+  vk::PhysicalDevice _physicalDevice;
   vk::Image textureImage = VK_NULL_HANDLE;
   vk::DeviceMemory textureImageMemory = VK_NULL_HANDLE;
-  VkImageView textureImageView = VK_NULL_HANDLE;
-  VkSampler textureSampler = VK_NULL_HANDLE;
+  vk::ImageView textureImageView = VK_NULL_HANDLE;
+  vk::Sampler textureSampler = VK_NULL_HANDLE;
 
-  void createImage(const std::string &filepath);
+  void createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath);
   void createImageView();
-  static void loadCubemap(lve::LveDevice &device, std::string filename, VkFormat format);
+  uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+  void transitionImageLayout(
+    engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+  void copyBufferToImage(
+    engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount);
   /*
   std::unique_ptr<LveBuffer> vertexBuffer;
   uint32_t vertexCount;

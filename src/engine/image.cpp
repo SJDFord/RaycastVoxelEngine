@@ -1,144 +1,203 @@
 #include "image.hpp"
 
-#include <iostream>
-
 namespace engine {
-
-Image::Image( 
-    vk::PhysicalDevice const & physicalDevice,
+Image::Image(
     vk::Device const &         device,
-    vk::Format                 format,
-    vk::Extent2D const &       extent,
-    vk::ImageTiling            tiling,
-    vk::ImageUsageFlags        usage,
-    vk::ImageLayout            initialLayout,
-    vk::MemoryPropertyFlags    propertyFlags,
-    vk::ImageAspectFlags       aspectMask 
-) : _format( format ) {
+    vk::PhysicalDevice const & physicalDevice,
+    engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    const std::string &filepath) : _device{device}, _physicalDevice{physicalDevice} {
+    createImage(oneTimeCommandSubmitter, filepath);
+    createImageView();
 
-    vk::ImageCreateInfo imageCreateInfo( vk::ImageCreateFlags(),
-                                           vk::ImageType::e2D,
-                                           format,
-                                           vk::Extent3D( extent, 1 ),
-                                           1,
-                                           1,
-                                           vk::SampleCountFlagBits::e1,
-                                           tiling,
-                                           usage | vk::ImageUsageFlagBits::eSampled,
-                                           vk::SharingMode::eExclusive,
-                                           {},
-                                           initialLayout );
-      _image = device.createImage( imageCreateInfo );
-      
-      vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-      vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-      uint32_t memoryTypeIndex = engine::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, propertyFlags );
-      _deviceMemory = device.allocateMemory( vk::MemoryAllocateInfo( memoryRequirements.size, memoryTypeIndex ) );
-      
+    vk::SamplerCreateInfo samplerInfo = vk::SamplerCreateInfo(vk::SamplerCreateFlags())
+      .setMagFilter(vk::Filter::eLinear)
+      .setMinFilter(vk::Filter::eLinear)
+      .setAddressModeU(vk::SamplerAddressMode::eRepeat)
+      .setAddressModeV(vk::SamplerAddressMode::eRepeat)
+      .setAddressModeW(vk::SamplerAddressMode::eRepeat)
+      .setAnisotropyEnable(false)
+      .setMaxAnisotropy(1.0f)
+      .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+      .setUnnormalizedCoordinates(false)
+      .setCompareEnable(false)
+      .setCompareOp(vk::CompareOp::eAlways)
+      .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+      .setMipLodBias(0.0f)
+      .setMinLod(0.0f)
+      .setMaxLod(0.0f);
 
-      device.bindImageMemory( _image, _deviceMemory, 0 );
-
-      vk::ImageViewCreateInfo imageViewCreateInfo( {}, _image, vk::ImageViewType::e2D, _format, {}, { aspectMask, 0, 1, 0, 1 } );
-      _imageView = device.createImageView( imageViewCreateInfo );
-      _sampler = device.createSampler( vk::SamplerCreateInfo( vk::SamplerCreateFlags(),
-                                                             vk::Filter::eLinear,
-                                                             vk::Filter::eLinear,
-                                                             vk::SamplerMipmapMode::eLinear,
-                                                             vk::SamplerAddressMode::eRepeat,
-                                                             vk::SamplerAddressMode::eRepeat,
-                                                             vk::SamplerAddressMode::eRepeat,
-                                                             0.0f,
-                                                             true,
-                                                             16.0f,
-                                                             false,
-                                                             vk::CompareOp::eNever,
-                                                             0.0f,
-                                                             0.0f,
-                                                             vk::BorderColor::eFloatOpaqueBlack ) );
+    textureSampler = _device.createSampler(samplerInfo);
 }
 
 Image::~Image() {
-
+    _device.destroySampler(textureSampler);
+    _device.destroyImageView(textureImageView);
+    _device.destroyImage(textureImage);
+    _device.freeMemory(textureImageMemory);
 }
 
-void Image::setTexture(
-        vk::Device const &         device,
-        vk::PhysicalDevice const & physicalDevice,
-        vk::CommandBuffer const & commandBuffer,
-        const std::string& path) {
-int texWidth, texHeight, texChannels;
-  stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath) {
+  int texWidth, texHeight, texChannels;
+  stbi_uc *pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
   vk::DeviceSize imageSize = texWidth * texHeight * 4;
   if (!pixels) {
     throw std::runtime_error("failed to load texture image!");
   }
 
   std::unique_ptr<engine::Buffer> buffer = std::make_unique<engine::Buffer>(
-      device,
-      physicalDevice,
+      _device,
+      _physicalDevice,
       imageSize,
       1,
       vk::BufferUsageFlagBits::eTransferSrc,
-      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+      vk::MemoryPropertyFlagBits::eHostVisible | 
+      vk::MemoryPropertyFlagBits::eHostCoherent);
 
   buffer->map(imageSize, 0);
   buffer->writeToBuffer(pixels, static_cast<size_t>(imageSize));
   buffer->unmap();
   stbi_image_free(pixels);
 
-  /*
-  lveDevice.createImageWithInfo(
-      imageInfo,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      textureImage,
-      textureImageMemory);
-  */
+  vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
+    .setImageType(vk::ImageType::e2D)
+    .setExtent(vk::Extent3D(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1))
+    .setMipLevels(1)
+    .setArrayLayers(1)
+    .setFormat(vk::Format::eR8G8B8A8Srgb)
+    .setTiling(vk::ImageTiling::eOptimal)
+    .setInitialLayout(vk::ImageLayout::eUndefined)
+    .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
+    .setSamples(vk::SampleCountFlagBits::e1)
+    .setFlags({});
 
-  /*
-  lveDevice.transitionImageLayout(
+
+  textureImage = _device.createImage(imageInfo);
+  vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(textureImage);
+
+  vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
+    .setAllocationSize(memRequirements.size)
+    .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+  textureImageMemory = _device.allocateMemory(allocInfo);
+
+  _device.bindImageMemory(textureImage, textureImageMemory, 0);
+
+  transitionImageLayout(
+      oneTimeCommandSubmitter,
       textureImage,
-      VK_FORMAT_R8G8B8A8_SRGB,
-      VK_IMAGE_LAYOUT_UNDEFINED,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-   */
-   copyBufferToImage(
-      commandBuffer,
+      vk::Format::eR8G8B8A8Srgb,
+      vk::ImageLayout::eUndefined,
+      vk::ImageLayout::eTransferDstOptimal);
+
+  copyBufferToImage(
+      oneTimeCommandSubmitter,
       buffer->getBuffer(),
-      _image,
+      textureImage,
       static_cast<uint32_t>(texWidth),
       static_cast<uint32_t>(texHeight),
       1);
-  /*
-  lveDevice.transitionImageLayout(
+  transitionImageLayout(
+      oneTimeCommandSubmitter,
       textureImage,
-      VK_FORMAT_R8G8B8A8_SRGB,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  */
+      vk::Format::eR8G8B8A8Srgb,
+      vk::ImageLayout::eTransferDstOptimal,
+      vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
-const vk::Format& Image::getFormat() const {
-    return _format;
+void Image::createImageView() {
+    vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor)
+        .setBaseMipLevel(0)
+        .setLevelCount(1)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
+
+    vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+        .setImage(textureImage)
+        .setViewType(vk::ImageViewType::e2D)
+        .setFormat(vk::Format::eR8G8B8A8Srgb)
+        .setSubresourceRange(subresourceRange);
+
+    textureImageView = _device.createImageView(viewInfo);
 }
 
-const vk::ImageView& Image::getImageView() const {
-    return _imageView;
+vk::ImageView Image::getImageView() { return textureImageView; }
+vk::Sampler Image::getSampler() { return textureSampler; }
+
+uint32_t Image::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+
+  auto memoryProperties = _physicalDevice.getMemoryProperties();
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) &&
+        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("failed to find suitable memory type!");
 }
 
-vk::Image Image::getImage() const {
-    return _image;
+void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
+  vk::ImageSubresourceRange subresource = vk::ImageSubresourceRange()
+      .setAspectMask(vk::ImageAspectFlagBits::eColor)
+      .setBaseMipLevel(0)
+      .setLevelCount(1)
+      .setBaseArrayLayer(0)
+      .setLayerCount(1);
+  
+  vk::ImageMemoryBarrier barrier = vk::ImageMemoryBarrier()
+    .setOldLayout(oldLayout)
+    .setNewLayout(newLayout)
+    .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+    .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+    .setImage(image)
+    .setSubresourceRange(subresource);
+
+  vk::PipelineStageFlags sourceStage;
+  vk::PipelineStageFlags destinationStage;
+
+  if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+    destinationStage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (
+      oldLayout == vk::ImageLayout::eTransferDstOptimal &&
+      newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;;
+
+    sourceStage = vk::PipelineStageFlagBits::eTransfer;
+    destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else {
+    throw std::invalid_argument("unsupported layout transition!");
+  }
+
+  oneTimeCommandSubmitter.submit([sourceStage, destinationStage, barrier](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.pipelineBarrier(sourceStage, destinationStage, vk::DependencyFlags(), {}, {}, barrier);
+  });
 }
 
-
-const vk::DeviceMemory& Image::getDeviceMemory() const {
-    return _deviceMemory;
-}
-
-void Image::clear( vk::Device const & device )
-{
-    device.destroyImageView( _imageView );
-    device.destroyImage( _image );  // the Image should to be destroyed before the bound DeviceMemory is freed
-    device.freeMemory( _deviceMemory );
+void Image::copyBufferToImage(OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount) {
+  vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
+      .setAspectMask(vk::ImageAspectFlagBits::eColor)
+      .setMipLevel(0)
+      .setBaseArrayLayer(0)
+      .setLayerCount(layerCount);
+  vk::BufferImageCopy region = vk::BufferImageCopy()
+    .setBufferOffset(0)
+    .setBufferRowLength(0)
+    .setBufferImageHeight(0)
+    .setImageSubresource(subresource)
+    .setImageOffset({0, 0, 0})
+    .setImageExtent({width, height, 1});
+  
+  oneTimeCommandSubmitter.submit([buffer, image, region](const vk::CommandBuffer& commandBuffer) {
+    commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
+  });
 }
 
 }

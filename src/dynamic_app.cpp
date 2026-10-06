@@ -17,7 +17,7 @@
 #include "./engine/buffer.hpp"
 #include "./engine/descriptor_set_layout_builder.hpp"
 #include "./engine/device_builder.hpp"
-#include "./engine/image_from_file.hpp"
+#include "./engine/image.hpp"
 #include "./engine/image_generators.hpp"
 #include "./engine/instance_builder.hpp"
 #include "./engine/physical_device_strategy.hpp"
@@ -30,6 +30,7 @@
 #include "./engine/descriptors.hpp"
 #include "./engine/fps_movement_controller.hpp"
 #include "./engine/camera.hpp"
+#include "./engine/one_time_command_submitter.hpp"
 
 
 #include "glslang/Public/ShaderLang.h"
@@ -97,39 +98,33 @@ void DynamicApp::run() {
 
     std::println("Pipeline created...");
     
-    auto buffers = _device.allocateCommandBuffers(
-        vk::CommandBufferAllocateInfo(
-            commandPool,
-            vk::CommandBufferLevel::ePrimary,
-            1
-        )
-    );
+    auto commandSubmitter = engine::OneTimeCommandSubmitter(_device, commandPool, _graphicsQueueIndex);
 
-    auto oneTimeCommandBuffer = buffers.front();
-    oneTimeCommandBuffer.begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
-
-    engine::ImageFromFile image = engine::ImageFromFile(
-        _physicalDevice,
+    engine::Image image = engine::Image(
         _device,
-        oneTimeCommandBuffer,
-        "../textures/jungle-brick-with-moss.png"
+        _physicalDevice,
+        commandSubmitter,
+        std::string("../textures/jungle-brick-with-moss.png")
     );
         
     auto testGameObject = engine::GameObject::createGameObject();
     glm::vec3 position = {1.0f, 1.0f, 1.0f};
     auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
-    std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(_device, _physicalDevice, oneTimeCommandBuffer, testMesh);
+    std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(_device, _physicalDevice, commandSubmitter, testMesh);
     testGameObject.model = testModel;
     testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
     testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
     _gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
 
-    oneTimeCommandBuffer.end();
-    auto submitInfo = vk::SubmitInfo().setCommandBuffers(oneTimeCommandBuffer);
-    auto graphicsQueue = _device.getQueue(_graphicsQueueIndex, 0);
-    graphicsQueue.submit(submitInfo, VK_NULL_HANDLE);
-    graphicsQueue.waitIdle();
-   _device.freeCommandBuffers(commandPool, oneTimeCommandBuffer);
+    auto testGameObject2 = engine::GameObject::createGameObject();
+    glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
+    auto testMesh2 = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
+    std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, commandSubmitter, testMesh2);
+    testGameObject2.model = testModel2;
+    testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
+    testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
+    _gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
+
     std::println("ImageFromFile created");
 
     
