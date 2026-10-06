@@ -10,6 +10,7 @@
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
 #include "./engine/descriptor_pool_builder.hpp"
+#include "./engine/image.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -22,8 +23,6 @@
 #include <cassert>
 #include <chrono>
 #include <stdexcept>
-#include <keyboard_movement_controller.hpp>
-#include <image.hpp>
 
 namespace lve {
 
@@ -62,7 +61,7 @@ void VoxelApp::run() {
           vk::ShaderStageFlagBits::eFragment)
       .build(bindings);
 
-  std::unique_ptr<Image> image = std::make_unique<Image>(
+  std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(
     lveDevice.device(), 
     lveDevice.getPhysicalDevice(), 
     _oneTimeCommandSubmitter,
