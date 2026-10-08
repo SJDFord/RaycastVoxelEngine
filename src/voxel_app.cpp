@@ -89,10 +89,10 @@ void VoxelApp::run() {
   }
 
   SimpleRenderSystem simpleRenderSystem{
-      lveDevice,
+      lveDevice.device(),
       _renderer.getSwapChainRenderPass(), globalSetLayout};
   PointLightSystem pointLightSystem{
-      lveDevice,
+      lveDevice.device(),
       _renderer.getSwapChainRenderPass(), globalSetLayout};
   engine::Camera camera{};
 
@@ -129,7 +129,7 @@ void VoxelApp::run() {
       mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
       mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
 
-      FrameInfo frameInfo{
+      engine::FrameInfo frameInfo{
           frameIndex,
           frameTime,
           commandBuffer,

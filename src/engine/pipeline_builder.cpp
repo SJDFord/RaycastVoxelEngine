@@ -11,7 +11,7 @@ PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pi
   
   _inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
     .setTopology(vk::PrimitiveTopology::eTriangleList)
-    .setPrimitiveRestartEnable(false);
+    .setPrimitiveRestartEnable(vk::False);
 
   _viewportInfo = vk::PipelineViewportStateCreateInfo()
     .setViewportCount(1)
@@ -20,55 +20,35 @@ PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pi
     .setPScissors(nullptr);
 
   _rasterizationInfo = vk::PipelineRasterizationStateCreateInfo()
-    .setDepthClampEnable(false)
-    .setRasterizerDiscardEnable(false)
+    .setDepthClampEnable(vk::False)
+    .setRasterizerDiscardEnable(vk::False)
     .setPolygonMode(vk::PolygonMode::eFill)
     .setLineWidth(1.0f)
     .setCullMode(vk::CullModeFlagBits::eNone)
     .setFrontFace(vk::FrontFace::eClockwise)
-    .setDepthBiasEnable(false)
+    .setDepthBiasEnable(vk::False)
     .setDepthBiasConstantFactor(0.0f)
     .setDepthBiasClamp(0.0f)
     .setDepthBiasSlopeFactor(0.0f);
 
   _multisampleInfo = vk::PipelineMultisampleStateCreateInfo()
-    .setSampleShadingEnable(false)
+    .setSampleShadingEnable(vk::False)
     .setRasterizationSamples(vk::SampleCountFlagBits::e1)
     .setMinSampleShading(1.0f)
     .setPSampleMask(nullptr)
-    .setAlphaToCoverageEnable(false)
-    .setAlphaToOneEnable(false);
+    .setAlphaToCoverageEnable(vk::False)
+    .setAlphaToOneEnable(vk::False);
 
-  _colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
-    .setColorWriteMask(
-      vk::ColorComponentFlagBits::eR |
-      vk::ColorComponentFlagBits::eG |
-      vk::ColorComponentFlagBits::eB |
-      vk::ColorComponentFlagBits::eA
-    )
-    .setBlendEnable(false)
-    .setSrcColorBlendFactor(vk::BlendFactor::eOne)
-    .setDstColorBlendFactor(vk::BlendFactor::eZero)
-    .setColorBlendOp(vk::BlendOp::eAdd)
-    .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
-    .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
-    .setAlphaBlendOp(vk::BlendOp::eAdd);
-
-  // TODO: _colorBlendAttachment shouldn't be it's own class member as this references it
-  _colorBlendInfo = vk::PipelineColorBlendStateCreateInfo()
-    .setLogicOpEnable(false)
-    .setLogicOp(vk::LogicOp::eCopy)
-    .setAttachments(_colorBlendAttachment)
-    .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
+  setBlending(false);
 
   _depthStencilInfo = vk::PipelineDepthStencilStateCreateInfo()
-    .setDepthTestEnable(false)
-    .setDepthWriteEnable(false)
+    .setDepthTestEnable(vk::True)
+    .setDepthWriteEnable(vk::True)
     .setDepthCompareOp(vk::CompareOp::eLess)
-    .setDepthBoundsTestEnable(false)
+    .setDepthBoundsTestEnable(vk::False)
     .setMinDepthBounds(0.0f)
     .setMaxDepthBounds(1.0f)
-    .setStencilTestEnable(false)
+    .setStencilTestEnable(vk::False)
     .setFront({})
     .setBack({});
 
@@ -123,10 +103,63 @@ PipelineBuilder& PipelineBuilder::setAttributeDescriptions(std::vector<vk::Verte
   return *this;
 }
 
+PipelineBuilder& PipelineBuilder::setBlending(bool enableBlending) {
+  if (enableBlending) {
+    /*
+    configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
+    configInfo.colorBlendAttachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        VK_COLOR_COMPONENT_A_BIT;
+    configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    */
+    _colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
+      .setColorWriteMask(
+        vk::ColorComponentFlagBits::eR |
+        vk::ColorComponentFlagBits::eG |
+        vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA
+      )
+      .setBlendEnable(vk::True)
+      .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+      .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+      .setColorBlendOp(vk::BlendOp::eAdd)
+      .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+      .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+      .setAlphaBlendOp(vk::BlendOp::eAdd);
+  } else {
+    _colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
+      .setColorWriteMask(
+        vk::ColorComponentFlagBits::eR |
+        vk::ColorComponentFlagBits::eG |
+        vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA
+      )
+      .setBlendEnable(vk::False)
+      .setSrcColorBlendFactor(vk::BlendFactor::eOne)
+      .setDstColorBlendFactor(vk::BlendFactor::eZero)
+      .setColorBlendOp(vk::BlendOp::eAdd)
+      .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+      .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+      .setAlphaBlendOp(vk::BlendOp::eAdd);
+  }
+  return *this;
+}
 
 vk::Pipeline PipelineBuilder::build() {
 
-    std::println("Building pipeline...");
+  // TODO: _colorBlendAttachment shouldn't be it's own class member as this references it
+  _colorBlendInfo = vk::PipelineColorBlendStateCreateInfo()
+    .setLogicOpEnable(vk::False)
+    .setLogicOp(vk::LogicOp::eCopy)
+    .setAttachments(_colorBlendAttachment)
+    .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
+
+  std::println("Building pipeline...");
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
     .setVertexBindingDescriptions(_bindingDescriptions)
     .setVertexAttributeDescriptions(_attributeDescriptions);

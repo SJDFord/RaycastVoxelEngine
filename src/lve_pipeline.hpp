@@ -32,7 +32,7 @@ struct PipelineConfigInfo {
 class LvePipeline {
  public:
   LvePipeline(
-      LveDevice& device,
+      vk::Device device,
       const std::string& vertFilepath,
       const std::string& fragFilepath,
       const PipelineConfigInfo& configInfo);
@@ -41,11 +41,12 @@ class LvePipeline {
   LvePipeline(const LvePipeline&) = delete;
   LvePipeline& operator=(const LvePipeline&) = delete;
 
-  void bind(VkCommandBuffer commandBuffer);
+  void bind(vk::CommandBuffer commandBuffer);
 
   static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
   static void enableAlphaBlending(PipelineConfigInfo& configInfo);
 
+  vk::Pipeline getPipeline() { return _graphicsPipeline; };
  private:
   static std::vector<char> readFile(const std::string& filepath);
 
@@ -54,11 +55,11 @@ class LvePipeline {
       const std::string& fragFilepath,
       const PipelineConfigInfo& configInfo);
 
-  void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+  vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
-  LveDevice& lveDevice;
-  VkPipeline graphicsPipeline;
-  VkShaderModule vertShaderModule;
-  VkShaderModule fragShaderModule;
+  vk::Device _device;
+  VkPipeline _graphicsPipeline;
+  vk::ShaderModule _vertShaderModule;
+  vk::ShaderModule _fragShaderModule;
 };
 }  // namespace lve

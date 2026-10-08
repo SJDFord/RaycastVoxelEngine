@@ -58,7 +58,7 @@ Buffer::Buffer(
   vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
 
   vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-  uint32_t memoryTypeIndex = engine::findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, _memoryPropertyFlags );
+  uint32_t memoryTypeIndex = findMemoryType( memoryProperties, memoryRequirements.memoryTypeBits, _memoryPropertyFlags );
 
   vk::MemoryAllocateInfo allocInfo =
     vk::MemoryAllocateInfo()
@@ -221,5 +221,21 @@ vk::Result Buffer::invalidateIndex(int index) {
   return invalidate(_alignmentSize, index * _alignmentSize);
 }
 
+uint32_t Buffer::findMemoryType(
+    vk::PhysicalDeviceMemoryProperties const& memoryProperties,
+    uint32_t typeBits,
+    vk::MemoryPropertyFlags requirementsMask) {
+  uint32_t typeIndex = uint32_t(~0);
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if ((typeBits & 1) &&
+        ((memoryProperties.memoryTypes[i].propertyFlags & requirementsMask) == requirementsMask)) {
+      typeIndex = i;
+      break;
+    }
+    typeBits >>= 1;
+  }
+  assert(typeIndex != uint32_t(~0));
+  return typeIndex;
+}
 
 }

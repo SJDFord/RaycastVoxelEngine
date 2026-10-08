@@ -28,6 +28,8 @@ class PipelineBuilder {
   PipelineBuilder& setBindingDescriptions(std::vector<vk::VertexInputBindingDescription> bindingDescriptions);
   PipelineBuilder& setAttributeDescriptions(std::vector<vk::VertexInputAttributeDescription> attributeDescriptions);
 
+  PipelineBuilder& setBlending(bool enableBlending);
+
   vk::Pipeline build();
 
  private:

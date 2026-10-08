@@ -1,8 +1,11 @@
 #pragma once
 
 #include "lve_device.hpp"
-#include "lve_frame_info.hpp"
 #include "lve_pipeline.hpp"
+
+#include "../engine/utils.hpp"
+#include "../engine/pipeline_builder.hpp"
+#include "../engine/shader_module_builder.hpp"
 
 // std
 #include <memory>
@@ -12,21 +15,21 @@ namespace lve {
 class SimpleRenderSystem {
  public:
   SimpleRenderSystem(
-      LveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+      vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout);
   ~SimpleRenderSystem();
 
   SimpleRenderSystem(const SimpleRenderSystem &) = delete;
   SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
 
-  void renderGameObjects(FrameInfo &frameInfo);
+  void renderGameObjects(engine::FrameInfo &frameInfo);
 
  private:
-  void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-  void createPipeline(VkRenderPass renderPass);
+  void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);
+  void createPipeline(vk::RenderPass renderPass);
 
-  LveDevice &lveDevice;
-
-  std::unique_ptr<LvePipeline> lvePipeline;
-  VkPipelineLayout pipelineLayout;
+  vk::Device _device;
+  vk::Pipeline _pipeline;
+  //std::unique_ptr<LvePipeline> lvePipeline;
+  vk::PipelineLayout pipelineLayout;
 };
 }  // namespace lve

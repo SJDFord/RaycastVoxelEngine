@@ -2,8 +2,9 @@
 
 #include "../engine/utils.hpp"
 
+#include "../engine/pipeline_builder.hpp"
+#include "../engine/shader_module_builder.hpp"
 #include "lve_device.hpp"
-#include "lve_frame_info.hpp"
 #include "lve_pipeline.hpp"
 
 // std
@@ -14,22 +15,22 @@ namespace lve {
 class PointLightSystem {
  public:
   PointLightSystem(
-      LveDevice &device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+      vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout);
   ~PointLightSystem();
 
   PointLightSystem(const PointLightSystem &) = delete;
   PointLightSystem &operator=(const PointLightSystem &) = delete;
 
-  void update(FrameInfo &frameInfo, engine::GlobalUbo &ubo);
-  void render(FrameInfo &frameInfo);
+  void update(engine::FrameInfo &frameInfo, engine::GlobalUbo &ubo);
+  void render(engine::FrameInfo &frameInfo);
 
  private:
-  void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
-  void createPipeline(VkRenderPass renderPass);
+  void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);
+  void createPipeline(vk::RenderPass renderPass);
 
-  LveDevice &lveDevice;
+  vk::Device _device;
 
-  std::unique_ptr<LvePipeline> lvePipeline;
-  VkPipelineLayout pipelineLayout;
+  vk::Pipeline _pipeline;
+  vk::PipelineLayout pipelineLayout;
 };
 }  // namespace lve

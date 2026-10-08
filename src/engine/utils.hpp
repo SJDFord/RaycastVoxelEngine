@@ -2,7 +2,8 @@
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
-
+#include "camera.hpp"
+#include "game_object.hpp"
 #include <glm/glm.hpp>
 
 #include <fstream>
@@ -22,13 +23,28 @@ struct GlobalUbo {
   glm::mat4 view{1.f};
   glm::mat4 inverseView{1.f};
   glm::vec4 ambientLightColor{1.f, 1.f, 1.f, .02f};  // w is intensity
-  PointLight pointLights[100];
+  PointLight pointLights[MAX_LIGHTS];
   int numLights;
 };
 
 struct SimplePushConstantData {
   glm::mat4 modelMatrix{1.f};
   glm::mat4 normalMatrix{1.f};
+};
+
+struct PointLightPushConstants {
+  glm::vec4 position{};
+  glm::vec4 color{};
+  float radius;
+};
+
+struct FrameInfo {
+  int frameIndex;
+  float frameTime;
+  vk::CommandBuffer commandBuffer;
+  Camera &camera;
+  vk::DescriptorSet globalDescriptorSet;
+  GameObject::Map &gameObjects;
 };
 
 vk::AccessFlags getAccessFlags(vk::ImageLayout layout);

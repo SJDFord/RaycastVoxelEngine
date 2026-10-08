@@ -2,7 +2,6 @@
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
-#include "utils.hpp"
 
 namespace engine {
 
@@ -45,6 +44,10 @@ class Buffer {
 
  private:
   static vk::DeviceSize getAlignment(vk::DeviceSize instanceSize, vk::DeviceSize minOffsetAlignment);
+uint32_t findMemoryType(
+    vk::PhysicalDeviceMemoryProperties const& memoryProperties,
+    uint32_t typeBits,
+    vk::MemoryPropertyFlags requirementsMask);
 
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
