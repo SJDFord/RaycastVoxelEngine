@@ -1,8 +1,5 @@
 #pragma once
 
-#include "lve_device.hpp"
-#include "lve_pipeline.hpp"
-
 #include "../engine/utils.hpp"
 #include "../engine/pipeline_builder.hpp"
 #include "../engine/shader_module_builder.hpp"
@@ -29,7 +26,6 @@ class SimpleRenderSystem {
 
   vk::Device _device;
   vk::Pipeline _pipeline;
-  //std::unique_ptr<LvePipeline> lvePipeline;
-  vk::PipelineLayout pipelineLayout;
+  vk::PipelineLayout _pipelineLayout;
 };
 }  // namespace lve

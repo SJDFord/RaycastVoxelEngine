@@ -30,12 +30,14 @@ void Window::initWindow() {
 }
 
 
-void Window::createSurface(const vk::Instance& instance) {
+vk::SurfaceKHR Window::createSurface(vk::Instance instance) {
   VkSurfaceKHR surface;
   VkResult     err = glfwCreateWindowSurface( instance, window, nullptr, &surface );
-  if ( err != VK_SUCCESS )
+  if ( err != VK_SUCCESS ) {
     throw std::runtime_error( "Failed to create window!" );
-  _surface = vk::SurfaceKHR( surface );
+  }
+  return surface;
+    //_surface = vk::SurfaceKHR( surface );
 }
 
 std::vector<std::string>  Window::getRequiredExtensions() {
@@ -47,9 +49,11 @@ std::vector<std::string>  Window::getRequiredExtensions() {
   return extensions;
 }
 
+/*
 const vk::SurfaceKHR& Window::getSurface() {
     return _surface;
 }
+*/
 
 void Window::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
   auto w = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));

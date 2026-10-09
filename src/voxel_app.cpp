@@ -27,7 +27,7 @@
 namespace lve {
 
 VoxelApp::VoxelApp(): 
-  _globalPool{engine::DescriptorPoolBuilder(lveDevice.device())
+  _globalPool{engine::DescriptorPoolBuilder(_device)
       .setMaxSets(MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
@@ -42,8 +42,8 @@ void VoxelApp::run() {
   std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
     uboBuffers[i] = std::make_unique<engine::Buffer>(
-        lveDevice.device(),
-        lveDevice.getPhysicalDevice(),
+        _device,
+        _physicalDevice,
         sizeof(engine::GlobalUbo),
         1,
         vk::BufferUsageFlagBits::eUniformBuffer,
@@ -53,7 +53,7 @@ void VoxelApp::run() {
 
   std::vector<vk::DescriptorSetLayoutBinding> bindings;
   auto globalSetLayout =
-  engine::DescriptorSetLayoutBuilder(lveDevice.device())
+  engine::DescriptorSetLayoutBuilder(_device)
       .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
       .addBinding(
           vk::DescriptorType::eCombinedImageSampler,
@@ -62,8 +62,8 @@ void VoxelApp::run() {
       .build(bindings);
 
   std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(
-    lveDevice.device(), 
-    lveDevice.getPhysicalDevice(), 
+    _device, 
+    _physicalDevice, 
     _oneTimeCommandSubmitter,
     "../textures/hinoki_planks_diff_4k.jpg"
   );
@@ -78,7 +78,7 @@ void VoxelApp::run() {
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
     globalDescriptorSets[i] = engine::DescriptorWriter(
-        lveDevice.device(), 
+        _device, 
         _globalPool,
         globalSetLayout,
         bindings
@@ -89,10 +89,10 @@ void VoxelApp::run() {
   }
 
   SimpleRenderSystem simpleRenderSystem{
-      lveDevice.device(),
+      _device,
       _renderer.getSwapChainRenderPass(), globalSetLayout};
   PointLightSystem pointLightSystem{
-      lveDevice.device(),
+      _device,
       _renderer.getSwapChainRenderPass(), globalSetLayout};
   engine::Camera camera{};
 
@@ -159,14 +159,14 @@ void VoxelApp::run() {
   }
 
   
-  lveDevice.waitIdle();
+  _device.waitIdle();
 }
 
 void VoxelApp::loadGameObjects() {
   auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   auto testMesh = engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true);
-  std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), _oneTimeCommandSubmitter, testMesh);
+  std::shared_ptr<engine::Model> testModel = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, testMesh);
   testGameObject.model = testModel;
   testGameObject.transform.translation = position;  // chunk.Position * (float)chunk.Size;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
@@ -175,7 +175,7 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   auto testMesh2 = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
-  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(lveDevice.device(), lveDevice.getPhysicalDevice(), _oneTimeCommandSubmitter, testMesh2);
+  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, testMesh2);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;  // chunk.Position * (float)chunk.Size;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};

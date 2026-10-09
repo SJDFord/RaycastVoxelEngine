@@ -4,9 +4,6 @@
 
 #include "../engine/pipeline_builder.hpp"
 #include "../engine/shader_module_builder.hpp"
-#include "lve_device.hpp"
-#include "lve_pipeline.hpp"
-
 // std
 #include <memory>
 #include <vector>
@@ -31,6 +28,6 @@ class PointLightSystem {
   vk::Device _device;
 
   vk::Pipeline _pipeline;
-  vk::PipelineLayout pipelineLayout;
+  vk::PipelineLayout _pipelineLayout;
 };
 }  // namespace lve

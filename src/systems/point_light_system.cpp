@@ -22,7 +22,7 @@ PointLightSystem::PointLightSystem(
 }
 
 PointLightSystem::~PointLightSystem() {
-  _device.destroyPipelineLayout(pipelineLayout);
+  _device.destroyPipelineLayout(_pipelineLayout);
 }
 
 void PointLightSystem::createPipelineLayout(vk::DescriptorSetLayout globalSetLayout) {
@@ -36,7 +36,7 @@ void PointLightSystem::createPipelineLayout(vk::DescriptorSetLayout globalSetLay
     .setSetLayouts(descriptorSetLayouts)
     .setPushConstantRanges(pushConstantRange);
 
-  pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
+  _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
 }
 
 void PointLightSystem::createPipeline(vk::RenderPass renderPass) {
@@ -49,7 +49,7 @@ void PointLightSystem::createPipeline(vk::RenderPass renderPass) {
       engine::ShaderModuleBuilder(_device, vk::ShaderStageFlagBits::eFragment, fragShaderGlsl)
           .build();
 
-  _pipeline = engine::PipelineBuilder(_device, pipelineLayout)
+  _pipeline = engine::PipelineBuilder(_device, _pipelineLayout)
               .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
               .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
               .setRenderPass(renderPass)
@@ -96,7 +96,7 @@ void PointLightSystem::render(engine::FrameInfo& frameInfo) {
   frameInfo.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
   frameInfo.commandBuffer.bindDescriptorSets(
     vk::PipelineBindPoint::eGraphics, 
-    pipelineLayout, 
+    _pipelineLayout, 
     0,
     frameInfo.globalDescriptorSet, 
     {}
@@ -114,7 +114,7 @@ void PointLightSystem::render(engine::FrameInfo& frameInfo) {
     push.radius = obj.transform.scale.x;
     
     frameInfo.commandBuffer.pushConstants(
-      pipelineLayout, 
+      _pipelineLayout, 
       vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 
       0,
       sizeof(engine::PointLightPushConstants),

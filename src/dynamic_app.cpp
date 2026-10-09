@@ -16,12 +16,8 @@
 
 #include "./engine/buffer.hpp"
 #include "./engine/descriptor_set_layout_builder.hpp"
-#include "./engine/device_builder.hpp"
 #include "./engine/image.hpp"
 #include "./engine/image_generators.hpp"
-#include "./engine/instance_builder.hpp"
-#include "./engine/physical_device_strategy.hpp"
-#include "./engine/ranked_physical_device_strategy.hpp"
 #include "./engine/shader_module_builder.hpp"
 #include "./engine/swap_chain.hpp"
 #include "./engine/utils.hpp"
@@ -35,7 +31,7 @@
 
 #include "glslang/Public/ShaderLang.h"
 
-DynamicApp::DynamicApp() : _window{APP_NAME, WIDTH, HEIGHT} {
+DynamicApp::DynamicApp() {
   init();
 }
 
@@ -65,6 +61,7 @@ void DynamicApp::run() {
 
     engine::Renderer renderer(
         _window, 
+        _surface,
         _device, 
         _physicalDevice, 
         commandPool,
@@ -221,18 +218,6 @@ void DynamicApp::run() {
 void DynamicApp::init() {
     char const* EngineName = "TEST";
     std::println("Window created...");
-    std::vector<std::string> extensions = _window.getRequiredExtensions();
-
-    for (int i = 0; i < extensions.size(); i++) {
-        std::cout << "Extension required: " << extensions[i] << std::endl; 
-    }
-
-    vk::Instance instance = engine::InstanceBuilder(APP_NAME, EngineName, VK_API_VERSION_1_3)
-                                .setExtensions(extensions)
-                                .build();
-
-    std::println("Instance created...");
-    _window.createSurface(instance);
 
 #if !defined(NDEBUG)
     // TODO: Do this in the InstanceBuilder instead
@@ -242,12 +227,13 @@ void DynamicApp::init() {
     //);
 #endif
 
-    const std::vector<vk::PhysicalDevice>& physicalDevices = instance.enumeratePhysicalDevices();
+    const std::vector<vk::PhysicalDevice>& physicalDevices = _instance.enumeratePhysicalDevices();
     engine::RankedPhysicalDeviceStrategy physicalDeviceStrategy{};
     _physicalDevice = physicalDeviceStrategy.pickPhysicalDevice(physicalDevices);
 
+    _surface = _window.createSurface(_instance);
     std::pair<uint32_t, uint32_t> queueFamilyIndices =
-        engine::findGraphicsAndPresentQueueFamilyIndex(_physicalDevice, _window.getSurface());
+        engine::findGraphicsAndPresentQueueFamilyIndex(_physicalDevice, _surface);
     _graphicsQueueIndex = queueFamilyIndices.first;
     _presentQueueIndex = queueFamilyIndices.second;
     std::println("Physical device created...");

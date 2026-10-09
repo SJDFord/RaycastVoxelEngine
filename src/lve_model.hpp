@@ -1,6 +1,5 @@
 #pragma once
 
-#include "lve_device.hpp"
 #include "./engine/buffer.hpp"
 #include "engine/vertex.hpp"
 #include "engine/mesh.hpp"

@@ -39,12 +39,10 @@ class Window {
   ~Window();
   Window(const Window &) = delete;
   Window &operator=(const Window &) = delete;
-
-  void createSurface(const vk::Instance& instance); 
   std::vector<std::string> getRequiredExtensions();
   bool shouldClose() { return glfwWindowShouldClose(window); }
   const vk::Extent2D& getExtent() const { return _extent; }
-  const vk::SurfaceKHR& getSurface();
+  //const vk::SurfaceKHR& getSurface();
   bool wasWindowResized() const { return framebufferResized; }
   void resetWindowResizedFlag() { framebufferResized = false; }
   void pollEvents() const;
@@ -59,6 +57,8 @@ class Window {
   bool isKeyPressed(KeyboardKey keyboardKey);
   void close();
 
+  vk::SurfaceKHR createSurface(vk::Instance instance);
+
  private:
   static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
   void initWindow();
@@ -69,7 +69,7 @@ class Window {
 
   std::string windowName;
   GLFWwindow *window;
-  vk::SurfaceKHR _surface; 
+  //vk::SurfaceKHR _surface; 
   vk::Extent2D _extent;
 
 

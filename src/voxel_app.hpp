@@ -1,6 +1,8 @@
 #pragma once
 
-#include "lve_device.hpp"
+#include "./engine/instance_builder.hpp"
+#include "./engine/ranked_physical_device_strategy.hpp"
+#include "./engine/device_builder.hpp"
 #include "./engine/game_object.hpp"
 #include "./engine/renderer.hpp"
 #include "./engine/window.hpp"
@@ -18,6 +20,7 @@ namespace lve {
 class VoxelApp {
  public:
   static constexpr std::string APP_NAME = "Voxel App";
+  static constexpr std::string ENGINE_NAME = "rayvox";
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
   static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -33,10 +36,34 @@ class VoxelApp {
  private:
   void loadGameObjects();
 
+
   engine::Window _window{APP_NAME, WIDTH, HEIGHT};
-  LveDevice lveDevice{_window};
-  engine::OneTimeCommandSubmitter _oneTimeCommandSubmitter{lveDevice.device(), lveDevice.getCommandPool(), lveDevice.findPhysicalQueueFamilies().graphicsFamily};
-  engine::Renderer _renderer{_window, lveDevice.device(), lveDevice.getPhysicalDevice(), lveDevice.getCommandPool(), lveDevice.findPhysicalQueueFamilies().graphicsFamily, lveDevice.findPhysicalQueueFamilies().presentFamily, MAX_FRAMES_IN_FLIGHT};
+  vk::Instance _instance = engine::InstanceBuilder(APP_NAME, ENGINE_NAME, VK_API_VERSION_1_3)
+    .setExtensions(_window.getRequiredExtensions())
+    .build();
+
+  vk::SurfaceKHR _surface{_window.createSurface(_instance)};
+  vk::PhysicalDevice _physicalDevice{
+    engine::RankedPhysicalDeviceStrategy()
+        .pickPhysicalDevice(_instance.enumeratePhysicalDevices())
+  };
+
+  std::pair<uint32_t, uint32_t> _queueFamilyIndices{engine::findGraphicsAndPresentQueueFamilyIndex(_physicalDevice, _surface)};
+  uint32_t _graphicsQueueIndex{_queueFamilyIndices.first};
+  uint32_t _presentQueueIndex{_queueFamilyIndices.second};
+
+  vk::Device _device{engine::DeviceBuilder(_physicalDevice, _graphicsQueueIndex)
+    .setExtensions({
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+        //VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+    })
+    //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
+    .build()};
+  vk::CommandPool _commandPool{_device.createCommandPool({vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _graphicsQueueIndex})};
+
+  //LveDevice lveDevice{_window};
+  engine::OneTimeCommandSubmitter _oneTimeCommandSubmitter{_device, _commandPool, _graphicsQueueIndex};
+  engine::Renderer _renderer{_window, _surface,  _device, _physicalDevice, _commandPool, _graphicsQueueIndex, _presentQueueIndex, MAX_FRAMES_IN_FLIGHT};
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;

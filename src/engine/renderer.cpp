@@ -3,13 +3,15 @@
 
 namespace engine {
 
-Renderer::Renderer(engine::Window& window,     vk::Device device,
+Renderer::Renderer(engine::Window& window,    
+    vk::SurfaceKHR surface,  vk::Device device,
     vk::PhysicalDevice physicalDevice, vk::CommandPool commandPool, 
     uint32_t graphicsFamilyIndex,
     uint32_t presentFamilyIndex,
     uint32_t maxFramesInFlight)
     : 
-    _window{window}, 
+    _window{window},
+    _surface{surface}, 
     _device{device}, 
     _physicalDevice{physicalDevice}, 
     _commandPool{commandPool}, 
@@ -35,7 +37,7 @@ void Renderer::recreateSwapChain() {
     _swapChain = std::make_unique<engine::SwapChain>(
       _device,
       _physicalDevice,
-      _window.getSurface(), 
+      _surface, 
       _window.getExtent(),
       _graphicsFamilyIndex,
       _presentFamilyIndex, 
@@ -46,7 +48,7 @@ void Renderer::recreateSwapChain() {
     _swapChain = std::make_unique<engine::SwapChain>(
       _device,
       _physicalDevice,
-      _window.getSurface(),
+      _surface,
       _window.getExtent(),
       _graphicsFamilyIndex,
       _presentFamilyIndex, 

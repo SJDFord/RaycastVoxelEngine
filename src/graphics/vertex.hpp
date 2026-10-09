@@ -1,6 +1,9 @@
 #pragma once
-#include "lve_device.hpp"
 #include "lve_utils.hpp"
+
+
+#include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan_raii.hpp"
 
 #include <glm/glm.hpp>
 #include <vector>

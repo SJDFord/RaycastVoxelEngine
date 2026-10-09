@@ -16,6 +16,7 @@ class Renderer {
  public:
   Renderer(
     engine::Window &window, 
+    vk::SurfaceKHR surface,
     vk::Device device,
     vk::PhysicalDevice physicalDevice, 
     vk::CommandPool commandPool,
@@ -52,6 +53,7 @@ class Renderer {
   void recreateSwapChain();
 
   engine::Window &_window;
+  vk::SurfaceKHR _surface;
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
   std::unique_ptr<engine::SwapChain> _swapChain;
