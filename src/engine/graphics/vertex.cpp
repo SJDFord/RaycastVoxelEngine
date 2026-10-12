@@ -52,7 +52,7 @@ bool Vertex::operator==(const Vertex &other) const {
 namespace std {
     size_t hash<engine::Vertex>::operator()(engine::Vertex const &vertex) const {
         size_t seed = 0;
-        lve::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+        engine::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
         return seed;
     }
 }  // namespace std

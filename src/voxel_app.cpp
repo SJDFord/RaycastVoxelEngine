@@ -1,16 +1,16 @@
 #include "voxel_app.hpp"
 #include "./engine/utils.hpp"
-#include "./engine/buffer.hpp"
-#include "./engine/descriptors.hpp"
-#include "./engine/model.hpp"
+#include "./engine/graphics/vulkan/buffer.hpp"
+#include "./engine/graphics/vulkan/descriptors.hpp"
+#include "./engine/graphics/vulkan/model.hpp"
 
-#include "./engine/descriptor_set_layout_builder.hpp"
-#include "./engine/camera.hpp"
-#include "./engine/fps_movement_controller.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_set_layout_builder.hpp"
+#include "./engine/logic/camera.hpp"
+#include "./engine/logic/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
-#include "./engine/descriptor_pool_builder.hpp"
-#include "./engine/image.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_pool_builder.hpp"
+#include "./engine/graphics/vulkan/image.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS

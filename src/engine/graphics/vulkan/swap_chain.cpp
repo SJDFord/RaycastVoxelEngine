@@ -1,7 +1,7 @@
 #include "swap_chain.hpp"
 
-#include "swapchain_builder.hpp"
-#include "render_pass_builder.hpp"
+#include "./builders/swapchain_builder.hpp"
+#include "./builders/render_pass_builder.hpp"
 
 #include <algorithm>
 #include <print>

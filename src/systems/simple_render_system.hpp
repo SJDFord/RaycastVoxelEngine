@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../engine/utils.hpp"
-#include "../engine/pipeline_builder.hpp"
-#include "../engine/shader_module_builder.hpp"
+#include "../engine/graphics/vulkan/utils.hpp"
+#include "../engine/graphics/vulkan/builders/pipeline_builder.hpp"
+#include "../engine/graphics/vulkan/builders/shader_module_builder.hpp"
 
 // std
 #include <memory>

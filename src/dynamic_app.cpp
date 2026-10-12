@@ -14,19 +14,19 @@
 #include <thread>
 #include <print>
 
-#include "./engine/buffer.hpp"
-#include "./engine/descriptor_set_layout_builder.hpp"
-#include "./engine/image.hpp"
-#include "./engine/image_generators.hpp"
-#include "./engine/shader_module_builder.hpp"
-#include "./engine/swap_chain.hpp"
-#include "./engine/utils.hpp"
-#include "./engine/pipeline_builder.hpp"
-#include "./engine/vertex.hpp"
-#include "./engine/descriptors.hpp"
-#include "./engine/fps_movement_controller.hpp"
-#include "./engine/camera.hpp"
-#include "./engine/one_time_command_submitter.hpp"
+#include "./engine/graphics/vulkan/buffer.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_set_layout_builder.hpp"
+#include "./engine/graphics/vulkan/image.hpp"
+#include "./engine/graphics/vulkan/image_generators.hpp"
+#include "./engine/graphics/vulkan/builders/shader_module_builder.hpp"
+#include "./engine/graphics/vulkan/swap_chain.hpp"
+#include "./engine/graphics/vulkan/utils.hpp"
+#include "./engine/graphics/vulkan/builders/pipeline_builder.hpp"
+#include "./engine/graphics/vertex.hpp"
+#include "./engine/graphics/vulkan/descriptors.hpp"
+#include "./engine/logic/fps_movement_controller.hpp"
+#include "./engine/logic/camera.hpp"
+#include "./engine/graphics/vulkan/one_time_command_submitter.hpp"
 
 
 #include "glslang/Public/ShaderLang.h"

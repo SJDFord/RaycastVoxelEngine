@@ -1,16 +1,17 @@
 #pragma once
 
-#include "./engine/instance_builder.hpp"
-#include "./engine/ranked_physical_device_strategy.hpp"
-#include "./engine/device_builder.hpp"
-#include "./engine/game_object.hpp"
-#include "./engine/renderer.hpp"
-#include "./engine/window.hpp"
-#include "./engine/renderer.hpp"
+#include "./engine/graphics/vulkan/builders/instance_builder.hpp"
+#include "./engine/graphics/vulkan/ranked_physical_device_strategy.hpp"
+#include "./engine/graphics/vulkan/builders/device_builder.hpp"
+#include "./engine/graphics/vulkan/game_object.hpp"
+#include "./engine/graphics/vulkan/renderer.hpp"
+#include "./engine/graphics/vulkan/window.hpp"
+#include "./engine/graphics/vulkan/renderer.hpp"
+#include "./engine/graphics/vulkan/one_time_command_submitter.hpp"
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
-#include "./engine/one_time_command_submitter.hpp"
 
 // std
 #include <memory>

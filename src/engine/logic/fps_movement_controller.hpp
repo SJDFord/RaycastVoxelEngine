@@ -1,7 +1,7 @@
 #pragma once
 
-#include "game_object.hpp"
-#include "window.hpp"
+#include "../graphics/vulkan/game_object.hpp"
+#include "../graphics/vulkan/window.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
 

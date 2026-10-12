@@ -1,8 +1,8 @@
 #pragma once
 
 #include "buffer.hpp"
-#include "vertex.hpp"
-#include "mesh.hpp"
+#include "../vertex.hpp"
+#include "../mesh.hpp"
 #include "one_time_command_submitter.hpp"
 
 // libs

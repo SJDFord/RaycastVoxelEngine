@@ -1,14 +1,14 @@
 #pragma once
 
-#include "./engine/window.hpp"
-#include "./engine/renderer.hpp"
-#include "./engine/descriptor_pool_builder.hpp"
-#include "./engine/device_builder.hpp"
-#include "./engine/instance_builder.hpp"
-#include "./engine/physical_device_strategy.hpp"
-#include "./engine/ranked_physical_device_strategy.hpp"
+#include "./engine/graphics/vulkan/window.hpp"
+#include "./engine/graphics/vulkan/renderer.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_pool_builder.hpp"
+#include "./engine/graphics/vulkan/builders/device_builder.hpp"
+#include "./engine/graphics/vulkan/builders/instance_builder.hpp"
+#include "./engine/graphics/vulkan/physical_device_strategy.hpp"
+#include "./engine/graphics/vulkan/ranked_physical_device_strategy.hpp"
 
-#include "./engine/game_object.hpp"
+#include "./engine/graphics/vulkan/game_object.hpp"
 
 // std
 #include <memory>
