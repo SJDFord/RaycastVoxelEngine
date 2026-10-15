@@ -2,7 +2,7 @@
 
 #include "./engine/graphics/vulkan/window.hpp"
 #include "./engine/graphics/vulkan/renderer.hpp"
-#include "./engine/graphics/vulkan/builders/descriptor_pool_builder.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_pool_create_info_builder.hpp"
 #include "./engine/graphics/vulkan/builders/device_builder.hpp"
 #include "./engine/graphics/vulkan/builders/instance_builder.hpp"
 #include "./engine/graphics/vulkan/physical_device_strategy.hpp"
@@ -47,6 +47,7 @@ class DynamicApp {
   std::vector<vk::DescriptorSetLayoutBinding> _descriptorSetLayoutBindings;
   vk::PipelineLayout _pipelineLayout;
   vk::Pipeline _pipeline;
+  vk::DescriptorPool _descriptorPool;
   //std::unique_ptr<engine::Renderer> _renderer;
 
   void init();

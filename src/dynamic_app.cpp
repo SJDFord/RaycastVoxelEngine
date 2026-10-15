@@ -35,16 +35,11 @@ DynamicApp::DynamicApp() {
   init();
 }
 
-DynamicApp::~DynamicApp() {}
+DynamicApp::~DynamicApp() {
+  _device.destroyDescriptorPool(_descriptorPool);
+}
 
 void DynamicApp::run() {
-
-    vk::DescriptorPool descriptorPool = engine::DescriptorPoolBuilder(_device)
-        .setMaxSets(MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
-        .build();
-
     std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<engine::Buffer>(
@@ -134,7 +129,7 @@ void DynamicApp::run() {
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
         //engine::
-        globalDescriptorSets[i] = engine::DescriptorWriter(_device, descriptorPool, _descriptorSetLayout, _descriptorSetLayoutBindings)
+        globalDescriptorSets[i] = engine::DescriptorWriter(_device, _descriptorPool, _descriptorSetLayout, _descriptorSetLayoutBindings)
             .writeBuffer(0, &bufferInfo)
             .writeImage(1, &imageInfo)
             .build();
@@ -266,6 +261,15 @@ void DynamicApp::init() {
     pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);
     pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
     _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
+
+    vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = engine::DescriptorPoolCreateInfoBuilder()
+        .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+        .build();
+
+    _descriptorPool = _device.createDescriptorPool(descriptorPoolCreateInfo);
+
 }
 
 

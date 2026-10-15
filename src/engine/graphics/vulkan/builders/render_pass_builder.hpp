@@ -16,7 +16,7 @@ namespace engine {
 class RenderPassBuilder {
  public:
   RenderPassBuilder(
-    vk::Device const & device
+    vk::Device device
   );
   ~RenderPassBuilder();
 

@@ -9,7 +9,7 @@
 #include "./engine/logic/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
-#include "./engine/graphics/vulkan/builders/descriptor_pool_builder.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_pool_create_info_builder.hpp"
 #include "./engine/graphics/vulkan/image.hpp"
 
 // libs
@@ -27,16 +27,21 @@
 namespace lve {
 
 VoxelApp::VoxelApp(): 
-  _globalPool{engine::DescriptorPoolBuilder(_device)
+  _globalPool{_device.createDescriptorPool(
+    engine::DescriptorPoolCreateInfoBuilder()
       .setMaxSets(MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
-      .build()} {
+      .build()
+  )} {
+
 
   loadGameObjects();
 }
 
-VoxelApp::~VoxelApp() {}
+VoxelApp::~VoxelApp() {
+  _device.destroyDescriptorPool(_globalPool);
+}
 
 void VoxelApp::run() {
   std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);

@@ -1,4 +1,6 @@
 #!/bin/bash
+vulkaninfo | less
+
 mkdir -p build
 cd build
 cmake -S ../ -B .

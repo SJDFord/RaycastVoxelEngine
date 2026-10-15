@@ -2,7 +2,7 @@
 
 namespace engine {
 
-RenderPassBuilder::RenderPassBuilder(vk::Device const& device) {
+RenderPassBuilder::RenderPassBuilder(vk::Device device) {
   _device = device;
 }
 
@@ -14,10 +14,12 @@ RenderPassBuilder& RenderPassBuilder::setColorFormat(vk::Format colorFormat) {
   _colorFormat = colorFormat;
   return *this;
 }
+
 RenderPassBuilder& RenderPassBuilder::setDepthFormat(vk::Format depthFormat) {
   _depthFormat = depthFormat;
   return *this;
 }
+
 vk::RenderPass  RenderPassBuilder::build() {
   vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
     .setFormat(_depthFormat)
