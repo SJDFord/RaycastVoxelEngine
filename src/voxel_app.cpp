@@ -4,7 +4,7 @@
 #include "./engine/graphics/vulkan/descriptors.hpp"
 #include "./engine/graphics/vulkan/model.hpp"
 
-#include "./engine/graphics/vulkan/builders/descriptor_set_layout_builder.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_set_layout_bindings_builder.hpp"
 #include "./engine/logic/camera.hpp"
 #include "./engine/logic/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
@@ -51,15 +51,12 @@ void VoxelApp::run() {
     uboBuffers[i]->map();
   }
 
-  std::vector<vk::DescriptorSetLayoutBinding> bindings;
-  auto globalSetLayout =
-  engine::DescriptorSetLayoutBuilder(_device)
-      .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
-      .addBinding(
-          vk::DescriptorType::eCombinedImageSampler,
-          1,
-          vk::ShaderStageFlagBits::eFragment)
-      .build(bindings);
+  std::vector<vk::DescriptorSetLayoutBinding> bindings = engine::DescriptorSetLayoutBindingsBuilder()
+    .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+    .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+    .build();
+  
+  vk::DescriptorSetLayout globalSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, bindings));
 
   std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(
     _device, 

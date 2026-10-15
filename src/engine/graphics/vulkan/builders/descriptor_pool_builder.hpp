@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cassert>
 
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_raii.hpp"
@@ -9,7 +10,7 @@ namespace engine {
 
 class DescriptorPoolBuilder {
  public:
-  DescriptorPoolBuilder(vk::Device const& device);
+  DescriptorPoolBuilder(vk::Device device);
   ~DescriptorPoolBuilder();
 
   DescriptorPoolBuilder(const DescriptorPoolBuilder&) = delete;

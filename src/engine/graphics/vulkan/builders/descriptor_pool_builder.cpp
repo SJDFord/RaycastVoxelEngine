@@ -3,17 +3,16 @@
 
 namespace engine {
 
-DescriptorPoolBuilder::DescriptorPoolBuilder(vk::Device const& device) {
+DescriptorPoolBuilder::DescriptorPoolBuilder(vk::Device device) {
+  assert(device != VK_NULL_HANDLE);
   _device = device;
 }
 
 DescriptorPoolBuilder::~DescriptorPoolBuilder() {}
 
-
-
 DescriptorPoolBuilder& DescriptorPoolBuilder::addPoolSize(vk::DescriptorType descriptorType, uint32_t count) {
-    _poolSizes.push_back({ descriptorType, count });
-    return *this;
+  _poolSizes.push_back({ descriptorType, count });
+  return *this;
 }
 
 DescriptorPoolBuilder& DescriptorPoolBuilder::setFlags(vk::DescriptorPoolCreateFlags flags) {
