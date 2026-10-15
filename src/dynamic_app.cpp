@@ -15,7 +15,7 @@
 #include <print>
 
 #include "./engine/graphics/vulkan/buffer.hpp"
-#include "./engine/graphics/vulkan/builders/descriptor_set_layout_builder.hpp"
+#include "./engine/graphics/vulkan/builders/descriptor_set_layout_bindings_builder.hpp"
 #include "./engine/graphics/vulkan/image.hpp"
 #include "./engine/graphics/vulkan/image_generators.hpp"
 #include "./engine/graphics/vulkan/builders/shader_module_builder.hpp"
@@ -248,14 +248,12 @@ void DynamicApp::init() {
 
     std::println("Device created...");
 
-    _descriptorSetLayout =
-        engine::DescriptorSetLayoutBuilder(_device)
-            .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
-            .addBinding(
-                vk::DescriptorType::eCombinedImageSampler,
-                1,
-                vk::ShaderStageFlagBits::eFragment)
-            .build(_descriptorSetLayoutBindings);
+    _descriptorSetLayoutBindings = engine::DescriptorSetLayoutBindingsBuilder()
+        .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+        .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+        .build();
+
+    _descriptorSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, _descriptorSetLayoutBindings));
 
     vk::PushConstantRange pushConstantRange{};
     pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
