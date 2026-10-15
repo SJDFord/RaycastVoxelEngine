@@ -5,8 +5,6 @@
 #include <vector>
 
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_raii.hpp"
-
 #include "glslang/SPIRV/GlslangToSpv.h"
 #include "glslang/Public/ResourceLimits.h"
 #include "glslang/Public/ShaderLang.h"

@@ -51,7 +51,6 @@ vk::SwapchainKHR SwapchainBuilder::build() {
       imageCount > _capabilities.maxImageCount) {
     imageCount = _capabilities.maxImageCount;
   }
-  // TODO: This needs a builder - we are doing too much here
   vk::SwapchainCreateInfoKHR createInfo = vk::SwapchainCreateInfoKHR()
     .setSurface(_surface)
     .setMinImageCount(imageCount)
@@ -77,7 +76,7 @@ vk::SwapchainKHR SwapchainBuilder::build() {
   createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 
   createInfo.presentMode = _presentMode;
-  createInfo.clipped = VK_TRUE;
+  createInfo.clipped = vk::True;
   createInfo.oldSwapchain = _oldSwapchain;
 
   auto swapchain = _device.createSwapchainKHR(createInfo);
