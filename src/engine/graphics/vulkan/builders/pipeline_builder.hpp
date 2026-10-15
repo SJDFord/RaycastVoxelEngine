@@ -11,7 +11,7 @@ namespace engine {
 
 class PipelineBuilder {
  public:
-  PipelineBuilder(vk::Device const &device, vk::PipelineLayout pipelineLayout);
+  PipelineBuilder(vk::Device device, vk::PipelineLayout pipelineLayout);
   ~PipelineBuilder();
 
   PipelineBuilder(const PipelineBuilder&) = delete;
@@ -33,7 +33,7 @@ class PipelineBuilder {
   vk::Pipeline build();
 
  private:
-  const vk::Device& _device;
+  vk::Device _device;
 
   std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages;
   std::vector<vk::VertexInputBindingDescription> _bindingDescriptions{};

@@ -11,7 +11,7 @@ namespace engine {
 
 class DeviceBuilder {
  public:
-  DeviceBuilder(const vk::PhysicalDevice& physicalDevice, uint32_t queueFamilyIndex);
+  DeviceBuilder(vk::PhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
   ~DeviceBuilder();
 
   DeviceBuilder(const DeviceBuilder&) = delete;
@@ -24,7 +24,7 @@ class DeviceBuilder {
   vk::Device build();
 
  private:
-  const vk::PhysicalDevice& _physicalDevice;
+  vk::PhysicalDevice _physicalDevice;
   uint32_t _queueFamilyIndex;
   std::vector<std::string> _extensions;
   vk::PhysicalDeviceFeatures const* _physicalDeviceFeatures;

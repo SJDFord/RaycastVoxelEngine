@@ -5,7 +5,7 @@
 
 namespace engine {
 
-PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pipelineLayout): _device{device}, _pipelineLayout{pipelineLayout} {
+PipelineBuilder::PipelineBuilder(vk::Device device, vk::PipelineLayout pipelineLayout): _device{device}, _pipelineLayout{pipelineLayout} {
   // TODO: Setters for all of these to allow overriding default pipeline behaviour
   _renderPass = VK_NULL_HANDLE;
   
@@ -52,15 +52,11 @@ PipelineBuilder::PipelineBuilder(vk::Device const &device, vk::PipelineLayout pi
     .setFront({})
     .setBack({});
 
-
-  // TODO: _dynamicStateEnables shouldn't be their own class member as dynamic state info references it
   _dynamicStateEnables.push_back(vk::DynamicState::eViewport);
   _dynamicStateEnables.push_back(vk::DynamicState::eScissor);
 
   _dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
     .setDynamicStates(_dynamicStateEnables);
-
-  
 }
 
 PipelineBuilder::~PipelineBuilder() {
@@ -105,18 +101,6 @@ PipelineBuilder& PipelineBuilder::setAttributeDescriptions(std::vector<vk::Verte
 
 PipelineBuilder& PipelineBuilder::setBlending(bool enableBlending) {
   if (enableBlending) {
-    /*
-    configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
-    configInfo.colorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-        VK_COLOR_COMPONENT_A_BIT;
-    configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    */
     _colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
       .setColorWriteMask(
         vk::ColorComponentFlagBits::eR |
@@ -151,22 +135,15 @@ PipelineBuilder& PipelineBuilder::setBlending(bool enableBlending) {
 }
 
 vk::Pipeline PipelineBuilder::build() {
-
-  // TODO: _colorBlendAttachment shouldn't be it's own class member as this references it
   _colorBlendInfo = vk::PipelineColorBlendStateCreateInfo()
     .setLogicOpEnable(vk::False)
     .setLogicOp(vk::LogicOp::eCopy)
     .setAttachments(_colorBlendAttachment)
     .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
-
   std::println("Building pipeline...");
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
     .setVertexBindingDescriptions(_bindingDescriptions)
     .setVertexAttributeDescriptions(_attributeDescriptions);
-
-  if (_renderPass == VK_NULL_HANDLE) {
-    std::println("No render pass present");
-  }
 
   vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
     .setStages(_shaderStages)

@@ -2,8 +2,7 @@
 
 namespace engine {
 
-DeviceBuilder::DeviceBuilder(const vk::PhysicalDevice& physicalDevice, uint32_t queueFamilyIndex):
-
+DeviceBuilder::DeviceBuilder(vk::PhysicalDevice physicalDevice, uint32_t queueFamilyIndex):
     _physicalDevice(physicalDevice),
     _queueFamilyIndex(queueFamilyIndex),
     _physicalDeviceFeatures(nullptr),
