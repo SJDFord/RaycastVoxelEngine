@@ -83,8 +83,6 @@ bool Renderer::renderFrame(
     std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPasses,
     std::function<void(vk::CommandBuffer const &, int)> postRender
   ) {
-  assert(!_isFrameStarted && "Can't call beginFrame while already in progress");
-
   auto acquireNextImageResult = _swapChain->acquireNextImage(&_currentImageIndex);
   if (acquireNextImageResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
@@ -95,8 +93,6 @@ bool Renderer::renderFrame(
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  _isFrameStarted = true;
-
   auto commandBuffer = _commandBuffers[_currentFrameIndex];
   vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
   commandBuffer.begin(beginInfo);
@@ -105,7 +101,7 @@ bool Renderer::renderFrame(
 
   for( auto renderPass : renderPasses )
   {
-    this->runRenderPass(commandBuffer, renderPass);
+    runRenderPass(renderPass);
   }
 
   postRender(commandBuffer, _currentFrameIndex);
@@ -116,24 +112,21 @@ bool Renderer::renderFrame(
   auto submitCommandBuffersResult = _swapChain->submitCommandBuffers(&commandBuffer, &_currentImageIndex);
   if (submitCommandBuffersResult == vk::Result::eErrorOutOfDateKHR || submitCommandBuffersResult == vk::Result::eSuboptimalKHR ||
     _window.wasWindowResized() ) {
-      _window.resetWindowResizedFlag();
+    // TODO: resized should be a registered callback rather than polling for it
+    _window.resetWindowResizedFlag();
     recreateSwapChain();
   } else if (submitCommandBuffersResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to present swap chain image!");
   }
 
-  _isFrameStarted = false;
   _currentFrameIndex = (_currentFrameIndex + 1) % _maxFramesInFlight;
 
   return true;
 }
 
 
-void Renderer::runRenderPass(vk::CommandBuffer commandBuffer, std::function<void(vk::CommandBuffer const &, int)> renderPassOperation) {
-  assert(_isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
-  assert(commandBuffer == _commandBuffers[_currentFrameIndex] &&
-      "Can't begin render pass on command buffer from a different frame");
-
+void Renderer::runRenderPass(std::function<void(vk::CommandBuffer const &, int)> renderPassOperation) {
+  auto commandBuffer = _commandBuffers[_currentFrameIndex];
   vk::Rect2D renderArea = vk::Rect2D({0, 0}, _swapChain->getSwapChainExtent());
 
   std::array<vk::ClearValue, 2> clearValues{};
@@ -160,11 +153,7 @@ void Renderer::runRenderPass(vk::CommandBuffer commandBuffer, std::function<void
   commandBuffer.setScissor(0, scissor);
 
   renderPassOperation(commandBuffer, _currentFrameIndex);
-  
-  assert(_isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
-  assert(
-      commandBuffer == _commandBuffers[_currentFrameIndex] &&
-      "Can't end render pass on command buffer from a different frame");
+
   commandBuffer.endRenderPass();
 }
 

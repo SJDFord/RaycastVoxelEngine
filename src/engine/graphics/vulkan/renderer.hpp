@@ -37,11 +37,7 @@ class Renderer {
   );
 
  private:
-  void runRenderPass(
-    vk::CommandBuffer commandBuffer, 
-    std::function<void(vk::CommandBuffer const &, int)> renderPass
-  );
-
+  void runRenderPass(std::function<void(vk::CommandBuffer const &, int)> renderPass);
   void createCommandBuffers();
   void freeCommandBuffers();
   void recreateSwapChain();
@@ -59,7 +55,6 @@ class Renderer {
   uint32_t _maxFramesInFlight;
   uint32_t _currentImageIndex;
   int _currentFrameIndex{0};
-  bool _isFrameStarted{false};
 };
 
 }  // namespace engine
