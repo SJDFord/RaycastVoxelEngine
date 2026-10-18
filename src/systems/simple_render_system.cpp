@@ -58,7 +58,7 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
               .build();
 }
 
-void SimpleRenderSystem::renderGameObjects(engine::FrameInfo& frameInfo) {
+void SimpleRenderSystem::renderGameObjects(engine::FrameInfo& frameInfo) const {
   frameInfo.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
   frameInfo.commandBuffer.bindDescriptorSets(
     vk::PipelineBindPoint::eGraphics, 

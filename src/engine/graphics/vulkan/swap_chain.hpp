@@ -1,7 +1,8 @@
 #pragma once
 
+#include <memory>
+
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_raii.hpp"
 #include "utils.hpp"
 
 namespace engine {
@@ -71,7 +72,6 @@ vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
       const std::vector<vk::PresentModeKHR> &availablePresentModes);
   vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
 
-uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
                      uint32_t                   _graphicsFamilyIndex;

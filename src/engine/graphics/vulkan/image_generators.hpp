@@ -4,7 +4,6 @@
 #include <cstdint>
 
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_raii.hpp"
 
 namespace engine {
 

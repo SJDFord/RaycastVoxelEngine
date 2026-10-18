@@ -6,10 +6,10 @@
 #include <print>
 
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_raii.hpp"
 #include "window.hpp"
 #include "swap_chain.hpp"
 #include <cassert>
+#include <functional>
 
 namespace engine {
 class Renderer {
@@ -30,24 +30,18 @@ class Renderer {
 
   vk::RenderPass getSwapChainRenderPass() const { return _swapChain->getRenderPass(); }
   float getAspectRatio() const { return _swapChain->extentAspectRatio(); }
-  bool isFrameInProgress() const { return isFrameStarted; }
-
-  vk::CommandBuffer getCurrentCommandBuffer() const {
-    assert(isFrameStarted && "Cannot get command buffer when frame not in progress");
-    return commandBuffers[currentFrameIndex];
-  }
-
-  int getFrameIndex() const {
-    assert(isFrameStarted && "Cannot get frame index when frame not in progress");
-    return currentFrameIndex;
-  }
-
-  vk::CommandBuffer beginFrame();
-  void endFrame();
-  void beginSwapChainRenderPass(vk::CommandBuffer commandBuffer);
-  void endSwapChainRenderPass(vk::CommandBuffer commandBuffer);
+  bool renderFrame(
+    std::function<void(vk::CommandBuffer const &, int)> preRender, 
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPasses,
+    std::function<void(vk::CommandBuffer const &, int)> postRender
+  );
 
  private:
+  void runRenderPass(
+    vk::CommandBuffer commandBuffer, 
+    std::function<void(vk::CommandBuffer const &, int)> renderPass
+  );
+
   void createCommandBuffers();
   void freeCommandBuffers();
   void recreateSwapChain();
@@ -58,14 +52,14 @@ class Renderer {
   vk::PhysicalDevice _physicalDevice;
   std::unique_ptr<engine::SwapChain> _swapChain;
   vk::CommandPool _commandPool;
-  std::vector<vk::CommandBuffer> commandBuffers;
+  std::vector<vk::CommandBuffer> _commandBuffers;
 
   uint32_t _graphicsFamilyIndex;
   uint32_t _presentFamilyIndex;
   uint32_t _maxFramesInFlight;
-  uint32_t currentImageIndex;
-  int currentFrameIndex{0};
-  bool isFrameStarted{false};
+  uint32_t _currentImageIndex;
+  int _currentFrameIndex{0};
+  bool _isFrameStarted{false};
 };
 
 }  // namespace engine

@@ -75,9 +75,15 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
   textureImage = _device.createImage(imageInfo);
   vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(textureImage);
 
+  uint32_t memoryTypeIndex = engine::findMemoryType(
+    _physicalDevice.getMemoryProperties(), 
+    memRequirements.memoryTypeBits, 
+    vk::MemoryPropertyFlagBits::eDeviceLocal
+  );
+
   vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
     .setAllocationSize(memRequirements.size)
-    .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+    .setMemoryTypeIndex(memoryTypeIndex);
 
   textureImageMemory = _device.allocateMemory(allocInfo);
 
@@ -123,19 +129,6 @@ void Image::createImageView() {
 
 vk::ImageView Image::getImageView() { return textureImageView; }
 vk::Sampler Image::getSampler() { return textureSampler; }
-
-uint32_t Image::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-
-  auto memoryProperties = _physicalDevice.getMemoryProperties();
-  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1 << i)) &&
-        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-
-  throw std::runtime_error("failed to find suitable memory type!");
-}
 
 void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
     vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {

@@ -63,64 +63,75 @@ void Renderer::recreateSwapChain() {
 }
 
 void Renderer::createCommandBuffers() {
-  commandBuffers.resize(_maxFramesInFlight);
+  _commandBuffers.resize(_maxFramesInFlight);
 
   vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
     .setLevel(vk::CommandBufferLevel::ePrimary)
     .setCommandPool(_commandPool)
-    .setCommandBufferCount(commandBuffers.size());
+    .setCommandBufferCount(_commandBuffers.size());
 
-  commandBuffers = _device.allocateCommandBuffers(allocInfo);
+  _commandBuffers = _device.allocateCommandBuffers(allocInfo);
 }
 
 void Renderer::freeCommandBuffers() {
-  _device.freeCommandBuffers(_commandPool, commandBuffers);
-  commandBuffers.clear();
+  _device.freeCommandBuffers(_commandPool, _commandBuffers);
+  _commandBuffers.clear();
 }
 
-vk::CommandBuffer Renderer::beginFrame() {
-  assert(!isFrameStarted && "Can't call beginFrame while already in progress");
+bool Renderer::renderFrame(
+    std::function<void(vk::CommandBuffer const &, int)> preRender, 
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPasses,
+    std::function<void(vk::CommandBuffer const &, int)> postRender
+  ) {
+  assert(!_isFrameStarted && "Can't call beginFrame while already in progress");
 
-  auto result = _swapChain->acquireNextImage(&currentImageIndex);
-  if (result == vk::Result::eErrorOutOfDateKHR) {
+  auto acquireNextImageResult = _swapChain->acquireNextImage(&_currentImageIndex);
+  if (acquireNextImageResult == vk::Result::eErrorOutOfDateKHR) {
     recreateSwapChain();
-    return nullptr;
+    return false;
   }
 
-  if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+  if (acquireNextImageResult != vk::Result::eSuccess && acquireNextImageResult != vk::Result::eSuboptimalKHR) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
 
-  isFrameStarted = true;
+  _isFrameStarted = true;
 
-  auto commandBuffer = getCurrentCommandBuffer();
+  auto commandBuffer = _commandBuffers[_currentFrameIndex];
   vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
   commandBuffer.begin(beginInfo);
-  return commandBuffer;
-}
 
-void Renderer::endFrame() {
-  assert(isFrameStarted && "Can't call endFrame while frame is not in progress");
-  auto commandBuffer = getCurrentCommandBuffer();
+  preRender(commandBuffer, _currentFrameIndex);
+
+  for( auto renderPass : renderPasses )
+  {
+    this->runRenderPass(commandBuffer, renderPass);
+  }
+
+  postRender(commandBuffer, _currentFrameIndex);
+
+
   commandBuffer.end();
 
-  auto result = _swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
-  if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
+  auto submitCommandBuffersResult = _swapChain->submitCommandBuffers(&commandBuffer, &_currentImageIndex);
+  if (submitCommandBuffersResult == vk::Result::eErrorOutOfDateKHR || submitCommandBuffersResult == vk::Result::eSuboptimalKHR ||
     _window.wasWindowResized() ) {
       _window.resetWindowResizedFlag();
     recreateSwapChain();
-  } else if (result != vk::Result::eSuccess) {
+  } else if (submitCommandBuffersResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to present swap chain image!");
   }
 
-  isFrameStarted = false;
-  currentFrameIndex = (currentFrameIndex + 1) % _maxFramesInFlight;
+  _isFrameStarted = false;
+  _currentFrameIndex = (_currentFrameIndex + 1) % _maxFramesInFlight;
+
+  return true;
 }
 
-void Renderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
-  assert(isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
-  assert(
-      commandBuffer == getCurrentCommandBuffer() &&
+
+void Renderer::runRenderPass(vk::CommandBuffer commandBuffer, std::function<void(vk::CommandBuffer const &, int)> renderPassOperation) {
+  assert(_isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
+  assert(commandBuffer == _commandBuffers[_currentFrameIndex] &&
       "Can't begin render pass on command buffer from a different frame");
 
   vk::Rect2D renderArea = vk::Rect2D({0, 0}, _swapChain->getSwapChainExtent());
@@ -131,7 +142,7 @@ void Renderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
 
   vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
     .setRenderPass(_swapChain->getRenderPass())
-    .setFramebuffer(_swapChain->getFrameBuffer(currentImageIndex))
+    .setFramebuffer(_swapChain->getFrameBuffer(_currentImageIndex))
     .setRenderArea(renderArea)
     .setClearValues(clearValues);
 
@@ -147,12 +158,12 @@ void Renderer::beginSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
   vk::Rect2D scissor{{0, 0}, _swapChain->getSwapChainExtent()};
   commandBuffer.setViewport(0, viewport);
   commandBuffer.setScissor(0, scissor);
-}
 
-void Renderer::endSwapChainRenderPass(vk::CommandBuffer commandBuffer) {
-  assert(isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
+  renderPassOperation(commandBuffer, _currentFrameIndex);
+  
+  assert(_isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
   assert(
-      commandBuffer == getCurrentCommandBuffer() &&
+      commandBuffer == _commandBuffers[_currentFrameIndex] &&
       "Can't end render pass on command buffer from a different frame");
   commandBuffer.endRenderPass();
 }

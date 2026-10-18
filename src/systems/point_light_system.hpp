@@ -3,6 +3,10 @@
 #include "../engine/graphics/vulkan/utils.hpp"
 #include "../engine/graphics/vulkan/builders/pipeline_builder.hpp"
 #include "../engine/graphics/vulkan/builders/shader_module_builder.hpp"
+#include "../engine/graphics/layout/global.hpp"
+#include "../engine/graphics/layout/point_light.hpp"
+#include "../engine/graphics/vulkan/frame_info.hpp"
+
 // std
 #include <memory>
 #include <vector>
@@ -17,8 +21,8 @@ class PointLightSystem {
   PointLightSystem(const PointLightSystem &) = delete;
   PointLightSystem &operator=(const PointLightSystem &) = delete;
 
-  void update(engine::FrameInfo &frameInfo, engine::GlobalUbo &ubo);
-  void render(engine::FrameInfo &frameInfo);
+  void update(engine::FrameInfo &frameInfo, engine::GlobalUbo &ubo) const;
+  void render(engine::FrameInfo &frameInfo) const;
 
  private:
   void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);

@@ -121,45 +121,52 @@ void VoxelApp::run() {
     float aspect = _renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
 
-    if (auto commandBuffer = _renderer.beginFrame()) {
-      int frameIndex = _renderer.getFrameIndex();
-
-      auto mainLight = engine::GameObject::makePointLight(10.0f);
-      mainLight.color = {1.0f, 1.0f, 1.0f};
-
-      glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};
-      mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
-      mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
-
-      engine::FrameInfo frameInfo{
+    _renderer.renderFrame(
+      [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) { 
+        engine::FrameInfo frameInfo{
           frameIndex,
           frameTime,
           commandBuffer,
           camera,
           globalDescriptorSets[frameIndex],
-          gameObjects};
+          gameObjects
+        };
 
-      // update
-      engine::GlobalUbo ubo{};
-      ubo.projection = camera.getProjection();
-      ubo.view = camera.getView();
-      ubo.inverseView = camera.getInverseView();
-      pointLightSystem.update(frameInfo, ubo);
-      uboBuffers[frameIndex]->writeToBuffer(&ubo);
-      uboBuffers[frameIndex]->flush();
+        auto mainLight = engine::GameObject::makePointLight(10.0f);
+        mainLight.color = {1.0f, 1.0f, 1.0f};
 
-      // render
-      _renderer.beginSwapChainRenderPass(commandBuffer);
+        glm::vec3 lightOffset = {0.0f, 2.0f, 0.0f};
+        mainLight.transform.translation = viewerObject.transform.translation + lightOffset;
+        mainLight.transform.scale = {0.1f, 0.1f, 0.1f};
 
-      // order here matters
-      simpleRenderSystem.renderGameObjects(frameInfo);
-      pointLightSystem.render(frameInfo);
+        // update
+        engine::GlobalUbo ubo{};
+        ubo.projection = camera.getProjection();
+        ubo.view = camera.getView();
+        ubo.inverseView = camera.getInverseView();
+        pointLightSystem.update(frameInfo, ubo);
+        uboBuffers[frameIndex]->writeToBuffer(&ubo);
+        uboBuffers[frameIndex]->flush();
+      }, 
+      {
+        [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) {
+          engine::FrameInfo frameInfo{
+            frameIndex,
+            frameTime,
+            commandBuffer,
+            camera,
+            globalDescriptorSets[frameIndex],
+            gameObjects
+          };
+          simpleRenderSystem.renderGameObjects(frameInfo);
+          pointLightSystem.render(frameInfo);
+        }  
+      },
+      [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) { 
 
-      _renderer.endSwapChainRenderPass(commandBuffer);
-      _renderer.endFrame();
-    }
+      }
+    );
   }
-
   
   _device.waitIdle();
 }

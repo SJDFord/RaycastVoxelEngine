@@ -208,9 +208,15 @@ void SwapChain::createDepthResources() {
     depthImages[i] = _device.createImage(imageInfo);
     vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(depthImages[i]);
 
+    uint32_t memoryTypeIndex = engine::findMemoryType(
+      _physicalDevice.getMemoryProperties(),
+      memRequirements.memoryTypeBits, 
+      vk::MemoryPropertyFlagBits::eDeviceLocal
+    ); 
+
     vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
       .setAllocationSize(memRequirements.size)
-      .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+      .setMemoryTypeIndex(memoryTypeIndex);
 
     depthImageMemorys[i] = _device.allocateMemory(allocInfo);
 
@@ -306,19 +312,6 @@ vk::Format SwapChain::findDepthFormat() {
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment
   );
-}
-
-uint32_t SwapChain::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-
-  auto memoryProperties = _physicalDevice.getMemoryProperties();
-  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1 << i)) &&
-        (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-
-  throw std::runtime_error("failed to find suitable memory type!");
 }
 
 vk::Format SwapChain::findSupportedFormat(

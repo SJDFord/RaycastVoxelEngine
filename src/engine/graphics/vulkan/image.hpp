@@ -55,7 +55,6 @@ class Image {
 
   void createImage(OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath);
   void createImageView();
-  uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
   void transitionImageLayout(
     OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
   void copyBufferToImage(

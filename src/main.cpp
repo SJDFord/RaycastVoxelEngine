@@ -3,7 +3,6 @@
 #include "stb/stb_image.h"
 
 #include "voxel_app.hpp"
-#include "dynamic_app.hpp"
 #include "renderdoc_app.h"
 
 // std
@@ -31,9 +30,6 @@ int main(int argc, char *argv[]) {
       std::cout << "Starting " << appName << std::endl;
      if (appName == "VoxelApp") {
         lve::VoxelApp app{};
-        app.run();
-     } else if (appName == "DynamicApp") {
-        DynamicApp app{};
         app.run();
      } else {
         std::cerr << "App name not recognised: " << appName << std::endl;
