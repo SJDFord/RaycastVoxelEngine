@@ -15,22 +15,103 @@ SwapChain::SwapChain(
     vk::PhysicalDevice physicalDevice,
     vk::SurfaceKHR     surface,
     vk::Extent2D       windowExtent,
-uint32_t                   graphicsFamilyIndex,
-                     uint32_t                   presentFamilyIndex,
-                     uint32_t                   maxFramesInFlight,
+    uint32_t           graphicsFamilyIndex,
+    uint32_t           presentFamilyIndex,
+    uint32_t           maxFramesInFlight,
     std::shared_ptr<SwapChain> previous)
     : _device{device}, _physicalDevice{physicalDevice}, _graphicsFamilyIndex{graphicsFamilyIndex}, _presentFamilyIndex{presentFamilyIndex}, _maxFramesInFlight(maxFramesInFlight), _oldSwapChain{previous} {
-  init(surface, windowExtent);
-  _oldSwapChain = nullptr;
-}
+  auto capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(surface);
+  vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(_physicalDevice.getSurfaceFormatsKHR(surface));
+  vk::PresentModeKHR presentMode = chooseSwapPresentMode(_physicalDevice.getSurfacePresentModesKHR(surface));
+  vk::Extent2D extent = chooseSwapExtent(capabilities, windowExtent);
 
-void SwapChain::init(vk::SurfaceKHR surface, vk::Extent2D windowExtent) {
-  createSwapChain(surface, windowExtent);
-  createImageViews();
-  createRenderPass();
-  createDepthResources();
-  createFramebuffers();
-  createSyncObjects();
+  _swapChain = engine::SwapchainBuilder(_device)
+    .setSurfaceCapabilities(capabilities).setSurface(surface).setSurfaceFormat(surfaceFormat)
+    .setExtent(extent)
+    .setGraphicsQueueFamilyIndex(_graphicsFamilyIndex).setPresentQueueFamilyIndex(_presentFamilyIndex)
+    .setPresentMode(presentMode)
+    .setOldSwapchain(_oldSwapChain == nullptr ? VK_NULL_HANDLE : _oldSwapChain->_swapChain)
+    .build();
+  _oldSwapChain = nullptr;
+  _colorImages = _device.getSwapchainImagesKHR(_swapChain);
+  _colorFormat = surfaceFormat.format;
+  _extent = extent;
+
+  auto imageCount = _colorImages.size();
+  _colorImageViews.resize(imageCount);
+  engine::ImageViewCreateInfoBuilder imageViewCreateInfoBuilder = engine::ImageViewCreateInfoBuilder();
+  imageViewCreateInfoBuilder.setFlags(vk::ImageAspectFlagBits::eColor).setFormat(_colorFormat);
+  for (size_t i = 0; i < imageCount; i++) {
+      imageViewCreateInfoBuilder.setImage(_colorImages[i]);
+      _colorImageViews[i] = _device.createImageView(imageViewCreateInfoBuilder.build());
+  }
+
+  _renderPass = engine::RenderPassBuilder(_device)
+    .setColorFormat(_colorFormat)
+    .setDepthFormat(findDepthFormat())
+    .build();
+
+  _depthFormat = findDepthFormat();
+  _depthImages.resize(imageCount);
+  _depthImageMemorys.resize(imageCount);
+  _depthImageViews.resize(imageCount);
+  imageViewCreateInfoBuilder.setFlags(vk::ImageAspectFlagBits::eDepth).setFormat(_depthFormat);
+  engine::ImageCreateInfoBuilder imageCreateInfoBuilder = engine::ImageCreateInfoBuilder();
+  imageCreateInfoBuilder
+    .setExtent(_extent).setFormat(_depthFormat)
+    .setUsageFlags(vk::ImageUsageFlagBits::eDepthStencilAttachment).setSharingMode(vk::SharingMode::eExclusive);
+
+  for (int i = 0; i < _depthImages.size(); i++) {
+    _depthImages[i] = _device.createImage(imageCreateInfoBuilder.build());
+    vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(_depthImages[i]);
+
+    uint32_t memoryTypeIndex = engine::findMemoryType(
+      _physicalDevice.getMemoryProperties(),
+      memRequirements.memoryTypeBits, 
+      vk::MemoryPropertyFlagBits::eDeviceLocal
+    ); 
+
+    vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
+      .setAllocationSize(memRequirements.size)
+      .setMemoryTypeIndex(memoryTypeIndex);
+
+    _depthImageMemorys[i] = _device.allocateMemory(allocInfo);
+
+    _device.bindImageMemory(_depthImages[i], _depthImageMemorys[i], 0);
+
+    imageViewCreateInfoBuilder.setImage(_depthImages[i]);
+    _depthImageViews[i] = _device.createImageView(imageViewCreateInfoBuilder.build());
+  }
+  
+  _framebuffers.resize(imageCount);
+  for (size_t i = 0; i < imageCount; i++) {
+    std::array<vk::ImageView, 2> attachments = {_colorImageViews[i], _depthImageViews[i]};
+
+     // TODO: Framebuffer builder
+
+    vk::FramebufferCreateInfo framebufferInfo = vk::FramebufferCreateInfo()
+      .setRenderPass(_renderPass)
+      .setAttachments(attachments)
+      .setWidth(_extent.width)
+      .setHeight(_extent.height)
+      .setLayers(1);
+
+    _framebuffers[i] = _device.createFramebuffer(framebufferInfo);
+  }
+
+  _imageAvailableSemaphores.resize(_maxFramesInFlight);
+  _renderFinishedSemaphores.resize(_maxFramesInFlight);
+  _inFlightFences.resize(_maxFramesInFlight);
+  _imagesInFlight.resize(imageCount, VK_NULL_HANDLE);
+
+  vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
+  vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
+
+  for (size_t i = 0; i < _maxFramesInFlight; i++) {
+    _imageAvailableSemaphores[i] = _device.createSemaphore(semaphoreInfo);
+    _renderFinishedSemaphores[i] = _device.createSemaphore(semaphoreInfo);
+    _inFlightFences[i] = _device.createFence(fenceInfo);
+  }
 }
 
 SwapChain::~SwapChain() {
@@ -127,136 +208,6 @@ void SwapChain::runRenderPass(const vk::CommandBuffer& commandBuffer, uint32_t f
   renderPassOperation(commandBuffer, frameIndex);
 
   commandBuffer.endRenderPass();
-}
-
-void SwapChain::createSwapChain(vk::SurfaceKHR surface, vk::Extent2D windowExtent) {
-  auto capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(surface);
-  auto formats = _physicalDevice.getSurfaceFormatsKHR(surface);
-  auto presentModes = _physicalDevice.getSurfacePresentModesKHR(surface);
-  vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(formats);
-  vk::PresentModeKHR presentMode = chooseSwapPresentMode(presentModes);
-  vk::Extent2D extent = chooseSwapExtent(capabilities, windowExtent);
-
-  _swapChain = engine::SwapchainBuilder(_device)
-    .setSurfaceCapabilities(capabilities)
-    .setSurface(surface)
-    .setSurfaceFormat(surfaceFormat)
-    .setExtent(extent)
-    .setGraphicsQueueFamilyIndex(_graphicsFamilyIndex)
-    .setPresentQueueFamilyIndex(_presentFamilyIndex)
-    .setPresentMode(presentMode)
-    .setOldSwapchain(_oldSwapChain == nullptr ? VK_NULL_HANDLE : _oldSwapChain->_swapChain)
-    .build();
-
-  // we only specified a minimum number of images in the swap chain, so the implementation is
-  // allowed to create a swap chain with more. That's why we'll first query the final number of
-  // images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
-  // retrieve the handles.
-  
-  _colorImages = _device.getSwapchainImagesKHR(_swapChain);
-  _colorFormat = surfaceFormat.format;
-  _extent = extent;
-}
-
-void SwapChain::createImageViews() {
-  auto imageCount = _colorImages.size();
-  _colorImageViews.resize(imageCount);
-  for (size_t i = 0; i < imageCount; i++) {
-      auto viewInfo = engine::ImageViewCreateInfoBuilder()
-        .setFlags(vk::ImageAspectFlagBits::eColor)
-        .setImage(_colorImages[i])
-        .setFormat(_colorFormat)
-        .build();
-
-      _colorImageViews[i] = _device.createImageView(viewInfo);
-  }
-}
-
-void SwapChain::createRenderPass() {
-  _renderPass = engine::RenderPassBuilder(_device)
-    .setColorFormat(_colorFormat)
-    .setDepthFormat(findDepthFormat())
-    .build();
-}
-
-void SwapChain::createFramebuffers() {
-  auto imageCount = _colorImages.size();
-  _framebuffers.resize(imageCount);
-  for (size_t i = 0; i < imageCount; i++) {
-    std::array<vk::ImageView, 2> attachments = {_colorImageViews[i], _depthImageViews[i]};
-
-     // TODO: Framebuffer builder
-
-    vk::FramebufferCreateInfo framebufferInfo = vk::FramebufferCreateInfo()
-      .setRenderPass(_renderPass)
-      .setAttachments(attachments)
-      .setWidth(_extent.width)
-      .setHeight(_extent.height)
-      .setLayers(1);
-
-    _framebuffers[i] = _device.createFramebuffer(framebufferInfo);
-  }
-}
-
-void SwapChain::createDepthResources() {
-  vk::Format depthFormat = findDepthFormat();
-  _depthFormat = depthFormat;
-  //VkExtent2D swapChainExtent = getSwapChainExtent();
-
-  auto imageCount = _colorImages.size();
-  _depthImages.resize(imageCount);
-  _depthImageMemorys.resize(imageCount);
-  _depthImageViews.resize(imageCount);
-
-  for (int i = 0; i < _depthImages.size(); i++) {
-    auto imageInfo = engine::ImageCreateInfoBuilder()
-      .setExtent(_extent)
-      .setFormat(depthFormat)
-      .setUsageFlags(vk::ImageUsageFlagBits::eDepthStencilAttachment)
-      .setSharingMode(vk::SharingMode::eExclusive)
-      .build();
-
-    _depthImages[i] = _device.createImage(imageInfo);
-    vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(_depthImages[i]);
-
-    uint32_t memoryTypeIndex = engine::findMemoryType(
-      _physicalDevice.getMemoryProperties(),
-      memRequirements.memoryTypeBits, 
-      vk::MemoryPropertyFlagBits::eDeviceLocal
-    ); 
-
-    vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
-      .setAllocationSize(memRequirements.size)
-      .setMemoryTypeIndex(memoryTypeIndex);
-
-    _depthImageMemorys[i] = _device.allocateMemory(allocInfo);
-
-    _device.bindImageMemory(_depthImages[i], _depthImageMemorys[i], 0);
-
-    auto viewInfo = engine::ImageViewCreateInfoBuilder()
-      .setFlags(vk::ImageAspectFlagBits::eDepth)
-      .setImage(_depthImages[i])
-      .setFormat(depthFormat)
-      .build();
-
-    _depthImageViews[i] = _device.createImageView(viewInfo);
-  }
-}
-
-void SwapChain::createSyncObjects() {
-  _imageAvailableSemaphores.resize(_maxFramesInFlight);
-  _renderFinishedSemaphores.resize(_maxFramesInFlight);
-  _inFlightFences.resize(_maxFramesInFlight);
-  _imagesInFlight.resize(_colorImages.size(), VK_NULL_HANDLE);
-
-  vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
-  vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
-
-  for (size_t i = 0; i < _maxFramesInFlight; i++) {
-    _imageAvailableSemaphores[i] = _device.createSemaphore(semaphoreInfo);
-    _renderFinishedSemaphores[i] = _device.createSemaphore(semaphoreInfo);
-    _inFlightFences[i] = _device.createFence(fenceInfo);
-  }
 }
 
 vk::SurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(

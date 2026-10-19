@@ -46,14 +46,6 @@ class SwapChain {
 
   vk::Format findDepthFormat();
 
-  void init(vk::SurfaceKHR surface, vk::Extent2D windowExtent);
-  void createSwapChain(vk::SurfaceKHR surface, vk::Extent2D windowExtent);
-  void createImageViews();
-  void createDepthResources();
-  void createRenderPass();
-  void createFramebuffers();
-  void createSyncObjects();
-
   // Helper functions
 vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
     const std::vector<vk::SurfaceFormatKHR> &availableFormats);
