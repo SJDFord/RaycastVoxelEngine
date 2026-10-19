@@ -33,15 +33,7 @@ class Image {
   Image(const Image &) = delete;
   Image &operator=(const Image &) = delete;
 
-  /*
-  static std::unique_ptr<Skybox> createSkyboxFromFile(
-      lve::LveDevice &device, const std::string &filepath);
-      */
-
-  // void bind(VkCommandBuffer commandBuffer);
-  // void draw(VkCommandBuffer commandBuffer);
-  vk::ImageView getImageView();
-  vk::Sampler getSampler();
+  vk::DescriptorImageInfo descriptorInfo();
 
  private:
   // void createVertexBuffers(const std::vector<Vertex> &vertices);

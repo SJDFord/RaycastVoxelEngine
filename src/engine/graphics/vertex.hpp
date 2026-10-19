@@ -4,7 +4,6 @@
 #include "../utils.hpp"
 
 #include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_raii.hpp"
 
 #include <glm/glm.hpp>
 #include <vector>

@@ -71,11 +71,7 @@ void VoxelApp::run() {
   );
   //std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/metal_plate_diff_4k.jpg");
   
-  vk::DescriptorImageInfo imageInfo = vk::DescriptorImageInfo()
-    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-    .setImageView(image->getImageView())
-    .setSampler(image->getSampler());
-
+  auto imageInfo = image->descriptorInfo();
   std::vector<VkDescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();

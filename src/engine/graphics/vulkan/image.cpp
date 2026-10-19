@@ -126,8 +126,13 @@ void Image::createImageView() {
     textureImageView = _device.createImageView(viewInfo);
 }
 
-vk::ImageView Image::getImageView() { return textureImageView; }
-vk::Sampler Image::getSampler() { return textureSampler; }
+vk::DescriptorImageInfo Image::descriptorInfo() {
+  vk::DescriptorImageInfo imageInfo = vk::DescriptorImageInfo()
+      .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+      .setImageView(textureImageView)
+      .setSampler(textureSampler);
+  return imageInfo;
+}
 
 void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
     vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
