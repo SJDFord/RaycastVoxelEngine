@@ -80,7 +80,7 @@ void Renderer::freeCommandBuffers() {
 
 bool Renderer::renderFrame(
     std::function<void(vk::CommandBuffer const &, int)> preRender, 
-    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPasses,
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPassOperations,
     std::function<void(vk::CommandBuffer const &, int)> postRender
   ) {
   auto acquireNextImageResult = _swapChain->acquireNextImage(&_currentImageIndex);
@@ -99,9 +99,9 @@ bool Renderer::renderFrame(
 
   preRender(commandBuffer, _currentFrameIndex);
 
-  for( auto renderPass : renderPasses )
+  for( auto renderPassOperation : renderPassOperations )
   {
-    runRenderPass(renderPass);
+    _swapChain->runRenderPass(commandBuffer, _currentFrameIndex, _currentImageIndex, renderPassOperation);
   }
 
   postRender(commandBuffer, _currentFrameIndex);
@@ -122,39 +122,6 @@ bool Renderer::renderFrame(
   _currentFrameIndex = (_currentFrameIndex + 1) % _maxFramesInFlight;
 
   return true;
-}
-
-
-void Renderer::runRenderPass(std::function<void(vk::CommandBuffer const &, int)> renderPassOperation) {
-  auto commandBuffer = _commandBuffers[_currentFrameIndex];
-  vk::Rect2D renderArea = vk::Rect2D({0, 0}, _swapChain->getSwapChainExtent());
-
-  std::array<vk::ClearValue, 2> clearValues{};
-  clearValues[0].color = vk::ClearColorValue(0.01f, 0.01f, 1.0f, 1.0f);
-  clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-  vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
-    .setRenderPass(_swapChain->getRenderPass())
-    .setFramebuffer(_swapChain->getFrameBuffer(_currentImageIndex))
-    .setRenderArea(renderArea)
-    .setClearValues(clearValues);
-
-  commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-  vk::Viewport viewport = vk::Viewport()
-    .setX(0.0f)
-    .setY(0.0f)
-    .setWidth(static_cast<float>(_swapChain->getSwapChainExtent().width))
-    .setHeight(static_cast<float>(_swapChain->getSwapChainExtent().height))
-    .setMinDepth(0.0f)
-    .setMaxDepth(1.0f);
-  vk::Rect2D scissor{{0, 0}, _swapChain->getSwapChainExtent()};
-  commandBuffer.setViewport(0, viewport);
-  commandBuffer.setScissor(0, scissor);
-
-  renderPassOperation(commandBuffer, _currentFrameIndex);
-
-  commandBuffer.endRenderPass();
 }
 
 }  // namespace engine

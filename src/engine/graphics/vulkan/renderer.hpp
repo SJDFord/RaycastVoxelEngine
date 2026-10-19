@@ -32,12 +32,11 @@ class Renderer {
   float getAspectRatio() const { return _swapChain->extentAspectRatio(); }
   bool renderFrame(
     std::function<void(vk::CommandBuffer const &, int)> preRender, 
-    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPasses,
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPassOperations,
     std::function<void(vk::CommandBuffer const &, int)> postRender
   );
 
  private:
-  void runRenderPass(std::function<void(vk::CommandBuffer const &, int)> renderPass);
   void createCommandBuffers();
   void freeCommandBuffers();
   void recreateSwapChain();
