@@ -26,14 +26,14 @@ Image::Image(
       .setMinLod(0.0f)
       .setMaxLod(0.0f);
 
-    textureSampler = _device.createSampler(samplerInfo);
+    _textureSampler = _device.createSampler(samplerInfo);
 }
 
 Image::~Image() {
-    _device.destroySampler(textureSampler);
-    _device.destroyImageView(textureImageView);
-    _device.destroyImage(textureImage);
-    _device.freeMemory(textureImageMemory);
+    _device.destroySampler(_textureSampler);
+    _device.destroyImageView(_textureImageView);
+    _device.destroyImage(_textureImage);
+    _device.freeMemory(_textureImageMemory);
 }
 
 
@@ -74,8 +74,8 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
     .setFlags({});
 
 
-  textureImage = _device.createImage(imageInfo);
-  vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(textureImage);
+  _textureImage = _device.createImage(imageInfo);
+  vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(_textureImage);
 
   uint32_t memoryTypeIndex = engine::findMemoryType(
     _physicalDevice.getMemoryProperties(), 
@@ -87,24 +87,24 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
     .setAllocationSize(memRequirements.size)
     .setMemoryTypeIndex(memoryTypeIndex);
 
-  textureImageMemory = _device.allocateMemory(allocInfo);
+  _textureImageMemory = _device.allocateMemory(allocInfo);
 
-  _device.bindImageMemory(textureImage, textureImageMemory, 0);
+  _device.bindImageMemory(_textureImage, _textureImageMemory, 0);
 
   transitionImageLayout(
       oneTimeCommandSubmitter,
-      textureImage,
+      _textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eTransferDstOptimal);
 
   oneTimeCommandSubmitter.submit([&] (const vk::CommandBuffer &commandBuffer) {
-    buffer->copyTo(commandBuffer, textureImage, imageExtent);
+    buffer->copyTo(commandBuffer, _textureImage, imageExtent);
   });
 
   transitionImageLayout(
       oneTimeCommandSubmitter,
-      textureImage,
+      _textureImage,
       vk::Format::eR8G8B8A8Srgb,
       vk::ImageLayout::eTransferDstOptimal,
       vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -118,19 +118,19 @@ void Image::createImageView() {
         .setLayerCount(1);
 
     vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
-        .setImage(textureImage)
+        .setImage(_textureImage)
         .setViewType(vk::ImageViewType::e2D)
         .setFormat(vk::Format::eR8G8B8A8Srgb)
         .setSubresourceRange(subresourceRange);
 
-    textureImageView = _device.createImageView(viewInfo);
+    _textureImageView = _device.createImageView(viewInfo);
 }
 
 vk::DescriptorImageInfo Image::descriptorInfo() {
   vk::DescriptorImageInfo imageInfo = vk::DescriptorImageInfo()
       .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-      .setImageView(textureImageView)
-      .setSampler(textureSampler);
+      .setImageView(_textureImageView)
+      .setSampler(_textureSampler);
   return imageInfo;
 }
 

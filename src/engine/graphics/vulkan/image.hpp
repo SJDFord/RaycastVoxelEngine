@@ -40,10 +40,10 @@ class Image {
   // void createIndexBuffers(const std::vector<uint32_t> &indices);
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
-  vk::Image textureImage = VK_NULL_HANDLE;
-  vk::DeviceMemory textureImageMemory = VK_NULL_HANDLE;
-  vk::ImageView textureImageView = VK_NULL_HANDLE;
-  vk::Sampler textureSampler = VK_NULL_HANDLE;
+  vk::Image _textureImage = VK_NULL_HANDLE;
+  vk::DeviceMemory _textureImageMemory = VK_NULL_HANDLE;
+  vk::ImageView _textureImageView = VK_NULL_HANDLE;
+  vk::Sampler _textureSampler = VK_NULL_HANDLE;
 
   void createImage(OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath);
   void createImageView();
