@@ -2,6 +2,8 @@
 
 #include "./builders/swapchain_builder.hpp"
 #include "./builders/render_pass_builder.hpp"
+#include "./builders/image_create_info_builder.hpp"
+#include "./builders/image_view_create_info_builder.hpp"
 
 #include <algorithm>
 #include <print>
@@ -160,18 +162,11 @@ void SwapChain::createImageViews() {
   auto imageCount = _colorImages.size();
   _colorImageViews.resize(imageCount);
   for (size_t i = 0; i < imageCount; i++) {
-      // TODO: Image view builder
-      vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor)
-        .setBaseMipLevel(0)
-        .setLevelCount(1)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-      vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+      auto viewInfo = engine::ImageViewCreateInfoBuilder()
+        .setFlags(vk::ImageAspectFlagBits::eColor)
         .setImage(_colorImages[i])
-        .setViewType(vk::ImageViewType::e2D)
         .setFormat(_colorFormat)
-        .setSubresourceRange(subresourceRange);
+        .build();
 
       _colorImageViews[i] = _device.createImageView(viewInfo);
   }
@@ -214,18 +209,12 @@ void SwapChain::createDepthResources() {
   _depthImageViews.resize(imageCount);
 
   for (int i = 0; i < _depthImages.size(); i++) {
-    // Todo: Image builder
-    vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
-      .setImageType(vk::ImageType::e2D)
-      .setExtent(vk::Extent3D(_extent, 1))
-      .setMipLevels(1)
-      .setArrayLayers(1)
+    auto imageInfo = engine::ImageCreateInfoBuilder()
+      .setExtent(_extent)
       .setFormat(depthFormat)
-      .setTiling(vk::ImageTiling::eOptimal)
-      .setInitialLayout(vk::ImageLayout::eUndefined)
-      .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
-      .setSamples(vk::SampleCountFlagBits::e1)
-      .setSharingMode(vk::SharingMode::eExclusive);
+      .setUsageFlags(vk::ImageUsageFlagBits::eDepthStencilAttachment)
+      .setSharingMode(vk::SharingMode::eExclusive)
+      .build();
 
     _depthImages[i] = _device.createImage(imageInfo);
     vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(_depthImages[i]);
@@ -244,18 +233,11 @@ void SwapChain::createDepthResources() {
 
     _device.bindImageMemory(_depthImages[i], _depthImageMemorys[i], 0);
 
-    // Todo: Image view builder
-      vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth)
-      .setBaseMipLevel(0)
-      .setLevelCount(1)
-      .setBaseArrayLayer(0)
-      .setLayerCount(1);
-
-    vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+    auto viewInfo = engine::ImageViewCreateInfoBuilder()
+      .setFlags(vk::ImageAspectFlagBits::eDepth)
       .setImage(_depthImages[i])
-      .setViewType(vk::ImageViewType::e2D)
       .setFormat(depthFormat)
-      .setSubresourceRange(subresourceRange);
+      .build();
 
     _depthImageViews[i] = _device.createImageView(viewInfo);
   }

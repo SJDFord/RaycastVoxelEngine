@@ -1,5 +1,8 @@
 #include "image.hpp"
 
+#include "./builders/image_create_info_builder.hpp"
+#include "./builders/image_view_create_info_builder.hpp"
+
 namespace engine {
 Image::Image(
     vk::Device const &         device,
@@ -61,18 +64,12 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
 
   vk::Extent2D imageExtent(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-  vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
-    .setImageType(vk::ImageType::e2D)
-    .setExtent(vk::Extent3D(imageExtent, 1))
-    .setMipLevels(1)
-    .setArrayLayers(1)
+  auto imageInfo = engine::ImageCreateInfoBuilder()
+    .setExtent(imageExtent)
     .setFormat(vk::Format::eR8G8B8A8Srgb)
-    .setTiling(vk::ImageTiling::eOptimal)
-    .setInitialLayout(vk::ImageLayout::eUndefined)
-    .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
-    .setSamples(vk::SampleCountFlagBits::e1)
-    .setFlags({});
-
+    .setUsageFlags(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
+    .setSharingMode(vk::SharingMode::eExclusive)
+    .build();
 
   _textureImage = _device.createImage(imageInfo);
   vk::MemoryRequirements memRequirements = _device.getImageMemoryRequirements(_textureImage);
@@ -111,17 +108,11 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
 }
 
 void Image::createImageView() {
-    vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor)
-        .setBaseMipLevel(0)
-        .setLevelCount(1)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-    vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
-        .setImage(_textureImage)
-        .setViewType(vk::ImageViewType::e2D)
-        .setFormat(vk::Format::eR8G8B8A8Srgb)
-        .setSubresourceRange(subresourceRange);
+    auto viewInfo = engine::ImageViewCreateInfoBuilder()
+      .setFlags(vk::ImageAspectFlagBits::eColor)
+      .setImage(_textureImage)
+      .setFormat(vk::Format::eR8G8B8A8Srgb)
+      .build();
 
     _textureImageView = _device.createImageView(viewInfo);
 }
