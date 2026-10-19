@@ -77,7 +77,7 @@ Buffer::~Buffer() {
 /**
  * Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
  *
- * @param size (Optional) Size of the memory range to map. Pass VK_WHOLE_SIZE to map the complete
+ * @param size (Optional) Size of the memory range to map. Pass vk::WholeSize to map the complete
  * buffer range.
  * @param offset (Optional) Byte offset from beginning
  *
@@ -104,7 +104,7 @@ void Buffer::unmap() {
  * Copies the specified data to the mapped buffer. Default value writes whole buffer range
  *
  * @param data Pointer to the data to copy
- * @param size (Optional) Size of the data to copy. Pass VK_WHOLE_SIZE to flush the complete buffer
+ * @param size (Optional) Size of the data to copy. Pass vk::WholeSize to flush the complete buffer
  * range.
  * @param offset (Optional) Byte offset from beginning of mapped region
  *
@@ -112,7 +112,7 @@ void Buffer::unmap() {
 void Buffer::writeToBuffer(void *data, vk::DeviceSize size, vk::DeviceSize offset) {
   assert(_mapped && "Cannot copy to unmapped buffer");
 
-  if (size == VK_WHOLE_SIZE) {
+  if (size == vk::WholeSize) {
     memcpy(_mapped, data, _bufferSize);
   } else {
     char *memOffset = (char *)_mapped;
@@ -126,7 +126,7 @@ void Buffer::writeToBuffer(void *data, vk::DeviceSize size, vk::DeviceSize offse
  *
  * @note Only required for non-coherent memory
  *
- * @param size (Optional) Size of the memory range to flush. Pass VK_WHOLE_SIZE to flush the
+ * @param size (Optional) Size of the memory range to flush. Pass vk::WholeSize to flush the
  * complete buffer range.
  * @param offset (Optional) Byte offset from beginning
  *
@@ -146,7 +146,7 @@ vk::Result Buffer::flush(vk::DeviceSize size, vk::DeviceSize offset) {
  *
  * @note Only required for non-coherent memory
  *
- * @param size (Optional) Size of the memory range to invalidate. Pass VK_WHOLE_SIZE to invalidate
+ * @param size (Optional) Size of the memory range to invalidate. Pass vk::WholeSize to invalidate
  * the complete buffer range.
  * @param offset (Optional) Byte offset from beginning
  *
@@ -219,6 +219,48 @@ vk::DescriptorBufferInfo Buffer::descriptorInfoForIndex(int index) {
  */
 vk::Result Buffer::invalidateIndex(int index) {
   return invalidate(_alignmentSize, index * _alignmentSize);
+}
+
+
+void Buffer::copyTo(const vk::CommandBuffer &commandBuffer, const Buffer &destination) {
+  Buffer& source = *this;
+  assert(source._bufferSize == destination._bufferSize && "Source and destination buffer size must match");
+  
+  vk::BufferCopy copyRegion = vk::BufferCopy()
+    .setSrcOffset(0)
+    .setDstOffset(0)
+    .setSize(source._bufferSize);
+
+  commandBuffer.copyBuffer(source._buffer, destination._buffer, copyRegion);
+}
+
+void Buffer::copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, vk::Extent2D extent) {
+  Buffer& source = *this;
+  vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
+    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+    .setMipLevel(0)
+    .setBaseArrayLayer(0)
+    .setLayerCount(1);
+
+  vk::BufferImageCopy region = vk::BufferImageCopy()
+    .setBufferOffset(0)
+    .setBufferRowLength(0)
+    .setBufferImageHeight(0)
+    .setImageSubresource(subresource)
+    .setImageOffset({0, 0, 0})
+    .setImageExtent(vk::Extent3D(extent, 1));
+  
+  commandBuffer.copyBufferToImage(source._buffer, destination, vk::ImageLayout::eTransferDstOptimal, region);
+}
+
+
+void Buffer::bindVertex(const vk::CommandBuffer &commandBuffer, uint32_t firstBinding, std::vector<vk::DeviceSize> offsets) {
+  vk::Buffer buffers[] = {_buffer};
+  commandBuffer.bindVertexBuffers(firstBinding, buffers, offsets);
+}
+
+void Buffer::bindIndex(const vk::CommandBuffer &commandBuffer, vk::DeviceSize offset, vk::IndexType indexType) {
+  commandBuffer.bindIndexBuffer(_buffer, offset, indexType);
 }
 
 }

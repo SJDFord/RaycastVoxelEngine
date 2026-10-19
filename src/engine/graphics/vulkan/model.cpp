@@ -55,16 +55,8 @@ void Model::createVertexBuffers(engine::OneTimeCommandSubmitter& commandSubmitte
       vk::MemoryPropertyFlagBits::eDeviceLocal
   );
 
-
-  vk::BufferCopy copyRegion = vk::BufferCopy()
-    .setSrcOffset(0)
-    .setDstOffset(0)
-    .setSize(bufferSize);
-
-  auto srcBuffer = stagingBuffer.getBuffer();
-  auto dstBuffer = vertexBuffer->getBuffer();
-  commandSubmitter.submit([srcBuffer, dstBuffer, copyRegion](const vk::CommandBuffer& commandBuffer) {
-    commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+  commandSubmitter.submit([&](const vk::CommandBuffer& commandBuffer) {
+    stagingBuffer.copyTo(commandBuffer, *vertexBuffer);
   });
 }
 
@@ -102,16 +94,9 @@ void Model::createIndexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter
       vk::MemoryPropertyFlagBits::eDeviceLocal
   );
   
-  vk::BufferCopy copyRegion = vk::BufferCopy()
-    .setSrcOffset(0)
-    .setDstOffset(0)
-    .setSize(bufferSize);
 
-
-  auto srcBuffer = stagingBuffer.getBuffer();
-  auto dstBuffer = indexBuffer->getBuffer();
-  commandSubmitter.submit([srcBuffer, dstBuffer, copyRegion](const vk::CommandBuffer& commandBuffer) {
-    commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRegion);
+  commandSubmitter.submit([&](const vk::CommandBuffer& commandBuffer) {
+    stagingBuffer.copyTo(commandBuffer, *indexBuffer);
   });
 }
 
@@ -124,12 +109,10 @@ void Model::draw(vk::CommandBuffer commandBuffer) {
 }
 
 void Model::bind(vk::CommandBuffer commandBuffer) {
-  vk::Buffer buffers[] = {vertexBuffer->getBuffer()};
-  vk::DeviceSize offsets[] = {0};
-  commandBuffer.bindVertexBuffers(0, buffers, offsets);
+  vertexBuffer->bindVertex(commandBuffer, 0, {0});
 
   if (hasIndexBuffer) {
-    commandBuffer.bindIndexBuffer(indexBuffer->getBuffer(), 0, vk::IndexType::eUint32);
+    indexBuffer->bindIndex(commandBuffer, 0, vk::IndexType::eUint32);
   }
 }
 

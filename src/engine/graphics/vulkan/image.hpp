@@ -57,8 +57,6 @@ class Image {
   void createImageView();
   void transitionImageLayout(
     OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-  void copyBufferToImage(
-    OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount);
   /*
   std::unique_ptr<LveBuffer> vertexBuffer;
   uint32_t vertexCount;

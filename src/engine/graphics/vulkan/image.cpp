@@ -59,9 +59,11 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
   buffer->unmap();
   stbi_image_free(pixels);
 
+  vk::Extent2D imageExtent(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
   vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
     .setImageType(vk::ImageType::e2D)
-    .setExtent(vk::Extent3D(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1))
+    .setExtent(vk::Extent3D(imageExtent, 1))
     .setMipLevels(1)
     .setArrayLayers(1)
     .setFormat(vk::Format::eR8G8B8A8Srgb)
@@ -96,13 +98,10 @@ void Image::createImage(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eTransferDstOptimal);
 
-  copyBufferToImage(
-      oneTimeCommandSubmitter,
-      buffer->getBuffer(),
-      textureImage,
-      static_cast<uint32_t>(texWidth),
-      static_cast<uint32_t>(texHeight),
-      1);
+  oneTimeCommandSubmitter.submit([&] (const vk::CommandBuffer &commandBuffer) {
+    buffer->copyTo(commandBuffer, textureImage, imageExtent);
+  });
+
   transitionImageLayout(
       oneTimeCommandSubmitter,
       textureImage,
@@ -170,26 +169,6 @@ void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeComman
 
   oneTimeCommandSubmitter.submit([sourceStage, destinationStage, barrier](const vk::CommandBuffer& commandBuffer) {
     commandBuffer.pipelineBarrier(sourceStage, destinationStage, vk::DependencyFlags(), {}, {}, barrier);
-  });
-}
-
-void Image::copyBufferToImage(OneTimeCommandSubmitter& oneTimeCommandSubmitter,
-    vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount) {
-  vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
-      .setAspectMask(vk::ImageAspectFlagBits::eColor)
-      .setMipLevel(0)
-      .setBaseArrayLayer(0)
-      .setLayerCount(layerCount);
-  vk::BufferImageCopy region = vk::BufferImageCopy()
-    .setBufferOffset(0)
-    .setBufferRowLength(0)
-    .setBufferImageHeight(0)
-    .setImageSubresource(subresource)
-    .setImageOffset({0, 0, 0})
-    .setImageExtent({width, height, 1});
-  
-  oneTimeCommandSubmitter.submit([buffer, image, region](const vk::CommandBuffer& commandBuffer) {
-    commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
   });
 }
 

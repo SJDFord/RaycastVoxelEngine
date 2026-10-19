@@ -19,28 +19,23 @@ class Buffer {
 
   Buffer(const Buffer&) = delete;
   Buffer& operator=(const Buffer&) = delete;
-
-  vk::Result map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  vk::Result map(VkDeviceSize size = vk::WholeSize, VkDeviceSize offset = 0);
   void unmap();
 
-  void writeToBuffer(void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-  vk::Result flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-  vk::DescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-  vk::Result invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+  void writeToBuffer(void* data, VkDeviceSize size = vk::WholeSize, VkDeviceSize offset = 0);
+  vk::Result flush(VkDeviceSize size = vk::WholeSize, VkDeviceSize offset = 0);
+  vk::DescriptorBufferInfo descriptorInfo(VkDeviceSize size = vk::WholeSize, VkDeviceSize offset = 0);
+  vk::Result invalidate(VkDeviceSize size = vk::WholeSize, VkDeviceSize offset = 0);
 
   void writeToIndex(void* data, int index);
   vk::Result flushIndex(int index);
   vk::DescriptorBufferInfo descriptorInfoForIndex(int index);
   vk::Result invalidateIndex(int index);
 
-  vk::Buffer getBuffer() const { return _buffer; }
-  void* getMappedMemory() const { return _mapped; }
-  uint32_t getInstanceCount() const { return _instanceCount; }
-  vk::DeviceSize getInstanceSize() const { return _instanceSize; }
-  vk::DeviceSize getAlignmentSize() const { return _instanceSize; }
-  vk::BufferUsageFlags getUsageFlags() const { return _usageFlags; }
-  vk::MemoryPropertyFlags getMemoryPropertyFlags() const { return _memoryPropertyFlags; }
-  vk::DeviceSize getBufferSize() const { return _bufferSize; }
+  void copyTo(const vk::CommandBuffer &commandBuffer, const Buffer &destination);
+  void copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, vk::Extent2D extent);
+  void bindVertex(const vk::CommandBuffer &commandBuffer, uint32_t firstBinding, std::vector<vk::DeviceSize> offsets);
+  void bindIndex(const vk::CommandBuffer &commandBuffer, vk::DeviceSize offset, vk::IndexType indexType);
 
  private:
   static vk::DeviceSize getAlignment(vk::DeviceSize instanceSize, vk::DeviceSize minOffsetAlignment);
