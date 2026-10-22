@@ -18,20 +18,23 @@ Renderer::Renderer(engine::Window& window,
     _graphicsFamilyIndex{graphicsFamilyIndex},
     _presentFamilyIndex{presentFamilyIndex},
     _maxFramesInFlight{maxFramesInFlight} {
-  recreateSwapChain();
+
+  auto extent = _window.getExtent();
+  recreateSwapChain(extent);
   createCommandBuffers();
+
+  _window.addFramebufferResizeListener([&] (vk::Extent2D extent) { 
+    std::println("Window resized");
+    recreateSwapChain(extent);
+  });
 }
 
 Renderer::~Renderer() { freeCommandBuffers(); }
 
-void Renderer::recreateSwapChain() {
-  auto extent = _window.getExtent();
-  while (extent.width == 0 || extent.height == 0) {
-    extent = _window.getExtent();
-    _window.waitEvents();
-  }
-
+void Renderer::recreateSwapChain(vk::Extent2D extent) {
   _device.waitIdle();
+
+  std::println("Recreating swap chain {} x {}", extent.width, extent.height);
   
   if (_swapChain == nullptr) {
     _swapChain = std::make_unique<engine::SwapChain>(
@@ -85,7 +88,8 @@ bool Renderer::renderFrame(
   ) {
   auto acquireNextImageResult = _swapChain->acquireNextImage(&_currentImageIndex);
   if (acquireNextImageResult == vk::Result::eErrorOutOfDateKHR) {
-    recreateSwapChain();
+    std::println("Out of date KHR after acquiring next image");
+    recreateSwapChain(_window.getExtent());
     return false;
   }
 
@@ -110,11 +114,9 @@ bool Renderer::renderFrame(
   commandBuffer.end();
 
   auto submitCommandBuffersResult = _swapChain->submitCommandBuffers(&commandBuffer, &_currentImageIndex);
-  if (submitCommandBuffersResult == vk::Result::eErrorOutOfDateKHR || submitCommandBuffersResult == vk::Result::eSuboptimalKHR ||
-    _window.wasWindowResized() ) {
-    // TODO: resized should be a registered callback rather than polling for it
-    _window.resetWindowResizedFlag();
-    recreateSwapChain();
+  if (submitCommandBuffersResult == vk::Result::eErrorOutOfDateKHR || submitCommandBuffersResult == vk::Result::eSuboptimalKHR) {
+    std::println("Error after submitting command buffers");
+    recreateSwapChain(_window.getExtent());
   } else if (submitCommandBuffersResult != vk::Result::eSuccess) {
     throw std::runtime_error("failed to present swap chain image!");
   }

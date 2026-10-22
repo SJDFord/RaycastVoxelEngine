@@ -39,7 +39,7 @@ class Renderer {
  private:
   void createCommandBuffers();
   void freeCommandBuffers();
-  void recreateSwapChain();
+  void recreateSwapChain(vk::Extent2D extent);
 
   engine::Window &_window;
   vk::SurfaceKHR _surface;

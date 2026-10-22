@@ -5,6 +5,9 @@
 
 namespace engine {
 
+/*
+A class encapsulating a vk::Buffer along with the mapped memory it contains
+*/
 class Buffer {
  public:
   Buffer(
@@ -32,9 +35,24 @@ class Buffer {
   vk::DescriptorBufferInfo descriptorInfoForIndex(int index);
   vk::Result invalidateIndex(int index);
 
+  /*
+  Copy this buffer to a destination Buffer using the specified vk::CommandBuffer 
+  */
   void copyTo(const vk::CommandBuffer &commandBuffer, const Buffer &destination);
+
+  /*
+  Copy this buffer to a destination vk::Image using the specified vk::CommandBuffer 
+  */
   void copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, vk::Extent2D extent);
+
+  /*
+  Bind a vertex buffer using the specified vk::CommandBuffer 
+  */
   void bindVertex(const vk::CommandBuffer &commandBuffer, uint32_t firstBinding, std::vector<vk::DeviceSize> offsets);
+  
+  /*
+  Bind an index buffer using the specified vk::CommandBuffer 
+  */
   void bindIndex(const vk::CommandBuffer &commandBuffer, vk::DeviceSize offset, vk::IndexType indexType);
 
  private:

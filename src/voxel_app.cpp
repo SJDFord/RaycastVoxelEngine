@@ -98,13 +98,21 @@ void VoxelApp::run() {
   viewerObject.transform.translation.z = -2.5f;
   engine::FpsMovementController cameraController{_window};
 
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  while (!_window.shouldClose()) {
-    _window.pollEvents();
 
-    if (_window.isKeyPressed(engine::KeyboardKey::ESCAPE)) {
-      _window.close();
+  bool isRunning = true;
+
+  _window.addKeyListener([&] (engine::KeyboardKey key, bool isPressed, vk::Flags<engine::ModifierFlagBits> modifierFlags) {
+    if (key == engine::KeyboardKey::ESCAPE && isPressed) {
+      isRunning = false;
     }
+  });
+  _window.addCloseListener([&] () {
+    isRunning = false;
+  });
+
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  while (isRunning) {
+    _window.pollEvents();
 
     auto newTime = std::chrono::high_resolution_clock::now();
     float frameTime =
@@ -164,6 +172,7 @@ void VoxelApp::run() {
     );
   }
   
+  std::println("Cleanup");
   _device.waitIdle();
 }
 
