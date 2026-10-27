@@ -11,12 +11,18 @@
 #include "systems/simple_render_system.hpp"
 #include "./engine/graphics/vulkan/builders/descriptor_pool_create_info_builder.hpp"
 #include "./engine/graphics/vulkan/image.hpp"
+#include "./engine/graphics/vulkan/builders/file_image_builder.hpp"
+
+#include "./engine/graphics/vulkan/image.hpp"
 
 // libs
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+
+#include <ktx.h>
+#include <ktxvulkan.h>
 
 // std
 #include <array>
@@ -63,14 +69,15 @@ void VoxelApp::run() {
   
   vk::DescriptorSetLayout globalSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, bindings));
 
-  std::unique_ptr<engine::Image> image = std::make_unique<engine::Image>(
+  std::unique_ptr<engine::Image> image = engine::FileImageBuilder(
     _device, 
-    _physicalDevice, 
-    _oneTimeCommandSubmitter,
-    "../textures/hinoki_planks_diff_4k.jpg"
+    _physicalDevice
+  ).build(
+    _oneTimeCommandSubmitter, 
+    //"../textures/hinoki_planks_diff_4k.jpg"
+    "../textures/metalplate01_rgba.ktx"
   );
-  //std::unique_ptr<Image> image = std::make_unique<Image>(lveDevice, "../textures/metal_plate_diff_4k.jpg");
-  
+
   auto imageInfo = image->descriptorInfo();
   std::vector<VkDescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {

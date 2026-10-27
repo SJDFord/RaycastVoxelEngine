@@ -56,6 +56,9 @@ CPMAddPackage("gh:KhronosGroup/glslang#16.1.0")
 
   #find_package(spvtools REQUIRED) # throws error if could not find Vulkan
 
+# KTX
+CPMAddPackage("gh:KhronosGroup/KTX-Software#v4.4.2")
+
 endif()
 if (NOT GLFW_LIB)
 	message(FATAL_ERROR "Could not find glfw library!")
@@ -132,7 +135,7 @@ elseif (UNIX)
       ${STB_PATH}
       ${TINYOBJ_PATH}
     )
-    target_link_libraries(${PROJECT_NAME} glfw glslang ${Vulkan_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} glfw glslang ktx ${Vulkan_LIBRARIES})
 endif()
 
 

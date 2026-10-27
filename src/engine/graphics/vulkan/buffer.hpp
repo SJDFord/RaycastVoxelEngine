@@ -46,6 +46,11 @@ class Buffer {
   void copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, vk::Extent2D extent);
 
   /*
+  Copy this buffer to a destination vk::Image using the specified vk::CommandBuffer 
+  */
+  void copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, std::vector<vk::BufferImageCopy> regions);
+
+  /*
   Bind a vertex buffer using the specified vk::CommandBuffer 
   */
   void bindVertex(const vk::CommandBuffer &commandBuffer, uint32_t firstBinding, std::vector<vk::DeviceSize> offsets);

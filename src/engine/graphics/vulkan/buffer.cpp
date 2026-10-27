@@ -254,6 +254,21 @@ void Buffer::copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &des
 }
 
 
+/*
+Copy this buffer to a destination vk::Image using the specified vk::CommandBuffer 
+*/
+void Buffer::copyTo(const vk::CommandBuffer &commandBuffer, const vk::Image &destination, std::vector<vk::BufferImageCopy> regions) {
+  Buffer& source = *this;
+  vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
+    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+    .setMipLevel(0)
+    .setBaseArrayLayer(0)
+    .setLayerCount(1);
+  
+  commandBuffer.copyBufferToImage(source._buffer, destination, vk::ImageLayout::eTransferDstOptimal, regions);
+}
+
+
 void Buffer::bindVertex(const vk::CommandBuffer &commandBuffer, uint32_t firstBinding, std::vector<vk::DeviceSize> offsets) {
   vk::Buffer buffers[] = {_buffer};
   commandBuffer.bindVertexBuffers(firstBinding, buffers, offsets);

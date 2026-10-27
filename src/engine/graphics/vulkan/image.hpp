@@ -1,8 +1,5 @@
 #pragma once
 
-//#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
-
 #include "one_time_command_submitter.hpp"
 #include "buffer.hpp"
 
@@ -21,12 +18,27 @@ namespace engine {
 // TODO: Separate image creaton and image view/sampling
 class Image {
  public:
+  Image(
+    vk::Device const &         device,
+    vk::PhysicalDevice const & physicalDevice,
+    OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    void* data,
+    uint32_t dataSize,
+    vk::Extent2D extent
+  );
+ 
   // TODO: Other ways to create an image
   Image(
     vk::Device const &         device,
     vk::PhysicalDevice const & physicalDevice,
     OneTimeCommandSubmitter& oneTimeCommandSubmitter,
-    const std::string &filepath
+    void* data,
+    uint32_t dataSize,
+    vk::Extent2D extent,
+    uint32_t mipLevels,
+    std::function<uint32_t(uint32_t mipLevel, uint32_t layer, uint32_t faceSlice)> getOffset,
+    std::function<uint32_t(uint32_t mipLevel)> getImageSize
+    //const std::string &filepath
   );
   ~Image();
 
@@ -36,8 +48,6 @@ class Image {
   vk::DescriptorImageInfo descriptorInfo();
 
  private:
-  // void createVertexBuffers(const std::vector<Vertex> &vertices);
-  // void createIndexBuffers(const std::vector<uint32_t> &indices);
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
   vk::Image _textureImage = VK_NULL_HANDLE;
@@ -45,18 +55,8 @@ class Image {
   vk::ImageView _textureImageView = VK_NULL_HANDLE;
   vk::Sampler _textureSampler = VK_NULL_HANDLE;
 
-  void createImage(OneTimeCommandSubmitter& oneTimeCommandSubmitter, const std::string &filepath);
-  void createImageView();
   void transitionImageLayout(
-    OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-  /*
-  std::unique_ptr<LveBuffer> vertexBuffer;
-  uint32_t vertexCount;
-
-  bool hasIndexBuffer = false;
-  std::unique_ptr<LveBuffer> indexBuffer;
-  uint32_t indexCount;
-  */
+    OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t levelCount = 1);
 };
 
 }
