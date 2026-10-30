@@ -18,7 +18,7 @@
 namespace engine {
 class Model {
  public:
-  Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const Mesh &mesh);
+  Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Mesh>& meshes);
   ~Model();
 
   Model(const Model &) = delete;

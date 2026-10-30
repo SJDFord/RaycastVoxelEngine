@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstring>
 #include <unordered_map>
+#include <print>
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
@@ -12,21 +13,21 @@
 
 namespace engine {
 
-Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const Mesh &mesh) : _device{device}, _physicalDevice{physicalDevice} {
-  createVertexBuffers(commandSubmitter, mesh.Vertices);
-  createIndexBuffers(commandSubmitter, mesh.Indices);
+Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Mesh>& meshes) : _device{device}, _physicalDevice{physicalDevice} {
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+
+  for (auto& mesh : meshes) {
+    std::println("Building vertex list");
+    vertices.insert(vertices.end(), mesh.Vertices.begin(), mesh.Vertices.end());
+    indices.insert(indices.end(), mesh.Indices.begin(), mesh.Indices.end());
+  }
+  
+  createVertexBuffers(commandSubmitter, vertices);
+  createIndexBuffers(commandSubmitter, indices);
 }
 
 Model::~Model() {}
-
-/*
-std::unique_ptr<LveModel> LveModel::createModelFromFile(
-    LveDevice &device, const std::string &filepath) {
-  MeshBuilder builder{};
-  Mesh mesh = builder.loadMesh(ENGINE_DIR + filepath);
-  return std::make_unique<LveModel>(device, mesh);
-}
-*/
 
 void Model::createVertexBuffers(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Vertex> &vertices) {
   vertexCount = static_cast<uint32_t>(vertices.size());
