@@ -37,14 +37,14 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::getAttributeDescription
                                         .setLocation(3)
                                         .setBinding(0)
                                         .setFormat(vk::Format::eR32G32Sfloat)
-                                        .setOffset(offsetof(Vertex, uv)));
+                                        .setOffset(offsetof(Vertex, uvw)));
 
     return attributeDescriptions;
 }
 
 bool Vertex::operator==(const Vertex &other) const {
     return position == other.position && color == other.color && normal == other.normal &&
-            uv == other.uv;
+            uvw == other.uvw;
 }
 
 }
@@ -52,7 +52,7 @@ bool Vertex::operator==(const Vertex &other) const {
 namespace std {
     size_t hash<engine::Vertex>::operator()(engine::Vertex const &vertex) const {
         size_t seed = 0;
-        engine::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+        engine::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uvw);
         return seed;
     }
 }  // namespace std

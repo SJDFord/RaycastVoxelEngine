@@ -32,8 +32,11 @@ class FileModelBuilder {
  private:
   const vk::Device& _device;
   const vk::PhysicalDevice& _physicalDevice;
+  std::string _modelName;
 
   std::vector<Mesh> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh);
-  Mesh createMesh(const fastgltf::Asset& asset, const fastgltf::Primitive& primitive);
+  Mesh createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive);
+  std::string toString(fastgltf::AccessorType accessorType);
+  std::string toString(fastgltf::ComponentType componentType);
 };
 }  // namespace engine

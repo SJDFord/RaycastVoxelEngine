@@ -5,10 +5,10 @@
 
 namespace engine {
   struct TextureCoords {
-    static constexpr glm::vec2 BottomLeft = glm::vec2(0.0f, 0.0f);
-    static constexpr glm::vec2 TopLeft = glm::vec2(0.0f, 1.0f);
-    static constexpr glm::vec2 BottomRight = glm::vec2(1.0f, 0.0f);
-    static constexpr glm::vec2 TopRight = glm::vec2(1.0f, 1.0f);
+    static constexpr glm::vec3 BottomLeft = glm::vec3(0.0f, 0.0f, 0.0f);
+    static constexpr glm::vec3 TopLeft = glm::vec3(0.0f, 1.0f, 0.0f);
+    static constexpr glm::vec3 BottomRight = glm::vec3(1.0f, 0.0f, 0.0f);
+    static constexpr glm::vec3 TopRight = glm::vec3(1.0f, 1.0f, 0.0f);
 };
 
 struct CubeCoords {

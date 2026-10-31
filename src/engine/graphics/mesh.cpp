@@ -81,7 +81,7 @@ namespace engine {
         // 3   0
         // 1   2
 
-        std::vector<std::vector<glm::vec2>> textureCoords = {
+        std::vector<std::vector<glm::vec3>> textureCoords = {
             {
                 TextureCoords::TopLeft,
                 TextureCoords::BottomRight,

@@ -187,9 +187,6 @@ void VoxelApp::run() {
 void VoxelApp::loadGameObjects() {
   auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
-  std::vector<engine::Mesh> testMeshes;
-  testMeshes.resize(1);
-  testMeshes.push_back(engine::createCubeMesh(position, {0.0f, 0.5f, 0.5f}, true, true, true, true, true, true));
   testGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf");
   testGameObject.transform.translation = position;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
@@ -197,14 +194,20 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
-  std::vector<engine::Mesh> test2Meshes;
-  test2Meshes.resize(1);
-  test2Meshes.push_back(engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true));
+  std::vector<engine::Mesh> test2Meshes = {engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true)};
   std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, test2Meshes);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
   gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
+
+  auto testGameObject3 = engine::GameObject::createGameObject();
+  glm::vec3 position3 = {-20.0f, 1.0f, -10.0f};
+  testGameObject3.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/chinesedragon.gltf");
+  testGameObject3.transform.translation = position3;
+  testGameObject3.transform.scale = {1.0f, 1.0f, 1.0f};
+  testGameObject3.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
+  gameObjects.emplace(testGameObject3.getId(), std::move(testGameObject3));
   
   auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {
