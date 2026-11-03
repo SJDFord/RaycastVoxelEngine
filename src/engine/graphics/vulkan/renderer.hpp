@@ -22,13 +22,17 @@ class Renderer {
     vk::CommandPool commandPool,
     uint32_t graphicsFamilyIndex,
     uint32_t presentFamilyIndex,
-    uint32_t maxFramesInFlight);
+    uint32_t maxFramesInFlight,
+    bool enableDynamicRendering);
   ~Renderer();
 
   Renderer(const Renderer &) = delete;
   Renderer &operator=(const Renderer &) = delete;
 
   vk::RenderPass getSwapChainRenderPass() const { return _swapChain->getRenderPass(); }
+  vk::Format getSwapChainColorFormat() { return _swapChain->getColorFormat(); }
+  vk::Format getSwapChainDepthFormat() { return _swapChain->getDepthFormat(); }
+
   float getAspectRatio() const { return _swapChain->extentAspectRatio(); }
   bool renderFrame(
     std::function<void(vk::CommandBuffer const &, int)> preRender, 
@@ -37,6 +41,8 @@ class Renderer {
   );
 
  private:
+  bool _enableDynamicRendering;
+
   void createCommandBuffers();
   void freeCommandBuffers();
   void recreateSwapChain(vk::Extent2D extent);

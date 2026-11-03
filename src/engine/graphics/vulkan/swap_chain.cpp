@@ -18,8 +18,9 @@ SwapChain::SwapChain(
     uint32_t           graphicsFamilyIndex,
     uint32_t           presentFamilyIndex,
     uint32_t           maxFramesInFlight,
+    bool enableDynamicRendering,
     std::shared_ptr<SwapChain> previous)
-    : _device{device}, _physicalDevice{physicalDevice}, _graphicsFamilyIndex{graphicsFamilyIndex}, _presentFamilyIndex{presentFamilyIndex}, _maxFramesInFlight(maxFramesInFlight), _oldSwapChain{previous} {
+    : _device{device}, _physicalDevice{physicalDevice}, _graphicsFamilyIndex{graphicsFamilyIndex}, _presentFamilyIndex{presentFamilyIndex}, _maxFramesInFlight(maxFramesInFlight), _enableDynamicRendering{enableDynamicRendering}, _oldSwapChain{previous} {
   auto capabilities = _physicalDevice.getSurfaceCapabilitiesKHR(surface);
   vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(_physicalDevice.getSurfaceFormatsKHR(surface));
   vk::PresentModeKHR presentMode = chooseSwapPresentMode(_physicalDevice.getSurfacePresentModesKHR(surface));
@@ -46,10 +47,12 @@ SwapChain::SwapChain(
       _colorImageViews[i] = _device.createImageView(imageViewCreateInfoBuilder.build());
   }
 
-  _renderPass = engine::RenderPassBuilder(_device)
-    .setColorFormat(_colorFormat)
-    .setDepthFormat(findDepthFormat())
-    .build();
+  if (!_enableDynamicRendering) {
+    _renderPass = engine::RenderPassBuilder(_device)
+      .setColorFormat(_colorFormat)
+      .setDepthFormat(findDepthFormat())
+      .build();
+  }
 
   _depthFormat = findDepthFormat();
   _depthImages.resize(imageCount);
@@ -83,22 +86,24 @@ SwapChain::SwapChain(
     _depthImageViews[i] = _device.createImageView(imageViewCreateInfoBuilder.build());
   }
   
-  _framebuffers.resize(imageCount);
-  for (size_t i = 0; i < imageCount; i++) {
-    std::array<vk::ImageView, 2> attachments = {_colorImageViews[i], _depthImageViews[i]};
+  if (!_enableDynamicRendering) {
+  
+    _framebuffers.resize(imageCount);
+    for (size_t i = 0; i < imageCount; i++) {
+      std::array<vk::ImageView, 2> attachments = {_colorImageViews[i], _depthImageViews[i]};
 
-     // TODO: Framebuffer builder
+      // TODO: Framebuffer builder
 
-    vk::FramebufferCreateInfo framebufferInfo = vk::FramebufferCreateInfo()
-      .setRenderPass(_renderPass)
-      .setAttachments(attachments)
-      .setWidth(_extent.width)
-      .setHeight(_extent.height)
-      .setLayers(1);
+      vk::FramebufferCreateInfo framebufferInfo = vk::FramebufferCreateInfo()
+        .setRenderPass(_renderPass)
+        .setAttachments(attachments)
+        .setWidth(_extent.width)
+        .setHeight(_extent.height)
+        .setLayers(1);
 
-    _framebuffers[i] = _device.createFramebuffer(framebufferInfo);
+      _framebuffers[i] = _device.createFramebuffer(framebufferInfo);
+    }
   }
-
   _imageAvailableSemaphores.resize(_maxFramesInFlight);
   _renderFinishedSemaphores.resize(_maxFramesInFlight);
   _inFlightFences.resize(_maxFramesInFlight);
@@ -131,12 +136,13 @@ SwapChain::~SwapChain() {
     _device.freeMemory(_depthImageMemorys[i]);
   }
 
-  for (auto framebuffer : _framebuffers) {
-    _device.destroyFramebuffer(framebuffer);
+  if (!_enableDynamicRendering) {
+    for (auto framebuffer : _framebuffers) {
+      _device.destroyFramebuffer(framebuffer);
+    }
+
+    _device.destroyRenderPass(_renderPass);
   }
-
-  _device.destroyRenderPass(_renderPass);
-
   // cleanup synchronization objects
   for (size_t i = 0; i < _maxFramesInFlight; i++) {
     _device.destroySemaphore(_renderFinishedSemaphores[i]);

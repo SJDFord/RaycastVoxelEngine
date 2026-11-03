@@ -134,6 +134,24 @@ PipelineBuilder& PipelineBuilder::setBlending(bool enableBlending) {
   return *this;
 }
 
+
+PipelineBuilder& PipelineBuilder::setDynamicRendering(bool enableDynamicRendering) {
+  _enableDynamicRendering = enableDynamicRendering;
+  return *this;
+}
+
+
+PipelineBuilder& PipelineBuilder::setColorFormat(vk::Format colorFormat) {
+  _colorFormat = colorFormat;
+  return *this;
+}
+
+PipelineBuilder& PipelineBuilder::setDepthFormat(vk::Format depthFormat) {
+  _depthFormat = depthFormat;
+  return *this;
+}
+
+
 vk::Pipeline PipelineBuilder::build() {
   _colorBlendInfo = vk::PipelineColorBlendStateCreateInfo()
     .setLogicOpEnable(vk::False)
@@ -156,10 +174,28 @@ vk::Pipeline PipelineBuilder::build() {
     .setPDepthStencilState(&_depthStencilInfo)
     .setPDynamicState(&_dynamicStateInfo)
     .setLayout(_pipelineLayout)
-    .setRenderPass(_renderPass)
+    //.setRenderPass(_renderPass)
     .setSubpass(_subpass)
     .setBasePipelineIndex(-1)
     .setBasePipelineHandle(VK_NULL_HANDLE);
+
+  if (_enableDynamicRendering) {
+    // Provide information for dynamic rendering
+    vk::PipelineRenderingCreateInfoKHR pipelineCreate = vk::PipelineRenderingCreateInfoKHR()
+      .setPNext(VK_NULL_HANDLE)
+      .setColorAttachmentCount(1)
+      .setPColorAttachmentFormats(&_colorFormat)
+      .setDepthAttachmentFormat(_depthFormat);
+    // Depth only formats
+    if (_depthFormat == vk::Format::eD16Unorm || _depthFormat == vk::Format::eD32Sfloat) {
+      pipelineCreate.setStencilAttachmentFormat(_depthFormat);
+    }
+    pipelineInfo.setPNext(&pipelineCreate);
+    pipelineInfo.setRenderPass(VK_NULL_HANDLE);
+  } else {
+    pipelineInfo.setPNext(VK_NULL_HANDLE);
+    pipelineInfo.setRenderPass(_renderPass);
+  }
 
   vk::ResultValue<vk::Pipeline> pipelineResult = _device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
 

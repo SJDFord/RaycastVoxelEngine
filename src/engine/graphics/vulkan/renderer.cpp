@@ -8,7 +8,8 @@ Renderer::Renderer(engine::Window& window,
     vk::PhysicalDevice physicalDevice, vk::CommandPool commandPool, 
     uint32_t graphicsFamilyIndex,
     uint32_t presentFamilyIndex,
-    uint32_t maxFramesInFlight)
+    uint32_t maxFramesInFlight,
+    bool enableDynamicRendering)
     : 
     _window{window},
     _surface{surface}, 
@@ -17,7 +18,8 @@ Renderer::Renderer(engine::Window& window,
     _commandPool{commandPool}, 
     _graphicsFamilyIndex{graphicsFamilyIndex},
     _presentFamilyIndex{presentFamilyIndex},
-    _maxFramesInFlight{maxFramesInFlight} {
+    _maxFramesInFlight{maxFramesInFlight},
+    _enableDynamicRendering{enableDynamicRendering} {
 
   auto extent = _window.getExtent();
   recreateSwapChain(extent);
@@ -44,7 +46,8 @@ void Renderer::recreateSwapChain(vk::Extent2D extent) {
       _window.getExtent(),
       _graphicsFamilyIndex,
       _presentFamilyIndex, 
-      _maxFramesInFlight 
+      _maxFramesInFlight,
+      _enableDynamicRendering
     );
   } else {
     std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
@@ -56,6 +59,7 @@ void Renderer::recreateSwapChain(vk::Extent2D extent) {
       _graphicsFamilyIndex,
       _presentFamilyIndex, 
       _maxFramesInFlight,
+      _enableDynamicRendering,
       oldSwapChain
     );
 
@@ -101,15 +105,25 @@ bool Renderer::renderFrame(
   vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
   commandBuffer.begin(beginInfo);
 
-  preRender(commandBuffer, _currentFrameIndex);
+  if (_enableDynamicRendering) {
+    preRender(commandBuffer, _currentFrameIndex);
 
-  for( auto renderPassOperation : renderPassOperations )
-  {
-    _swapChain->runRenderPass(commandBuffer, _currentFrameIndex, _currentImageIndex, renderPassOperation);
+    for( auto renderPassOperation : renderPassOperations )
+    {
+      _swapChain->runRenderPass(commandBuffer, _currentFrameIndex, _currentImageIndex, renderPassOperation);
+    }
+
+    postRender(commandBuffer, _currentFrameIndex);
+  } else {
+    preRender(commandBuffer, _currentFrameIndex);
+
+    for( auto renderPassOperation : renderPassOperations )
+    {
+      _swapChain->runRenderPass(commandBuffer, _currentFrameIndex, _currentImageIndex, renderPassOperation);
+    }
+
+    postRender(commandBuffer, _currentFrameIndex);
   }
-
-  postRender(commandBuffer, _currentFrameIndex);
-
 
   commandBuffer.end();
 

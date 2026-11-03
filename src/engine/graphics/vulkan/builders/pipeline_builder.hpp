@@ -29,9 +29,16 @@ class PipelineBuilder {
 
   PipelineBuilder& setBlending(bool enableBlending);
 
+  PipelineBuilder& setDynamicRendering(bool enableDynamicRendering);
+
+  
+  PipelineBuilder& setColorFormat(vk::Format colorFormat);
+  PipelineBuilder& setDepthFormat(vk::Format depthFormat);
+
   vk::Pipeline build();
 
  private:
+  bool _enableDynamicRendering = false;
   vk::Device _device;
 
   std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages;
@@ -48,6 +55,8 @@ class PipelineBuilder {
   std::vector<vk::DynamicState> _dynamicStateEnables;
   vk::PipelineDynamicStateCreateInfo _dynamicStateInfo;
   vk::RenderPass _renderPass;
+  vk::Format _colorFormat;
+  vk::Format _depthFormat;
   // TODO: Set pipeline layout
   vk::PipelineLayout _pipelineLayout;
   uint32_t _subpass = 0;

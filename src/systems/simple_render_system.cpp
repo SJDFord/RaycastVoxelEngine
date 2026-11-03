@@ -15,10 +15,10 @@
 namespace lve {
 
 SimpleRenderSystem::SimpleRenderSystem(
-    vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout)
+    vk::Device device, vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat, vk::DescriptorSetLayout globalSetLayout)
     : _device{device} {
   createPipelineLayout(globalSetLayout);
-  createPipeline(renderPass);
+  createPipeline(renderPass, colorFormat, depthFormat);
 }
 
 SimpleRenderSystem::~SimpleRenderSystem() {
@@ -39,7 +39,7 @@ void SimpleRenderSystem::createPipelineLayout(vk::DescriptorSetLayout globalSetL
   _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
 }
 
-void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
+void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat) {
   std::string vertShaderGlsl = engine::readFileString("../shaders/simple_shader.vert");
   std::string fragShaderGlsl = engine::readFileString("../shaders/simple_shader.frag");
   vk::ShaderModule vertexShaderModule =

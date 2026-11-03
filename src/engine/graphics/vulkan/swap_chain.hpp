@@ -16,9 +16,10 @@ class SwapChain {
     vk::PhysicalDevice physicalDevice,
     vk::SurfaceKHR     surface,
     vk::Extent2D       windowExtent,
-                      uint32_t                   graphicsFamilyIndex,
-                     uint32_t                   presentFamilyIndex,
-                     uint32_t                   maxFramesInFlight,
+    uint32_t                   graphicsFamilyIndex,
+    uint32_t                   presentFamilyIndex,
+    uint32_t                   maxFramesInFlight,
+    bool enableDynamicRendering,
     std::shared_ptr<SwapChain> previous = nullptr
   );
 
@@ -28,6 +29,8 @@ class SwapChain {
   SwapChain &operator=(const SwapChain &) = delete;
 
   vk::RenderPass getRenderPass() { return _renderPass; }
+  vk::Format getColorFormat() { return _colorFormat; }
+  vk::Format getDepthFormat() { return _depthFormat; }
 
   float extentAspectRatio() {
     return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
@@ -43,6 +46,8 @@ class SwapChain {
   }
 
  private:
+
+  bool _enableDynamicRendering;
 
   vk::Format findDepthFormat();
 

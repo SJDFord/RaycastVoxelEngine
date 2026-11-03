@@ -98,10 +98,18 @@ void VoxelApp::run() {
 
   SimpleRenderSystem simpleRenderSystem{
       _device,
-      _renderer.getSwapChainRenderPass(), globalSetLayout};
+      _renderer.getSwapChainRenderPass(),
+      _renderer.getSwapChainColorFormat(),
+      _renderer.getSwapChainDepthFormat(),
+       globalSetLayout
+  };
   PointLightSystem pointLightSystem{
       _device,
-      _renderer.getSwapChainRenderPass(), globalSetLayout};
+      _renderer.getSwapChainRenderPass(),
+      _renderer.getSwapChainColorFormat(),
+      _renderer.getSwapChainDepthFormat(),
+      globalSetLayout
+  };
   engine::Camera camera{};
 
   auto viewerObject = engine::GameObject::createGameObject();

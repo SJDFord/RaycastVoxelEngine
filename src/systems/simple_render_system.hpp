@@ -15,7 +15,7 @@ namespace lve {
 class SimpleRenderSystem {
  public:
   SimpleRenderSystem(
-      vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout);
+      vk::Device device, vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat, vk::DescriptorSetLayout globalSetLayout);
   ~SimpleRenderSystem();
 
   SimpleRenderSystem(const SimpleRenderSystem &) = delete;
@@ -25,7 +25,7 @@ class SimpleRenderSystem {
 
  private:
   void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);
-  void createPipeline(vk::RenderPass renderPass);
+  void createPipeline(vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat);
 
   vk::Device _device;
   vk::Pipeline _pipeline;

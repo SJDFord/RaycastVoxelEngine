@@ -15,10 +15,10 @@
 namespace lve {
 
 PointLightSystem::PointLightSystem(
-    vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout)
+    vk::Device device, vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat, vk::DescriptorSetLayout globalSetLayout)
     : _device{device} {
   createPipelineLayout(globalSetLayout);
-  createPipeline(renderPass);
+  createPipeline(renderPass, colorFormat, depthFormat);
 }
 
 PointLightSystem::~PointLightSystem() {
@@ -39,7 +39,7 @@ void PointLightSystem::createPipelineLayout(vk::DescriptorSetLayout globalSetLay
   _pipelineLayout = _device.createPipelineLayout(pipelineLayoutInfo);
 }
 
-void PointLightSystem::createPipeline(vk::RenderPass renderPass) {
+void PointLightSystem::createPipeline(vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat) {
   std::string vertShaderGlsl = engine::readFileString("../shaders/point_light.vert");
   std::string fragShaderGlsl = engine::readFileString("../shaders/point_light.frag");
   vk::ShaderModule vertexShaderModule =

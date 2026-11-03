@@ -15,7 +15,7 @@ namespace lve {
 class PointLightSystem {
  public:
   PointLightSystem(
-      vk::Device device, vk::RenderPass renderPass, vk::DescriptorSetLayout globalSetLayout);
+      vk::Device device, vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat, vk::DescriptorSetLayout globalSetLayout);
   ~PointLightSystem();
 
   PointLightSystem(const PointLightSystem &) = delete;
@@ -26,7 +26,7 @@ class PointLightSystem {
 
  private:
   void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);
-  void createPipeline(vk::RenderPass renderPass);
+  void createPipeline(vk::RenderPass renderPass, vk::Format colorFormat, vk::Format depthFormat);
 
   vk::Device _device;
 
