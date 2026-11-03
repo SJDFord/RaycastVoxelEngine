@@ -187,7 +187,7 @@ vk::Pipeline PipelineBuilder::build() {
       .setPColorAttachmentFormats(&_colorFormat)
       .setDepthAttachmentFormat(_depthFormat);
     // Depth only formats
-    if (_depthFormat == vk::Format::eD16Unorm || _depthFormat == vk::Format::eD32Sfloat) {
+    if (_depthFormat != vk::Format::eD16Unorm && _depthFormat != vk::Format::eD32Sfloat) {
       pipelineCreate.setStencilAttachmentFormat(_depthFormat);
     }
     pipelineInfo.setPNext(&pipelineCreate);

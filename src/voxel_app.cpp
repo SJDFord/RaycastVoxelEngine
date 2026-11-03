@@ -41,8 +41,14 @@ VoxelApp::VoxelApp():
       .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
       .build()
   )} {
-
-
+  /*
+  vkCmdBeginRenderingKHR = reinterpret_cast<PFN_vkCmdBeginRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdBeginRenderingKHR"));
+  vkCmdEndRenderingKHR   = reinterpret_cast<PFN_vkCmdEndRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdEndRenderingKHR"));
+  if (!vkCmdBeginRenderingKHR || !vkCmdEndRenderingKHR)
+  {
+    throw std::runtime_error("Unable to dynamically load vkCmdBeginRenderingKHR and vkCmdEndRenderingKHR");
+  }
+  */
   loadGameObjects();
 }
 

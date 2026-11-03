@@ -36,6 +36,14 @@ class SwapChain {
     return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
   }
 
+  vk::Image& getColorImage(uint32_t index) { return _colorImages[index]; }
+  vk::Image& getDepthImage(uint32_t index) { return _depthImages[index]; }
+
+  vk::ImageView& getColorImageView(uint32_t index) { return _colorImageViews[index]; }
+  vk::ImageView& getDepthImageView(uint32_t index) { return _depthImageViews[index]; }
+
+  vk::Extent2D getExtent() { return _extent; }
+
   vk::Result acquireNextImage(uint32_t *imageIndex);
   vk::Result submitCommandBuffers(const vk::CommandBuffer *buffers, uint32_t *imageIndex);
   void runRenderPass(const vk::CommandBuffer& commandBuffer, uint32_t frameIndex, uint32_t imageIndex, std::function<void(vk::CommandBuffer const &, int)> renderPassOperation);

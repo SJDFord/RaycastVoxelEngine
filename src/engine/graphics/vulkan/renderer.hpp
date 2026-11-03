@@ -15,6 +15,7 @@ namespace engine {
 class Renderer {
  public:
   Renderer(
+    vk::Instance instance,
     engine::Window &window, 
     vk::SurfaceKHR surface,
     vk::Device device,
@@ -41,12 +42,37 @@ class Renderer {
   );
 
  private:
+  vk::Instance _instance;
+	PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR{VK_NULL_HANDLE};
+	PFN_vkCmdEndRenderingKHR   vkCmdEndRenderingKHR{VK_NULL_HANDLE};
   bool _enableDynamicRendering;
 
   void createCommandBuffers();
   void freeCommandBuffers();
   void recreateSwapChain(vk::Extent2D extent);
+  void transitionImageLayout(
+    vk::CommandBuffer                commandBuffer,
+    vk::Image                        image,
+    vk::PipelineStageFlags           srcStageMask,
+    vk::PipelineStageFlags           dstStageMask,
+    vk::AccessFlags                  srcAccessMask,
+    vk::AccessFlags                  dstAccessMask,
+    vk::ImageLayout                  oldLayout,
+    vk::ImageLayout                  newLayout,
+    vk::ImageSubresourceRange const &subresourceRange
+  );
 
+  void transitionImageLayout(
+    vk::CommandBuffer                commandBuffer,
+    vk::Image                        image,
+    vk::ImageLayout                  oldLayout,
+    vk::ImageLayout                  newLayout,
+    vk::ImageSubresourceRange const &subresourceRange
+  );
+
+
+  vk::PipelineStageFlags getPipelineStageFlags(vk::ImageLayout layout);
+  vk::AccessFlags getAccessFlags(vk::ImageLayout layout);
   engine::Window &_window;
   vk::SurfaceKHR _surface;
   vk::Device _device;

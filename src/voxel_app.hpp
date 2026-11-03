@@ -56,15 +56,16 @@ class VoxelApp {
   vk::Device _device{engine::DeviceBuilder(_physicalDevice, _graphicsQueueIndex)
     .setExtensions({
         VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
-        //VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
     })
-    //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(VK_TRUE))
+    //.setPhysicalDeviceFeatures(new vk::PhysicalDeviceDynamicRenderingFeatures(vk::True))
+    //.setPNext(new vk::PhysicalDeviceDynamicRenderingFeatures(vk::True))
     .build()};
   vk::CommandPool _commandPool{_device.createCommandPool({vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _graphicsQueueIndex})};
 
   //LveDevice lveDevice{_window};
   engine::OneTimeCommandSubmitter _oneTimeCommandSubmitter{_device, _commandPool, _graphicsQueueIndex};
-  engine::Renderer _renderer{_window, _surface,  _device, _physicalDevice, _commandPool, _graphicsQueueIndex, _presentQueueIndex, MAX_FRAMES_IN_FLIGHT, false};
+  engine::Renderer _renderer{_instance, _window, _surface,  _device, _physicalDevice, _commandPool, _graphicsQueueIndex, _presentQueueIndex, MAX_FRAMES_IN_FLIGHT, true};
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;
