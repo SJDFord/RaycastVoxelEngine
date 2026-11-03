@@ -80,18 +80,20 @@ void VoxelApp::run() {
   );
 
   auto imageInfo = image->descriptorInfo();
-  std::vector<VkDescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
+  // TODO: Create multiple descriptor sets for each frame, following: https://vkguide.dev/docs/chapter-4/descriptors/#mental-model
+  // TODO: Tie this in with Model loading
+  std::vector<vk::DescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
     globalDescriptorSets[i] = engine::DescriptorWriter(
-        _device, 
-        _globalPool,
-        globalSetLayout,
-        bindings
-      )
-        .writeBuffer(0, &bufferInfo)
-        .writeImage(1, &imageInfo)
-        .build();
+      _device, 
+      _globalPool,
+      globalSetLayout,
+      bindings
+    )
+      .writeBuffer(0, &bufferInfo)
+      .writeImage(1, &imageInfo)
+      .build();
   }
 
   SimpleRenderSystem simpleRenderSystem{
@@ -209,6 +211,15 @@ void VoxelApp::loadGameObjects() {
   testGameObject3.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
   gameObjects.emplace(testGameObject3.getId(), std::move(testGameObject3));
   
+
+  auto testGameObject4 = engine::GameObject::createGameObject();
+  glm::vec3 position4 = {20.0f, 1.0f, -10.0f};
+  testGameObject4.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/oaktree.gltf");
+  testGameObject4.transform.translation = position4;
+  testGameObject4.transform.scale = {10.0f, 10.0f, 10.0f};
+  testGameObject4.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
+  gameObjects.emplace(testGameObject4.getId(), std::move(testGameObject4));
+
   auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {
       1.0f,

@@ -80,7 +80,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
 
 std::vector<Mesh> FileModelBuilder::createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh) {
   auto& primitives = mesh.primitives;
-  std::println("Model {}: Mesh {}: {} primitives", _modelName, mesh.name, primitives.size());
+  std::println("Model {}: Mesh {}: {} primitives, {} textures, {} images, {} materials", _modelName, mesh.name, primitives.size(), asset.textures.size(), asset.images.size(), asset.materials.size());
 
   std::vector<Mesh> meshes;
   meshes.resize(primitives.size());
@@ -104,6 +104,34 @@ Mesh FileModelBuilder::createMesh(const fastgltf::Asset& asset, const fastgltf::
   const fastgltf::Attribute* positionAttribute = primitive.findAttribute("POSITION");
   if (!positionAttribute) {
     throw std::format_error("Missing position attribute");
+  }
+
+  for (auto& image : asset.images) {
+    if (std::holds_alternative<fastgltf::sources::URI>(image.data)) {
+        const auto& uri = std::get<fastgltf::sources::URI>(image.data);
+        std::println("Model {}: URI: {}", _modelName, uri.uri.c_str());      
+        // Handle external URI/file path
+    } else if (std::holds_alternative<fastgltf::sources::Vector>(image.data)) {
+        const auto& vectorSource = std::get<fastgltf::sources::Vector>(image.data);
+        auto mimeType = toString(vectorSource.mimeType);
+        std::println("Model {}: Vector ({})", _modelName, mimeType);
+        // vectorSource.bytes contains the raw encoded file data (PNG/JPG/etc.)
+    } else if (std::holds_alternative<fastgltf::sources::BufferView>(image.data)) {
+        const auto& bufferViewSource = std::get<fastgltf::sources::BufferView>(image.data);
+        auto mimeType = toString(bufferViewSource.mimeType);
+        std::println("Model {}: Buffer View ({})", _modelName, mimeType);
+          /*
+          std::unique_ptr<engine::Image> image = engine::FileImageBuilder(
+            _device, 
+            _physicalDevice
+          ).build(
+            _oneTimeCommandSubmitter, 
+            //"../textures/hinoki_planks_diff_4k.jpg"
+            "../textures/metalplate01_rgba.ktx"
+          );
+          */
+        // Access asset.bufferViews[bufferViewSource.bufferViewIndex]
+    }
   }
 
   auto& positionAccessor = asset.accessors[positionAttribute->accessorIndex];
@@ -228,6 +256,27 @@ std::string FileModelBuilder::toString(fastgltf::ComponentType componentType) {
       return "UnsignedShort";
     default:
       throw std::format_error("Component type not recognised");
+  }
+}
+
+std::string FileModelBuilder::toString(fastgltf::MimeType mimeType) {
+  switch (mimeType) {
+    case fastgltf::MimeType::DDS:
+      return "DDS";
+    case fastgltf::MimeType::GltfBuffer:
+      return "GltfBuffer";
+    case fastgltf::MimeType::JPEG:
+      return "JPEG";
+    case fastgltf::MimeType::KTX2:
+      return "KTX2";
+    case fastgltf::MimeType::None:
+      return "None";
+    case fastgltf::MimeType::OctetStream:
+      return "OctetStream";
+    case fastgltf::MimeType::PNG:
+      return "PNG";
+    case fastgltf::MimeType::WEBP:
+      return "WEBP";
   }
 }
 

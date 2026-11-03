@@ -38,5 +38,6 @@ class FileModelBuilder {
   Mesh createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive);
   std::string toString(fastgltf::AccessorType accessorType);
   std::string toString(fastgltf::ComponentType componentType);
+  std::string toString(fastgltf::MimeType mimeType);
 };
 }  // namespace engine

@@ -39,7 +39,7 @@ class VoxelApp {
 
 
   engine::Window _window{APP_NAME, WIDTH, HEIGHT};
-  vk::Instance _instance = engine::InstanceBuilder(APP_NAME, ENGINE_NAME, VK_API_VERSION_1_3)
+  vk::Instance _instance = engine::InstanceBuilder(APP_NAME, ENGINE_NAME, vk::ApiVersion14)
     .setExtensions(_window.getRequiredExtensions())
     .build();
 
