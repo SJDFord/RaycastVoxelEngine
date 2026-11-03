@@ -23,16 +23,6 @@ Renderer::Renderer(
     _presentFamilyIndex{presentFamilyIndex},
     _maxFramesInFlight{maxFramesInFlight},
     _enableDynamicRendering{enableDynamicRendering} {
-
-  if (_enableDynamicRendering) {
-    vkCmdBeginRenderingKHR = reinterpret_cast<PFN_vkCmdBeginRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdBeginRenderingKHR"));
-		vkCmdEndRenderingKHR   = reinterpret_cast<PFN_vkCmdEndRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdEndRenderingKHR"));
-		if (!vkCmdBeginRenderingKHR || !vkCmdEndRenderingKHR)
-		{
-			throw std::runtime_error("Unable to dynamically load vkCmdBeginRenderingKHR and vkCmdEndRenderingKHR");
-		}
-  }
-
   auto extent = _window.getExtent();
   recreateSwapChain(extent);
   createCommandBuffers();
@@ -52,6 +42,7 @@ void Renderer::recreateSwapChain(vk::Extent2D extent) {
   
   if (_swapChain == nullptr) {
     _swapChain = std::make_unique<engine::SwapChain>(
+      _instance,
       _device,
       _physicalDevice,
       _surface, 
@@ -64,6 +55,7 @@ void Renderer::recreateSwapChain(vk::Extent2D extent) {
   } else {
     std::shared_ptr<engine::SwapChain> oldSwapChain = std::move(_swapChain);
     _swapChain = std::make_unique<engine::SwapChain>(
+      _instance,
       _device,
       _physicalDevice,
       _surface,
@@ -200,7 +192,7 @@ void Renderer::freeCommandBuffers() {
 
 bool Renderer::renderFrame(
     std::function<void(vk::CommandBuffer const &, int)> preRender, 
-    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPassOperations,
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderOperations,
     std::function<void(vk::CommandBuffer const &, int)> postRender
   ) {
   auto acquireNextImageResult = _swapChain->acquireNextImage(&_currentImageIndex);
@@ -217,124 +209,22 @@ bool Renderer::renderFrame(
   auto commandBuffer = _commandBuffers[_currentFrameIndex];
   vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
   commandBuffer.begin(beginInfo);
+  preRender(commandBuffer, _currentFrameIndex);
 
-  if (_enableDynamicRendering) {
-
-    std::array<vk::ClearValue, 2> clearValues{};
-    clearValues[0].color        = vk::ClearColorValue(1.0f, 0.0f, 0.0f, 0.0f);
-    clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::ImageSubresourceRange colorRange = vk::ImageSubresourceRange()
-      .setAspectMask(vk::ImageAspectFlagBits::eColor)
-      .setBaseMipLevel(0)
-      .setLevelCount(vk::RemainingMipLevels)
-      .setBaseArrayLayer(0)
-      .setLayerCount(vk::RemainingArrayLayers);
-
-		vk::ImageSubresourceRange depthRange = vk::ImageSubresourceRange()
-      .setAspectMask(vk::ImageAspectFlagBits::eDepth);
-
-    transitionImageLayout(
-      commandBuffer,
-      _swapChain->getColorImage(_currentImageIndex),
-      vk::PipelineStageFlagBits::eColorAttachmentOutput,
-      vk::PipelineStageFlagBits::eColorAttachmentOutput,
-      {},
-      vk::AccessFlagBits::eColorAttachmentWrite,
-      vk::ImageLayout::eUndefined,
-      vk::ImageLayout::eColorAttachmentOptimal,
-      colorRange
-    );
-
-    transitionImageLayout(
-      commandBuffer,                      
-      _swapChain->getDepthImage(_currentImageIndex),
-      vk::ImageLayout::eUndefined,
-      vk::ImageLayout::eDepthAttachmentOptimal,
-      depthRange
-    );
-
-    vk::RenderingAttachmentInfoKHR colorAttachmentInfo = vk::RenderingAttachmentInfoKHR()
-      .setImageView(_swapChain->getColorImageView(_currentImageIndex))
-      .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
-      .setResolveMode(vk::ResolveModeFlagBits::eNone)
-      .setLoadOp(vk::AttachmentLoadOp::eClear)
-      .setStoreOp(vk::AttachmentStoreOp::eStore)
-      .setClearValue(clearValues[0]);
-
-    vk::RenderingAttachmentInfoKHR depthAttachmentInfo = vk::RenderingAttachmentInfoKHR()
-      .setImageView(_swapChain->getDepthImageView(_currentImageIndex))
-      .setImageLayout(vk::ImageLayout::eDepthAttachmentOptimal)
-      .setResolveMode(vk::ResolveModeFlagBits::eNone)
-      .setLoadOp(vk::AttachmentLoadOp::eClear)
-      .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-      .setClearValue(clearValues[1]);
-
-    auto extent = _swapChain->getExtent();
-    auto renderArea             = vk::Rect2D{vk::Offset2D{}, extent};
-    auto renderInfo             = vk::RenderingInfoKHR()
-      .setRenderArea(renderArea)
-      .setColorAttachmentCount(1)
-      .setPColorAttachments(&colorAttachmentInfo)
-      .setLayerCount(1)
-      .setPDepthAttachment(&depthAttachmentInfo);
-
-    auto depthFormat = _swapChain->getDepthFormat();
-    if (depthFormat != vk::Format::eD16Unorm && depthFormat != vk::Format::eD32Sfloat)
-    {
-      renderInfo.setPStencilAttachment(&depthAttachmentInfo);
-    }
-
-
-    vkCmdBeginRenderingKHR(static_cast<VkCommandBuffer>(commandBuffer), reinterpret_cast<const VkRenderingInfo *>(&renderInfo));
-    //commandBuffer.beginRenderingKHR(&renderInfo);
-
-    //vkCmdBeginRenderingKHR(draw_cmd_buffer, &render_info);
-    //draw_scene();
-
-
-    preRender(commandBuffer, _currentFrameIndex);
-
-    vk::Viewport viewport = vk::Viewport()
-      .setX(0.0f)
-      .setY(0.0f)
-      .setWidth(static_cast<float>(extent.width))
-      .setHeight(static_cast<float>(extent.height))
-      .setMinDepth(0.0f)
-      .setMaxDepth(1.0f);
-    vk::Rect2D scissor{{0, 0}, extent};
-    commandBuffer.setViewport(0, viewport);
-    commandBuffer.setScissor(0, scissor);
-
-    for( auto renderPassOperation : renderPassOperations ) {  
-      renderPassOperation(commandBuffer, _currentFrameIndex);
-    }
-
-    postRender(commandBuffer, _currentFrameIndex);
-
-    
-    //commandBuffer.endRenderingKHR();
-    //vkCmdEndRenderingKHR(commandBuffer);
-    vkCmdEndRenderingKHR(static_cast<VkCommandBuffer>(commandBuffer));
-
-    transitionImageLayout(
-      commandBuffer,
-      _swapChain->getColorImage(_currentImageIndex),
-      vk::ImageLayout::eColorAttachmentOptimal,
-      vk::ImageLayout::ePresentSrcKHR,
-      colorRange
-    );
+  if (_enableDynamicRendering) {    
+    _swapChain->run(commandBuffer, _currentFrameIndex, _currentImageIndex, [&] (vk::CommandBuffer const & commandBuffer, int frameIndex) {
+      for( auto renderPassOperation : renderOperations ) {  
+        renderPassOperation(commandBuffer, frameIndex);
+      }
+    });
   } else {
-    preRender(commandBuffer, _currentFrameIndex);
-
-    for( auto renderPassOperation : renderPassOperations )
+    for( auto renderPassOperation : renderOperations )
     {
       _swapChain->runRenderPass(commandBuffer, _currentFrameIndex, _currentImageIndex, renderPassOperation);
     }
-
-    postRender(commandBuffer, _currentFrameIndex);
   }
-
+  
+  postRender(commandBuffer, _currentFrameIndex);
   commandBuffer.end();
 
   auto submitCommandBuffersResult = _swapChain->submitCommandBuffers(&commandBuffer, &_currentImageIndex);

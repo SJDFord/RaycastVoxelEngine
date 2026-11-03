@@ -37,14 +37,12 @@ class Renderer {
   float getAspectRatio() const { return _swapChain->extentAspectRatio(); }
   bool renderFrame(
     std::function<void(vk::CommandBuffer const &, int)> preRender, 
-    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderPassOperations,
+    std::initializer_list<std::function<void(vk::CommandBuffer const &, int)>> renderOperations,
     std::function<void(vk::CommandBuffer const &, int)> postRender
   );
 
  private:
   vk::Instance _instance;
-	PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR{VK_NULL_HANDLE};
-	PFN_vkCmdEndRenderingKHR   vkCmdEndRenderingKHR{VK_NULL_HANDLE};
   bool _enableDynamicRendering;
 
   void createCommandBuffers();

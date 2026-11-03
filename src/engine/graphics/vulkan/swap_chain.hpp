@@ -12,6 +12,7 @@ class SwapChain {
  public:
 
   SwapChain(
+    vk::Instance instance,
     vk::Device         device,
     vk::PhysicalDevice physicalDevice,
     vk::SurfaceKHR     surface,
@@ -36,17 +37,11 @@ class SwapChain {
     return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
   }
 
-  vk::Image& getColorImage(uint32_t index) { return _colorImages[index]; }
-  vk::Image& getDepthImage(uint32_t index) { return _depthImages[index]; }
-
-  vk::ImageView& getColorImageView(uint32_t index) { return _colorImageViews[index]; }
-  vk::ImageView& getDepthImageView(uint32_t index) { return _depthImageViews[index]; }
-
-  vk::Extent2D getExtent() { return _extent; }
-
   vk::Result acquireNextImage(uint32_t *imageIndex);
   vk::Result submitCommandBuffers(const vk::CommandBuffer *buffers, uint32_t *imageIndex);
   void runRenderPass(const vk::CommandBuffer& commandBuffer, uint32_t frameIndex, uint32_t imageIndex, std::function<void(vk::CommandBuffer const &, int)> renderPassOperation);
+  void run(const vk::CommandBuffer& commandBuffer, uint32_t frameIndex, uint32_t imageIndex, std::function<void(vk::CommandBuffer const &, int)> renderOperation);
+
 
   bool compareSwapFormats(const SwapChain &swapChain) const {
     return swapChain._depthFormat == _depthFormat &&
@@ -60,13 +55,38 @@ class SwapChain {
   vk::Format findDepthFormat();
 
   // Helper functions
-vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
+  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
     const std::vector<vk::SurfaceFormatKHR> &availableFormats);
   vk::PresentModeKHR chooseSwapPresentMode(
       const std::vector<vk::PresentModeKHR> &availablePresentModes);
   vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities, vk::Extent2D windowExtent);
 
-vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+  vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
+  void transitionImageLayout(
+    vk::CommandBuffer                commandBuffer,
+    vk::Image                        image,
+    vk::PipelineStageFlags           srcStageMask,
+    vk::PipelineStageFlags           dstStageMask,
+    vk::AccessFlags                  srcAccessMask,
+    vk::AccessFlags                  dstAccessMask,
+    vk::ImageLayout                  oldLayout,
+    vk::ImageLayout                  newLayout,
+    vk::ImageSubresourceRange const &subresourceRange
+  );
+
+  void transitionImageLayout(
+    vk::CommandBuffer                commandBuffer,
+    vk::Image                        image,
+    vk::ImageLayout                  oldLayout,
+    vk::ImageLayout                  newLayout,
+    vk::ImageSubresourceRange const &subresourceRange
+  );
+
+
+  vk::PipelineStageFlags getPipelineStageFlags(vk::ImageLayout layout);
+  vk::AccessFlags getAccessFlags(vk::ImageLayout layout);
+  
 
   uint32_t _graphicsFamilyIndex;
   uint32_t _presentFamilyIndex;
@@ -86,6 +106,10 @@ vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::Im
   std::vector<vk::ImageView> _colorImageViews;
 
   // TODO: Some private members are only used during creation so can be removed
+
+  vk::Instance _instance;
+	PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR{VK_NULL_HANDLE};
+	PFN_vkCmdEndRenderingKHR   vkCmdEndRenderingKHR{VK_NULL_HANDLE};
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
 
