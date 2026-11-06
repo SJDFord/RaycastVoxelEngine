@@ -22,9 +22,11 @@ class Image {
     vk::Device const &         device,
     vk::PhysicalDevice const & physicalDevice,
     OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Format format,
     void* data,
     uint32_t dataSize,
-    vk::Extent2D extent
+    vk::Extent2D extent,
+    bool isCubeMap = false
   );
  
   // TODO: Other ways to create an image
@@ -32,13 +34,14 @@ class Image {
     vk::Device const &         device,
     vk::PhysicalDevice const & physicalDevice,
     OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Format format,
     void* data,
     uint32_t dataSize,
     vk::Extent2D extent,
     uint32_t mipLevels,
     std::function<uint32_t(uint32_t mipLevel, uint32_t layer, uint32_t faceSlice)> getOffset,
-    std::function<uint32_t(uint32_t mipLevel)> getImageSize
-    //const std::string &filepath
+    std::function<uint32_t(uint32_t mipLevel)> getImageSize,
+    bool isCubeMap = false
   );
   ~Image();
 
@@ -56,7 +59,13 @@ class Image {
   vk::Sampler _textureSampler = VK_NULL_HANDLE;
 
   void transitionImageLayout(
-    OneTimeCommandSubmitter& oneTimeCommandSubmitter, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t levelCount = 1);
+    OneTimeCommandSubmitter& oneTimeCommandSubmitter, 
+    vk::Image image, 
+    vk::ImageLayout oldLayout, 
+    vk::ImageLayout newLayout, 
+    uint32_t levelCount = 1,
+    uint32_t layerCount = 1
+  );
 };
 
 }

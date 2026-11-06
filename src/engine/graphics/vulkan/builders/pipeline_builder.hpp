@@ -35,6 +35,9 @@ class PipelineBuilder {
   PipelineBuilder& setColorFormat(vk::Format colorFormat);
   PipelineBuilder& setDepthFormat(vk::Format depthFormat);
 
+  PipelineBuilder& setRasterizationInfo(vk::PipelineRasterizationStateCreateInfo rasterizationInfo);
+  PipelineBuilder& setDepthStencilInfo(vk::PipelineDepthStencilStateCreateInfo depthStencilInfo);
+
   vk::Pipeline build();
 
  private:

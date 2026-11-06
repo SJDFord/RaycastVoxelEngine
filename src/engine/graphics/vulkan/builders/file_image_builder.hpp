@@ -28,7 +28,7 @@ class FileImageBuilder {
   FileImageBuilder(const FileImageBuilder&) = delete;
   FileImageBuilder& operator=(const FileImageBuilder&) = delete;
 
-  std::unique_ptr<engine::Image> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath);
+  std::unique_ptr<engine::Image> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, bool isCubeMap = false);
 
  private:
   const vk::Device& _device;

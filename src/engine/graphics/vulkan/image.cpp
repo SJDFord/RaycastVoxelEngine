@@ -12,19 +12,23 @@ Image::Image(
     vk::Device const &         device,
     vk::PhysicalDevice const & physicalDevice,
     OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Format format,
     void* data,
     uint32_t dataSize,
-    vk::Extent2D extent
+    vk::Extent2D extent,
+	bool isCubeMap
   ): Image::Image(
 		device,
 		physicalDevice, 
 		oneTimeCommandSubmitter, 
+		format,
 		data, 
 		dataSize, 
 		extent, 
 		1, 
 		[](uint32_t mipLevel, uint32_t layer, uint32_t faceSlice) { return 0; },
-		[](uint32_t mipLevel) { return 0; }
+		[](uint32_t mipLevel) { return 0; },
+		isCubeMap
 	) {
 
 }
@@ -33,62 +37,60 @@ Image::Image(
     vk::Device const &         device,
     vk::PhysicalDevice const & physicalDevice,
     engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Format format,
     void* data,
     uint32_t dataSize,
     vk::Extent2D extent,
     uint32_t mipLevels,
     std::function<uint32_t(uint32_t mipLevel, uint32_t layer, uint32_t faceSlice)> getOffset,
-    std::function<uint32_t(uint32_t mipLevel)> getImageSize
+    std::function<uint32_t(uint32_t mipLevel)> getImageSize,
+	bool isCubeMap
 ) : _device{device}, _physicalDevice{physicalDevice} {
     
 	// TODO: Clean this up and incorporate it into engine::Image
 	// ktx1 doesn't know whether the content is sRGB or linear, but most tools save in sRGB, so assume that.
-	constexpr vk::Format format = vk::Format::eR8G8B8A8Srgb;
-
-	auto mip_levels = mipLevels;
+	//constexpr vk::Format format = vk::Format::eR8G8B8A8Srgb; //vk::Format::eR8G8B8A8Unorm; //vk::Format::eR8G8B8A8Srgb;
 
 	// We prefer using staging to copy the texture data to a device local optimal image
-	vk::Bool32 use_staging = true;
+	vk::Bool32 useStaging = true;
 
 	// Only use linear tiling if forced
-	bool force_linear_tiling = false;
-	if (force_linear_tiling)
+	bool forceLinearTiling = false;
+	if (forceLinearTiling)
 	{
 		// Don't use linear if format is not supported for (linear) shader sampling
 		// Get device properties for the requested texture format
-		vk::FormatProperties format_properties = physicalDevice.getFormatProperties(format);
-		use_staging                            = !(format_properties.linearTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+		vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+		useStaging                            = !(formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 	}
-
-	if (use_staging) {
-
-		std::println("Staging");
-
-	}
-	vk::ImageCreateInfo image_create_info = vk::ImageCreateInfo()
+	
+	auto layerCount = isCubeMap ? 6 : 1; // One per cube face
+	auto levelCount = useStaging ? mipLevels : 1;
+	vk::ImageCreateInfo imageCreateInfo = vk::ImageCreateInfo()
 		.setImageType(vk::ImageType::e2D)
 		.setFormat(format)
 		.setExtent(vk::Extent3D(extent, 1))
-		.setMipLevels(use_staging ? mip_levels : 1)
-		.setArrayLayers(1)
+		.setMipLevels(levelCount)
+		.setArrayLayers(layerCount)
 		.setSamples(vk::SampleCountFlagBits::e1)
-		.setTiling(use_staging ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear)
-		.setUsage(use_staging ? vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled : vk::ImageUsageFlagBits::eSampled)
+		.setTiling(useStaging ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear)
+		.setUsage(useStaging ? vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled : vk::ImageUsageFlagBits::eSampled)
 		.setSharingMode(vk::SharingMode::eExclusive)
-		.setInitialLayout(use_staging ? vk::ImageLayout::eUndefined : vk::ImageLayout::ePreinitialized);
+		.setInitialLayout(useStaging ? vk::ImageLayout::eUndefined : vk::ImageLayout::ePreinitialized)
+		.setFlags(isCubeMap ? vk::ImageCreateFlagBits::eCubeCompatible : vk::ImageCreateFlags());
 
-	_textureImage = device.createImage(image_create_info);
+	_textureImage = device.createImage(imageCreateInfo);
 
-	vk::MemoryRequirements memory_requirements   = device.getImageMemoryRequirements(_textureImage);
-	uint32_t memory_type           = engine::findMemoryType(physicalDevice.getMemoryProperties(), memory_requirements.memoryTypeBits, 
-		use_staging ? vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent : vk::MemoryPropertyFlagBits::eDeviceLocal);
-	vk::MemoryAllocateInfo memory_allocate_info  = vk::MemoryAllocateInfo()
-		.setAllocationSize(memory_requirements.size)
-		.setMemoryTypeIndex(memory_type);
-	_textureImageMemory = device.allocateMemory(memory_allocate_info);
+	vk::MemoryRequirements memoryRequirements   = device.getImageMemoryRequirements(_textureImage);
+	uint32_t memoryType           = engine::findMemoryType(physicalDevice.getMemoryProperties(), memoryRequirements.memoryTypeBits, 
+		useStaging ? vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent : vk::MemoryPropertyFlagBits::eDeviceLocal);
+	vk::MemoryAllocateInfo memoryAllocateInfo  = vk::MemoryAllocateInfo()
+		.setAllocationSize(memoryRequirements.size)
+		.setMemoryTypeIndex(memoryType);
+	_textureImageMemory = device.allocateMemory(memoryAllocateInfo);
 	device.bindImageMemory(_textureImage, _textureImageMemory, 0);
 
-	if (use_staging) {
+	if (useStaging) {
 		engine::Buffer stagingBuffer(
 			device, 
 			physicalDevice, 
@@ -103,38 +105,45 @@ Image::Image(
 		stagingBuffer.writeToBuffer(data, dataSize);
 		stagingBuffer.unmap();
 
-		// Setup buffer copy regions for each mip level
-		std::vector<vk::BufferImageCopy> buffer_copy_regions(mip_levels);
-		for (uint32_t i = 0; i < mip_levels; i++)
-		{
-			uint32_t offset = getOffset(i, 0, 0);
-			
-			buffer_copy_regions[i].imageSubresource.aspectMask     = vk::ImageAspectFlagBits::eColor;
-			buffer_copy_regions[i].imageSubresource.mipLevel       = i;
-			buffer_copy_regions[i].imageSubresource.baseArrayLayer = 0;
-			buffer_copy_regions[i].imageSubresource.layerCount     = 1;
-			buffer_copy_regions[i].imageExtent.width               = extent.width >> i;
-			buffer_copy_regions[i].imageExtent.height              = extent.height >> i;
-			buffer_copy_regions[i].imageExtent.depth               = 1;
-			buffer_copy_regions[i].bufferOffset                    = offset;
-		}
+		std::vector<vk::BufferImageCopy> bufferCopyRegions;
 
-		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+		for (uint32_t layer = 0; layer < layerCount; layer++)
+		{
+			for (uint32_t i = 0; i < mipLevels; i++)
+			{
+				uint32_t offset = getOffset(i, 0, layer);
+
+				vk::ImageSubresourceLayers imageSubresourceLayers = vk::ImageSubresourceLayers()
+					.setAspectMask(vk::ImageAspectFlagBits::eColor)
+					.setMipLevel(i)
+					.setBaseArrayLayer(layer)
+					.setLayerCount(1);
+
+				vk::BufferImageCopy bufferImageCopy = vk::BufferImageCopy()
+					.setImageSubresource(imageSubresourceLayers)
+					.setImageExtent(vk::Extent3D(extent.width >> i, extent.height >> i, 1))
+					.setBufferOffset(offset);
+
+				bufferCopyRegions.push_back(bufferImageCopy);
+			}
+		}	
+
+		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 1, layerCount);
 
 		oneTimeCommandSubmitter.submit([&] (const vk::CommandBuffer& commandBuffer) {
 			// Copy mip levels from staging buffer
-			stagingBuffer.copyTo(commandBuffer, _textureImage, buffer_copy_regions);
+			stagingBuffer.copyTo(commandBuffer, _textureImage, bufferCopyRegions);
 		});
 
-		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, 1, layerCount);
 	} else {
-		void *data = device.mapMemory(_textureImageMemory, 0, memory_requirements.size);
+		void *data = device.mapMemory(_textureImageMemory, 0, memoryRequirements.size);
 		// Copy image data of the first mip level into memory
 		//memcpy(data, data, ktxTexture_GetImageSize(ktx_texture, 0));
 		memcpy(data, data, getImageSize(0));
 		device.unmapMemory(_textureImageMemory);
 
-		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::ePreinitialized, vk::ImageLayout::eShaderReadOnlyOptimal);
+		transitionImageLayout(oneTimeCommandSubmitter, _textureImage, vk::ImageLayout::ePreinitialized, vk::ImageLayout::eShaderReadOnlyOptimal, 1, layerCount);
 	}
 
 	// now, the ktx_texture can be destroyed
@@ -155,44 +164,43 @@ Image::Image(
 		maxAnisotropy = physicalDevice.getProperties().limits.maxSamplerAnisotropy;
 	}
 
-	const vk::FormatProperties fmt_props = physicalDevice.getFormatProperties(format);
+	const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
 
-	bool has_linear_filter = !!(fmt_props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+	bool hasLinearFilter = !!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
-	vk::SamplerCreateInfo sampler_create_info = vk::SamplerCreateInfo()
-		.setMagFilter(has_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest)
-		.setMinFilter(has_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest)
-		.setMipmapMode(has_linear_filter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest)
+	vk::SamplerCreateInfo samplerCreateInfo = vk::SamplerCreateInfo()
+		.setMagFilter(hasLinearFilter ? vk::Filter::eLinear : vk::Filter::eNearest)
+		.setMinFilter(hasLinearFilter ? vk::Filter::eLinear : vk::Filter::eNearest)
+		.setMipmapMode(hasLinearFilter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest)
 		.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
 		.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
 		.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
 		.setMaxAnisotropy(1.0f < maxAnisotropy)
 		.setCompareOp(vk::CompareOp::eNever)
 		.setMinLod(0.0f)
-		.setMaxLod((use_staging) ? static_cast<float>(mip_levels) : 0.0f)
+		.setMaxLod((useStaging) ? static_cast<float>(mipLevels) : 0.0f)
 		.setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
 
-	_textureSampler = _device.createSampler(sampler_create_info);
+	_textureSampler = _device.createSampler(samplerCreateInfo);
 	// Create image view
 	// Textures are not directly accessed by the shaders and
 	// are abstracted by image views containing additional
 	// information and sub resource ranges
-	vk::ImageViewCreateInfo image_view_create_info;
-	image_view_create_info.viewType   = vk::ImageViewType::e2D;
-	image_view_create_info.format     = format;
-	image_view_create_info.components = {vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA};
-	// The subresource range describes the set of mip levels (and array layers) that can be accessed through this image image_view_create_info
-	// It's possible to create multiple image views for a single image referring to different (and/or overlapping) ranges of the image
-	image_view_create_info.subresourceRange.aspectMask     = vk::ImageAspectFlagBits::eColor;
-	image_view_create_info.subresourceRange.baseMipLevel   = 0;
-	image_view_create_info.subresourceRange.baseArrayLayer = 0;
-	image_view_create_info.subresourceRange.layerCount     = 1;
-	// Linear tiling usually won't support mip maps
-	// Only set mip map count if optimal tiling is used
-	image_view_create_info.subresourceRange.levelCount = (use_staging) ? mip_levels : 1;
-	// The image_view_create_info will be based on the texture's image
-	image_view_create_info.image = _textureImage;
-	_textureImageView          = device.createImageView(image_view_create_info);
+	vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
+		.setAspectMask(vk::ImageAspectFlagBits::eColor)
+		.setBaseMipLevel(0)
+		.setBaseArrayLayer(0)
+		.setLayerCount(layerCount)
+		.setLevelCount(levelCount);
+
+	vk::ImageViewCreateInfo imageViewCreateInfo = vk::ImageViewCreateInfo()
+		.setViewType(isCubeMap ? vk::ImageViewType::eCube : vk::ImageViewType::e2D)
+		.setFormat(format)
+		.setComponents({vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA})
+		.setSubresourceRange(subresourceRange)
+		.setImage(_textureImage);
+
+	_textureImageView          = device.createImageView(imageViewCreateInfo);
 }
 
 Image::~Image() {
@@ -210,13 +218,19 @@ vk::DescriptorImageInfo Image::descriptorInfo() {
   return imageInfo;
 }
 
-void Image::transitionImageLayout(engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
-    vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t levelCount) {
+void Image::transitionImageLayout(
+	engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
+    vk::Image image, 
+	vk::ImageLayout oldLayout, 
+	vk::ImageLayout newLayout, 
+	uint32_t levelCount,
+	uint32_t layerCount
+  ) {
   vk::ImageSubresourceRange subresource = vk::ImageSubresourceRange()
       .setAspectMask(vk::ImageAspectFlagBits::eColor)
       .setBaseMipLevel(0)
       .setLevelCount(levelCount)
-      .setLayerCount(1);
+      .setLayerCount(layerCount);
   
   vk::ImageMemoryBarrier barrier = vk::ImageMemoryBarrier()
     .setOldLayout(oldLayout)

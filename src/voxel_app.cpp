@@ -9,6 +9,7 @@
 #include "./engine/logic/fps_movement_controller.hpp"
 #include "systems/point_light_system.hpp"
 #include "systems/simple_render_system.hpp"
+#include "systems/skybox_render_system.hpp"
 #include "./engine/graphics/vulkan/builders/descriptor_pool_create_info_builder.hpp"
 #include "./engine/graphics/vulkan/image.hpp"
 #include "./engine/graphics/vulkan/builders/file_image_builder.hpp"
@@ -72,6 +73,7 @@ void VoxelApp::run() {
   std::vector<vk::DescriptorSetLayoutBinding> bindings = engine::DescriptorSetLayoutBindingsBuilder()
     .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
     .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+    .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
     .build();
   
   vk::DescriptorSetLayout globalSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, bindings));
@@ -82,10 +84,29 @@ void VoxelApp::run() {
   ).build(
     _oneTimeCommandSubmitter, 
     //"../textures/hinoki_planks_diff_4k.jpg"
-    "../textures/metalplate01_rgba.ktx"
+    "../textures/ground_dry_rgba.ktx"
   );
 
+  std::unique_ptr<engine::Image> skyboxCubeMap = engine::FileImageBuilder(
+    _device, 
+    _physicalDevice
+  ).build(
+    _oneTimeCommandSubmitter, 
+    //"../textures/hinoki_planks_diff_4k.jpg"
+    "../textures/skybox/cubemap_yokohama_rgba.ktx",
+    true
+  );
+
+  auto skyboxGameObject = engine::GameObject::createGameObject();
+  glm::vec3 position = {1.0f, 1.0f, 1.0f};
+  skyboxGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf");
+  skyboxGameObject.transform.translation = position;
+  skyboxGameObject.transform.scale = {10.0f, 10.0f, 10.0f};
+  engine::GameObject::Map skyboxObjects;
+  skyboxObjects.emplace(skyboxGameObject.getId(), std::move(skyboxGameObject));
+
   auto imageInfo = image->descriptorInfo();
+  auto skyboxCubeMapInfo = skyboxCubeMap->descriptorInfo();
   // TODO: Create multiple descriptor sets for each frame, following: https://vkguide.dev/docs/chapter-4/descriptors/#mental-model
   // TODO: Tie this in with Model loading
   std::vector<vk::DescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
@@ -99,9 +120,17 @@ void VoxelApp::run() {
     )
       .writeBuffer(0, &bufferInfo)
       .writeImage(1, &imageInfo)
+      .writeImage(2, &skyboxCubeMapInfo)
       .build();
   }
 
+  SkyboxRenderSystem skyboxRenderSystem{
+      _device,
+      _renderer.getSwapChainRenderPass(),
+      _renderer.getSwapChainColorFormat(),
+      _renderer.getSwapChainDepthFormat(),
+      globalSetLayout
+  };
   SimpleRenderSystem simpleRenderSystem{
       _device,
       _renderer.getSwapChainRenderPass(),
@@ -178,6 +207,16 @@ void VoxelApp::run() {
       }, 
       {
         [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) {
+
+          engine::FrameInfo skyboxFrameInfo{
+            frameIndex,
+            frameTime,
+            commandBuffer,
+            camera,
+            globalDescriptorSets[frameIndex],
+            skyboxObjects
+          };
+          skyboxRenderSystem.renderGameObjects(skyboxFrameInfo);
           engine::FrameInfo frameInfo{
             frameIndex,
             frameTime,
@@ -201,6 +240,7 @@ void VoxelApp::run() {
 }
 
 void VoxelApp::loadGameObjects() {
+
   auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
   testGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf");

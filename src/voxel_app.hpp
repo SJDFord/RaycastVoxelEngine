@@ -65,7 +65,7 @@ class VoxelApp {
 
   //LveDevice lveDevice{_window};
   engine::OneTimeCommandSubmitter _oneTimeCommandSubmitter{_device, _commandPool, _graphicsQueueIndex};
-  engine::Renderer _renderer{_instance, _window, _surface,  _device, _physicalDevice, _commandPool, _graphicsQueueIndex, _presentQueueIndex, MAX_FRAMES_IN_FLIGHT, true};
+  engine::Renderer _renderer{_instance, _window, _surface,  _device, _physicalDevice, _commandPool, _graphicsQueueIndex, _presentQueueIndex, MAX_FRAMES_IN_FLIGHT, false};
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;

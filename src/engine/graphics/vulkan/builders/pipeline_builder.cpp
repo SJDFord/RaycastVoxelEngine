@@ -6,7 +6,7 @@
 namespace engine {
 
 PipelineBuilder::PipelineBuilder(vk::Device device, vk::PipelineLayout pipelineLayout): _device{device}, _pipelineLayout{pipelineLayout} {
-  // TODO: Setters for all of these to allow overriding default pipeline behaviour
+ // TODO: Setters for all of these to allow overriding default pipeline behaviour
   _renderPass = VK_NULL_HANDLE;
   
   _inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
@@ -151,6 +151,16 @@ PipelineBuilder& PipelineBuilder::setDepthFormat(vk::Format depthFormat) {
   return *this;
 }
 
+
+PipelineBuilder& PipelineBuilder::setRasterizationInfo(vk::PipelineRasterizationStateCreateInfo rasterizationInfo) {
+  _rasterizationInfo = rasterizationInfo;
+  return *this;
+}
+
+PipelineBuilder& PipelineBuilder::setDepthStencilInfo(vk::PipelineDepthStencilStateCreateInfo depthStencilInfo) {
+  _depthStencilInfo = depthStencilInfo;
+  return *this;
+}
 
 vk::Pipeline PipelineBuilder::build() {
   _colorBlendInfo = vk::PipelineColorBlendStateCreateInfo()
