@@ -16,6 +16,8 @@
 #include "./engine/graphics/vulkan/builders/file_model_builder.hpp"
 
 #include "./engine/graphics/vulkan/image.hpp"
+#include "./engine/graphics/layout/simple.hpp"
+#include <utility>
 
 // libs
 #define GLM_FORCE_RADIANS
@@ -41,7 +43,16 @@ VoxelApp::VoxelApp():
       .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
       .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
       .build()
-  )} {
+  )},
+  _skyboxPool{_device.createDescriptorPool(
+    engine::DescriptorPoolCreateInfoBuilder()
+      .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+      .addPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+      .addPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+      .build()
+  )}
+  
+  {
   /*
   vkCmdBeginRenderingKHR = reinterpret_cast<PFN_vkCmdBeginRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdBeginRenderingKHR"));
   vkCmdEndRenderingKHR   = reinterpret_cast<PFN_vkCmdEndRenderingKHR>(vkGetInstanceProcAddr(_instance, "vkCmdEndRenderingKHR"));
@@ -58,6 +69,36 @@ VoxelApp::~VoxelApp() {
 }
 
 void VoxelApp::run() {
+	vk::SamplerCreateInfo samplerCreateInfo = vk::SamplerCreateInfo()
+		.setMagFilter(vk::Filter::eNearest)
+		.setMinFilter(vk::Filter::eNearest)
+		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+		.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+    .setAnisotropyEnable(vk::False)
+		.setMaxAnisotropy(0.0f)
+		.setCompareOp(vk::CompareOp::eNever)
+		.setMinLod(0.0f)
+		.setMaxLod(0.0f)
+		.setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
+
+	auto globalSampler = _device.createSampler(samplerCreateInfo);
+
+
+  std::vector<std::unique_ptr<engine::Buffer>> skyboxUboBuffers(MAX_FRAMES_IN_FLIGHT);
+  for (int i = 0; i < skyboxUboBuffers.size(); i++) {
+    skyboxUboBuffers[i] = std::make_unique<engine::Buffer>(
+        _device,
+        _physicalDevice,
+        sizeof(engine::GlobalUbo),
+        1,
+        vk::BufferUsageFlagBits::eUniformBuffer,
+        vk::MemoryPropertyFlagBits::eHostVisible);
+    skyboxUboBuffers[i]->map();
+  }
+
+
   std::vector<std::unique_ptr<engine::Buffer>> uboBuffers(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < uboBuffers.size(); i++) {
     uboBuffers[i] = std::make_unique<engine::Buffer>(
@@ -70,15 +111,27 @@ void VoxelApp::run() {
     uboBuffers[i]->map();
   }
 
+
+
+  // https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
   std::vector<vk::DescriptorSetLayoutBinding> bindings = engine::DescriptorSetLayoutBindingsBuilder()
     .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
-    .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+    .addBinding(vk::DescriptorType::eSampler, 1, vk::ShaderStageFlagBits::eFragment)
+    .addBinding(vk::DescriptorType::eSampledImage, 8, vk::ShaderStageFlagBits::eFragment)
+    //.addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
+    .build();
+    
+  std::vector<vk::DescriptorSetLayoutBinding> skyboxBindings = engine::DescriptorSetLayoutBindingsBuilder()
+    .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
     .addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
     .build();
-  
+
   vk::DescriptorSetLayout globalSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, bindings));
 
-  std::unique_ptr<engine::Image> image = engine::FileImageBuilder(
+
+  vk::DescriptorSetLayout skyboxSetLayout = _device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo({}, skyboxBindings));
+
+  std::unique_ptr<engine::Image> imageGrass = engine::FileImageBuilder(
     _device, 
     _physicalDevice
   ).build(
@@ -86,6 +139,23 @@ void VoxelApp::run() {
     //"../textures/hinoki_planks_diff_4k.jpg"
     "../textures/ground_dry_rgba.ktx"
   );
+
+  std::unique_ptr<engine::Image> imageWood = engine::FileImageBuilder(
+    _device, 
+    _physicalDevice
+  ).build(
+    _oneTimeCommandSubmitter, 
+    "../textures/hinoki_planks_diff_4k.jpg"
+  );
+
+  std::unique_ptr<engine::Image> imageMetal = engine::FileImageBuilder(
+    _device, 
+    _physicalDevice
+  ).build(
+    _oneTimeCommandSubmitter, 
+    "../textures/metalplate01_rgba.ktx"
+  );
+
 
   std::unique_ptr<engine::Image> skyboxCubeMap = engine::FileImageBuilder(
     _device, 
@@ -105,10 +175,44 @@ void VoxelApp::run() {
   engine::GameObject::Map skyboxObjects;
   skyboxObjects.emplace(skyboxGameObject.getId(), std::move(skyboxGameObject));
 
-  auto imageInfo = image->descriptorInfo();
+  //auto imageInfo = image->descriptorInfo();
+  engine::DemoData demoData;
+
+  for (uint32_t i = 0; i < 8; ++i)
+	{
+		demoData.descriptorImageInfos[i].sampler = nullptr;
+		demoData.descriptorImageInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    if (i == 0) {
+
+		  demoData.descriptorImageInfos[i].imageView = imageGrass->GetImageView();
+    } else if (i == 1) {
+
+		  demoData.descriptorImageInfos[i].imageView = imageWood->GetImageView();
+    } else if (i == 2) {
+
+		  demoData.descriptorImageInfos[i].imageView = imageMetal->GetImageView();
+    }
+	}
+
   auto skyboxCubeMapInfo = skyboxCubeMap->descriptorInfo();
   // TODO: Create multiple descriptor sets for each frame, following: https://vkguide.dev/docs/chapter-4/descriptors/#mental-model
   // TODO: Tie this in with Model loading
+  std::vector<vk::DescriptorSet> skyboxDescriptorSets(MAX_FRAMES_IN_FLIGHT);
+  for (int i = 0; i < skyboxDescriptorSets.size(); i++) {
+    auto bufferInfo = skyboxUboBuffers[i]->descriptorInfo();
+    skyboxDescriptorSets[i] = engine::DescriptorWriter(
+      _device, 
+      _skyboxPool,
+      skyboxSetLayout,
+      skyboxBindings
+    )
+      .writeBuffer(0, &bufferInfo)
+      .writeImage(1, &skyboxCubeMapInfo)
+      .build();
+  }
+  
+  vk::DescriptorImageInfo samplerInfo = {};
+	samplerInfo.sampler = globalSampler;
   std::vector<vk::DescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
@@ -119,8 +223,8 @@ void VoxelApp::run() {
       bindings
     )
       .writeBuffer(0, &bufferInfo)
-      .writeImage(1, &imageInfo)
-      .writeImage(2, &skyboxCubeMapInfo)
+      .writeImage(1, &samplerInfo)
+      .writeImage(2, demoData.descriptorImageInfos, 8)
       .build();
   }
 
@@ -129,7 +233,7 @@ void VoxelApp::run() {
       _renderer.getSwapChainRenderPass(),
       _renderer.getSwapChainColorFormat(),
       _renderer.getSwapChainDepthFormat(),
-      globalSetLayout
+      skyboxSetLayout
   };
   SimpleRenderSystem simpleRenderSystem{
       _device,
@@ -204,6 +308,9 @@ void VoxelApp::run() {
         pointLightSystem.update(frameInfo, ubo);
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();
+
+        skyboxUboBuffers[frameIndex]->writeToBuffer(&ubo);
+        skyboxUboBuffers[frameIndex]->flush();
       }, 
       {
         [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) {
@@ -213,7 +320,7 @@ void VoxelApp::run() {
             frameTime,
             commandBuffer,
             camera,
-            globalDescriptorSets[frameIndex],
+            skyboxDescriptorSets[frameIndex],
             skyboxObjects
           };
           skyboxRenderSystem.renderGameObjects(skyboxFrameInfo);
@@ -236,6 +343,7 @@ void VoxelApp::run() {
   }
   
   std::println("Cleanup");
+  _device.destroySampler(globalSampler);
   _device.waitIdle();
 }
 
@@ -250,8 +358,9 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
-  std::vector<engine::Mesh> test2Meshes = {engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true)};
-  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, test2Meshes);
+  engine::Mesh test2Mesh = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
+  std::vector<std::pair<engine::Mesh, int>> pairs = {{test2Mesh, 1}};
+  std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, pairs);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};

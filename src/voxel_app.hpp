@@ -69,6 +69,7 @@ class VoxelApp {
 
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;
+  vk::DescriptorPool _skyboxPool;
   engine::GameObject::Map gameObjects;
 };
 }  // namespace lve

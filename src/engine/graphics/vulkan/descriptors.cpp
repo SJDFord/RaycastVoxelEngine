@@ -12,20 +12,20 @@ DescriptorWriter::DescriptorWriter(vk::Device device, vk::DescriptorPool pool, v
     : _device{device}, _pool{pool}, _setLayout{setLayout}, _bindings{bindings}, _writes{} {}
 
 DescriptorWriter &DescriptorWriter::writeBuffer(
-    uint32_t binding, vk::DescriptorBufferInfo* bufferInfo) {
+    uint32_t binding, vk::DescriptorBufferInfo* bufferInfo, uint32_t descriptorCount) {
   assert(_bindings.size() > binding && "Layout does not contain specified binding");
 
   auto &bindingDescription = _bindings[binding];
 
   assert(
-      bindingDescription.descriptorCount == 1 &&
+      bindingDescription.descriptorCount == descriptorCount &&
       "Binding single descriptor info, but binding expects multiple");
 
   vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
     .setDescriptorType(bindingDescription.descriptorType)
     .setDstBinding(binding)
     .setPBufferInfo(bufferInfo)
-    .setDescriptorCount(1);
+    .setDescriptorCount(descriptorCount);
 
   _writes.push_back(write);
 
@@ -33,13 +33,13 @@ DescriptorWriter &DescriptorWriter::writeBuffer(
 }
 
 DescriptorWriter &DescriptorWriter::writeImage(
-    uint32_t binding, vk::DescriptorImageInfo* imageInfo) {
+    uint32_t binding, vk::DescriptorImageInfo* imageInfo, uint32_t descriptorCount) {
   assert(_bindings.size() > binding && "Layout does not contain specified binding");
 
   auto &bindingDescription = _bindings[binding];
 
   assert(
-      bindingDescription.descriptorCount == 1 &&
+      bindingDescription.descriptorCount == descriptorCount &&
       "Binding single descriptor info, but binding expects multiple");
 
 
@@ -47,7 +47,7 @@ DescriptorWriter &DescriptorWriter::writeImage(
     .setDescriptorType(bindingDescription.descriptorType)
     .setDstBinding(binding)
     .setPImageInfo(imageInfo)
-    .setDescriptorCount(1);
+    .setDescriptorCount(descriptorCount);
 
   _writes.push_back(write);
   return *this;

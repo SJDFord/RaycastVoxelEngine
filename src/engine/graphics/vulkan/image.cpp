@@ -218,6 +218,10 @@ vk::DescriptorImageInfo Image::descriptorInfo() {
   return imageInfo;
 }
 
+vk::ImageView Image::GetImageView() {
+	return _textureImageView;
+}
+
 void Image::transitionImageLayout(
 	engine::OneTimeCommandSubmitter& oneTimeCommandSubmitter,
     vk::Image image, 

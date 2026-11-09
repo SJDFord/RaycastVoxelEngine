@@ -1,5 +1,7 @@
 #version 450
 
+//#extension GL_ARB_separate_shader_objects : enable
+
 // TODO: Validate
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
@@ -9,7 +11,11 @@ layout (location = 3) in vec3 fragTexCoord;
 layout (location = 0) out vec4 outColor;
 
 // TODO: Validate
-layout(binding = 1) uniform sampler2D texSampler;
+//layout(binding = 1) uniform sampler texSampler;
+//layout(set = 0, binding = 2) uniform texture2D textures[8];
+
+layout(set = 0, binding = 1) uniform sampler samp;
+layout(set = 0, binding = 2) uniform texture2D textures[8];
 
 // TODO: Validate
 struct PointLight {
@@ -31,7 +37,14 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 layout(push_constant) uniform Push {
   mat4 modelMatrix;
   mat4 normalMatrix;
+  int textureIndex;
 } push;
+
+/*
+layout(push_constant) uniform PerModel {
+  int textureIndex;
+} perModel;
+*/
 
 void main() {
   //vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
@@ -66,5 +79,9 @@ void main() {
   //outColor = vec4(fragTexCoord, 0.0, 1.0);
 
   vec2 texCoord2d = vec2(fragTexCoord.x, fragTexCoord.y);
-  outColor = texture(texSampler, texCoord2d);
+  //outColor = texture(texSampler, texCoord2d);
+
+  //outColor = vec4(0.5f);
+	outColor = texture(sampler2D(textures[push.textureIndex], samp), texCoord2d);
+  //outColor = texture(sampler2D(textures[perModel.textureIndex], texSampler), texCoord2d)
 }

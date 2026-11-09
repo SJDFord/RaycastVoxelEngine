@@ -69,12 +69,19 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
       processNode(sceneNode, initial, processNode);
     }
 
-    std::vector<Mesh> flattenedMeshes;
+    std::vector<std::pair<Mesh, int>> flattenedMeshes;
 
     for (auto& meshList : meshes) {
-      flattenedMeshes.insert(flattenedMeshes.end(), meshList.begin(), meshList.end());
+      for (auto &mesh : meshList) {
+        if (mesh.Vertices.size() < 1) {
+          continue;
+        }
+
+        // TODO: Pass the texture index through
+        flattenedMeshes.push_back({mesh, 0});
+      }
     }
-  
+
     return std::make_unique<engine::Model>(_device, _physicalDevice, oneTimeCommandSubmitter, flattenedMeshes);
 }
 
@@ -107,31 +114,7 @@ Mesh FileModelBuilder::createMesh(const fastgltf::Asset& asset, const fastgltf::
   }
 
   for (auto& image : asset.images) {
-    if (std::holds_alternative<fastgltf::sources::URI>(image.data)) {
-        const auto& uri = std::get<fastgltf::sources::URI>(image.data);
-        std::println("Model {}: URI: {}", _modelName, uri.uri.c_str());      
-        // Handle external URI/file path
-    } else if (std::holds_alternative<fastgltf::sources::Vector>(image.data)) {
-        const auto& vectorSource = std::get<fastgltf::sources::Vector>(image.data);
-        auto mimeType = toString(vectorSource.mimeType);
-        std::println("Model {}: Vector ({})", _modelName, mimeType);
-        // vectorSource.bytes contains the raw encoded file data (PNG/JPG/etc.)
-    } else if (std::holds_alternative<fastgltf::sources::BufferView>(image.data)) {
-        const auto& bufferViewSource = std::get<fastgltf::sources::BufferView>(image.data);
-        auto mimeType = toString(bufferViewSource.mimeType);
-        std::println("Model {}: Buffer View ({})", _modelName, mimeType);
-          /*
-          std::unique_ptr<engine::Image> image = engine::FileImageBuilder(
-            _device, 
-            _physicalDevice
-          ).build(
-            _oneTimeCommandSubmitter, 
-            //"../textures/hinoki_planks_diff_4k.jpg"
-            "../textures/metalplate01_rgba.ktx"
-          );
-          */
-        // Access asset.bufferViews[bufferViewSource.bufferViewIndex]
-    }
+    //auto engineImage = createImage(asset, image);
   }
 
   auto& positionAccessor = asset.accessors[positionAttribute->accessorIndex];
@@ -212,6 +195,98 @@ Mesh FileModelBuilder::createMesh(const fastgltf::Asset& asset, const fastgltf::
   return engineMesh;
 }
 
+std::unique_ptr<Image> FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::Image& image) {
+    //AllocatedImage newImage {};
+    std::unique_ptr<engine::Image> engineImage;
+    int width, height, nrChannels;
+    /*
+    std::visit(
+        fastgltf::visitor {
+            [](auto& arg) {},
+            [&](fastgltf::sources::URI& filePath) {
+                assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
+                assert(filePath.uri.isLocalPath()); // We're only capable of loading
+                                                    // local files.
+
+                const std::string path(filePath.uri.path().begin(),
+                    filePath.uri.path().end()); // Thanks C++.
+                unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+                if (data) {
+                    VkExtent3D imagesize;
+                    imagesize.width = width;
+                    imagesize.height = height;
+                    imagesize.depth = 1;
+
+                    //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT,false);
+
+                    stbi_image_free(data);
+                }
+            },
+            [&](fastgltf::sources::Vector& vector) {
+                unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+                    &width, &height, &nrChannels, 4);
+                if (data) {
+                    VkExtent3D imagesize;
+                    imagesize.width = width;
+                    imagesize.height = height;
+                    imagesize.depth = 1;
+
+                    //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT,false);
+
+                    stbi_image_free(data);
+                }
+            },
+            [&](fastgltf::sources::BufferView& view) {
+                auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+                auto& buffer = asset.buffers[bufferView.bufferIndex];
+
+                std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
+                                               // specify LoadExternalBuffers, meaning all buffers
+                                               // are already loaded into a vector.
+                               [](auto& arg) {},
+                               [&](fastgltf::sources::Vector& vector) {
+                                   unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                       static_cast<int>(bufferView.byteLength),
+                                       &width, &height, &nrChannels, 4);
+                                   if (data) {
+                                       VkExtent3D imagesize;
+                                       imagesize.width = width;
+                                       imagesize.height = height;
+                                       imagesize.depth = 1;
+                                      engineImage = std::make_unique<engine::Image>(
+                                          _device, 
+                                          _physicalDevice, 
+                                          oneTimeCommandSubmitter,
+                                          vk::Format::eR8G8B8A8Srgb,
+                                          pixels,
+                                          imageSize,
+                                          vk::Extent2D(texWidth, texHeight),
+                                          false
+                                      );
+                                       //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                                       //    VK_IMAGE_USAGE_SAMPLED_BIT,false);
+
+                                       stbi_image_free(data);
+                                   }
+                               } },
+                    buffer.data);
+            },
+        },
+        image.data);
+    */
+    return engineImage;
+    
+    // if any of the attempts to load the data failed, we havent written the image
+    // so handle is null
+    /*
+    if (newImage.image == VK_NULL_HANDLE) {
+        return {};
+    } else {
+        return newImage;
+    }
+    */
+}
+
 std::string FileModelBuilder::toString(fastgltf::AccessorType accessorType) {
   switch (accessorType) {
     case fastgltf::AccessorType::Invalid:
@@ -277,6 +352,8 @@ std::string FileModelBuilder::toString(fastgltf::MimeType mimeType) {
       return "PNG";
     case fastgltf::MimeType::WEBP:
       return "WEBP";
+    default:
+      throw std::invalid_argument("mimeType");
   }
 }
 

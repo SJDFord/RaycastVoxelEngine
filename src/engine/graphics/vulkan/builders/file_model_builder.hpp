@@ -2,8 +2,12 @@
 
 #include "../one_time_command_submitter.hpp"
 #include "../model.hpp"
+#include "../image.hpp"
+
 #include "vulkan/vulkan.hpp"
 
+
+#include "stb/stb_image.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -34,8 +38,10 @@ class FileModelBuilder {
   const vk::PhysicalDevice& _physicalDevice;
   std::string _modelName;
 
+
   std::vector<Mesh> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh);
   Mesh createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive);
+  std::unique_ptr<Image> createImage(const fastgltf::Asset& asset, const fastgltf::Image& image);
   std::string toString(fastgltf::AccessorType accessorType);
   std::string toString(fastgltf::ComponentType componentType);
   std::string toString(fastgltf::MimeType mimeType);

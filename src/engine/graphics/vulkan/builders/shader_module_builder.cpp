@@ -1,4 +1,5 @@
 #include "shader_module_builder.hpp"
+#include <print>
 
 namespace engine {
 
@@ -186,6 +187,11 @@ bool ShaderModuleBuilder::GLSLtoSPV(
     const vk::ShaderStageFlagBits shaderType,
     std::string const& glslShader,
     std::vector<unsigned int>& spvShader) {
+
+  std::string name = shaderType == vk::ShaderStageFlagBits::eVertex ? "Vertex" : "";
+  name = shaderType == vk::ShaderStageFlagBits::eFragment ? "Fragment" : name;
+  std::println("Compiling shader: {}", name);
+
   EShLanguage stage = translateShaderStage(shaderType);
 
   const char* shaderStrings[1];
@@ -201,6 +207,8 @@ bool ShaderModuleBuilder::GLSLtoSPV(
   if (!shader.parse(&resources, 100, false, messages)) {
     puts(shader.getInfoLog());
     puts(shader.getInfoDebugLog());
+
+    std::println("Compilation failed");
     return false;  // something didn't work
   }
 
@@ -215,6 +223,7 @@ bool ShaderModuleBuilder::GLSLtoSPV(
     puts(shader.getInfoLog());
     puts(shader.getInfoDebugLog());
     fflush(stdout);
+    std::println("Linking failed");
     return false;
   }
 

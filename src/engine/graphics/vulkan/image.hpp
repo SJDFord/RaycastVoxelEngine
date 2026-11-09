@@ -49,6 +49,7 @@ class Image {
   Image &operator=(const Image &) = delete;
 
   vk::DescriptorImageInfo descriptorInfo();
+  vk::ImageView GetImageView();
 
  private:
   vk::Device _device;

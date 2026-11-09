@@ -97,19 +97,8 @@ void SkyboxRenderSystem::renderGameObjects(engine::FrameInfo& frameInfo) const {
   for (auto& kv : frameInfo.gameObjects) {
     auto& obj = kv.second;
     if (obj.model == nullptr) continue;
-    engine::SimplePushConstantData push{};
-    push.modelMatrix = obj.transform.mat4();
-    push.normalMatrix = obj.transform.normalMatrix();
-
-    frameInfo.commandBuffer.pushConstants(
-      _pipelineLayout, 
-      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 
-      0,
-      sizeof(engine::SimplePushConstantData),
-      &push);
-
-    obj.model->bind(frameInfo.commandBuffer);
-    obj.model->draw(frameInfo.commandBuffer);
+    obj.model->bind(frameInfo.commandBuffer, _pipelineLayout);
+    obj.model->draw(frameInfo.commandBuffer, _pipelineLayout, obj.transform.mat4(), obj.transform.normalMatrix());
   }
 }
 
