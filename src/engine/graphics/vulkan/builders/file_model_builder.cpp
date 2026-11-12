@@ -34,7 +34,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     _modelName = filePath.substr(lastSlashIndex + 1);
     constexpr auto gltfOptions = 
       fastgltf::Options::DontRequireValidAssetMember | 
-      fastgltf::Options::AllowDouble | 
+      //fastgltf::Options::AllowDouble | 
       fastgltf::Options::LoadGLBBuffers | 
       fastgltf::Options::LoadExternalBuffers |
       fastgltf::Options::LoadExternalImages;

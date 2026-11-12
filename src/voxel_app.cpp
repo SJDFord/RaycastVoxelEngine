@@ -72,9 +72,9 @@ void VoxelApp::run() {
 		.setMagFilter(vk::Filter::eNearest)
 		.setMinFilter(vk::Filter::eNearest)
 		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
-		.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
-		.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
-		.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
     .setAnisotropyEnable(vk::False)
 		.setMaxAnisotropy(0.0f)
 		.setCompareOp(vk::CompareOp::eNever)
@@ -401,6 +401,23 @@ void VoxelApp::loadGameObjects() {
   testGameObject4.transform.scale = {10.0f, 10.0f, 10.0f};
   testGameObject4.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
   gameObjects.emplace(testGameObject4.getId(), std::move(testGameObject4));
+
+  auto testGameObject5 = engine::GameObject::createGameObject();
+  glm::vec3 position5 = {20.0f, 1.0f, -30.0f};
+  testGameObject5.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/FlightHelmet/glTF/FlightHelmet.gltf", globalImages);
+  testGameObject5.transform.translation = position5;
+  testGameObject5.transform.scale = {4.0f, 4.0f, 4.0f};
+  testGameObject5.transform.rotation = {glm::pi<float>(), 0.0f, 0.0f};
+  gameObjects.emplace(testGameObject5.getId(), std::move(testGameObject5));
+
+
+  auto testGameObject6 = engine::GameObject::createGameObject();
+  glm::vec3 position6 = {0.0f, 1.0f, -30.0f};
+  testGameObject6.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/deer.gltf", globalImages);
+  testGameObject6.transform.translation = position6;
+  testGameObject6.transform.scale = {4.0f, 4.0f, 4.0f};
+  testGameObject6.transform.rotation = {glm::pi<float>(), 0.0f, 0.0f};
+  gameObjects.emplace(testGameObject6.getId(), std::move(testGameObject6));
 
   auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {
