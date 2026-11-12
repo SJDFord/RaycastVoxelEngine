@@ -11,7 +11,6 @@
 #include "systems/simple_render_system.hpp"
 #include "systems/skybox_render_system.hpp"
 #include "./engine/graphics/vulkan/builders/descriptor_pool_create_info_builder.hpp"
-#include "./engine/graphics/vulkan/image.hpp"
 #include "./engine/graphics/vulkan/builders/file_image_builder.hpp"
 #include "./engine/graphics/vulkan/builders/file_model_builder.hpp"
 
@@ -167,9 +166,11 @@ void VoxelApp::run() {
     true
   );
 
+
+  std::vector<std::shared_ptr<engine::Image>> skyboxImages;
   auto skyboxGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
-  skyboxGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf");
+  skyboxGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf", skyboxImages);
   skyboxGameObject.transform.translation = position;
   skyboxGameObject.transform.scale = {10.0f, 10.0f, 10.0f};
   engine::GameObject::Map skyboxObjects;
@@ -177,7 +178,24 @@ void VoxelApp::run() {
 
   //auto imageInfo = image->descriptorInfo();
   engine::DemoData demoData;
+  
+  for (uint32_t i = 0; i < globalImages.size(); ++i) {
 
+		demoData.descriptorImageInfos[i].sampler = nullptr;
+		demoData.descriptorImageInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    auto image = globalImages[i];
+    auto imagePtr = image.get();
+    std::println("Setting up image descriptor {}: {}", i, imagePtr == nullptr);
+    demoData.descriptorImageInfos[i].imageView = globalImages[i]->GetImageView();
+  }
+
+  for (uint32_t i = globalImages.size(); i < 8; i++) {
+		demoData.descriptorImageInfos[i].sampler = nullptr;
+		demoData.descriptorImageInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		demoData.descriptorImageInfos[i].imageView = imageGrass->GetImageView();
+  }
+
+  /*
   for (uint32_t i = 0; i < 8; ++i)
 	{
 		demoData.descriptorImageInfos[i].sampler = nullptr;
@@ -193,6 +211,7 @@ void VoxelApp::run() {
 		  demoData.descriptorImageInfos[i].imageView = imageMetal->GetImageView();
     }
 	}
+  */
 
   auto skyboxCubeMapInfo = skyboxCubeMap->descriptorInfo();
   // TODO: Create multiple descriptor sets for each frame, following: https://vkguide.dev/docs/chapter-4/descriptors/#mental-model
@@ -351,7 +370,7 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject = engine::GameObject::createGameObject();
   glm::vec3 position = {1.0f, 1.0f, 1.0f};
-  testGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf");
+  testGameObject.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/cube.gltf", globalImages);
   testGameObject.transform.translation = position;
   testGameObject.transform.scale = {0.2f, 0.2f, 0.2f};
   gameObjects.emplace(testGameObject.getId(), std::move(testGameObject));
@@ -368,7 +387,7 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject3 = engine::GameObject::createGameObject();
   glm::vec3 position3 = {-20.0f, 1.0f, -10.0f};
-  testGameObject3.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/chinesedragon.gltf");
+  testGameObject3.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/chinesedragon.gltf", globalImages);
   testGameObject3.transform.translation = position3;
   testGameObject3.transform.scale = {1.0f, 1.0f, 1.0f};
   testGameObject3.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
@@ -377,7 +396,7 @@ void VoxelApp::loadGameObjects() {
 
   auto testGameObject4 = engine::GameObject::createGameObject();
   glm::vec3 position4 = {20.0f, 1.0f, -10.0f};
-  testGameObject4.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/oaktree.gltf");
+  testGameObject4.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/oaktree.gltf", globalImages);
   testGameObject4.transform.translation = position4;
   testGameObject4.transform.scale = {10.0f, 10.0f, 10.0f};
   testGameObject4.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};

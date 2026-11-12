@@ -3,7 +3,7 @@
 #include "../one_time_command_submitter.hpp"
 #include "../model.hpp"
 #include "../image.hpp"
-
+#include <map>
 #include "vulkan/vulkan.hpp"
 
 
@@ -12,13 +12,30 @@
 #include <string>
 #include <vector>
 #include <print>
+#include <utility>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
+#include <algorithm>
+
+#include <png.h>
 
 namespace engine {
+  typedef struct {
+const png_byte* data;
+const png_size_t size;
+} DataHandle;
+typedef struct {
+const DataHandle data;
+png_size_t offset;
+} ReadDataHandle;
+
+#define PNG_SIG_BYTES (8) /* bytes in the PNG file signature. */
+
+#define PNG_RGBA_PIXEL_LIMIT (0x1000000)
+
 
 class FileModelBuilder {
  public:
@@ -31,7 +48,7 @@ class FileModelBuilder {
   FileModelBuilder(const FileModelBuilder&) = delete;
   FileModelBuilder& operator=(const FileModelBuilder&) = delete;
 
-  std::unique_ptr<engine::Model> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath);
+  std::unique_ptr<engine::Model> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, std::vector<std::shared_ptr<Image>>& images);
 
  private:
   const vk::Device& _device;
@@ -39,11 +56,14 @@ class FileModelBuilder {
   std::string _modelName;
 
 
-  std::vector<Mesh> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh);
-  Mesh createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive);
-  std::unique_ptr<Image> createImage(const fastgltf::Asset& asset, const fastgltf::Image& image);
+  std::vector<std::pair<Mesh, int>> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
+  std::pair<Mesh, int> createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
+  int createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
   std::string toString(fastgltf::AccessorType accessorType);
   std::string toString(fastgltf::ComponentType componentType);
   std::string toString(fastgltf::MimeType mimeType);
+
+  std::shared_ptr<engine::Image> readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success);
+  std::shared_ptr<engine::Image> readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success);
 };
 }  // namespace engine

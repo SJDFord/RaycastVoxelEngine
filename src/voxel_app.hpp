@@ -9,6 +9,7 @@
 #include "./engine/graphics/vulkan/renderer.hpp"
 #include "./engine/graphics/vulkan/one_time_command_submitter.hpp"
 
+#include "./engine/graphics/vulkan/image.hpp"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -70,6 +71,7 @@ class VoxelApp {
   // note: order of declarations matters
   vk::DescriptorPool _globalPool;
   vk::DescriptorPool _skyboxPool;
+  std::vector<std::shared_ptr<engine::Image>> globalImages;
   engine::GameObject::Map gameObjects;
 };
 }  // namespace lve

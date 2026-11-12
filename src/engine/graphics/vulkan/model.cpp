@@ -134,7 +134,7 @@ void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipe
     engine::SimplePushConstantData push{};
     push.modelMatrix = modelMatrix;
     push.normalMatrix = normalMatrix;
-    push.textureIndex = component.textureIndex;
+    push.textureIndex = component.textureIndex >= 0 ? component.textureIndex : 0;
 
 
     commandBuffer.pushConstants(

@@ -53,6 +53,7 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass, vk::Format co
               .addShaderModule(vertexShaderModule, vk::ShaderStageFlagBits::eVertex)
               .addShaderModule(fragmentShaderModule, vk::ShaderStageFlagBits::eFragment)
               .setRenderPass(renderPass)
+              .setBlending(true)
               .setBindingDescriptions(engine::Vertex::getBindingDescriptions())
               .setAttributeDescriptions(engine::Vertex::getAttributeDescriptions())
               .build();
