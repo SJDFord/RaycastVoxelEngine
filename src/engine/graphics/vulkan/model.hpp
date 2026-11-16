@@ -37,11 +37,13 @@ class Model {
 
   void bind(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout);
   void draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix);
+  void setName(std::string name);
 
  private:
   std::unique_ptr<engine::Buffer> createVertexBuffer(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<Vertex> &vertices);
   std::unique_ptr<engine::Buffer> createIndexBuffer(engine::OneTimeCommandSubmitter& commandSubmitter, const std::vector<uint32_t> &indices);
 
+  std::string _name;
   vk::Device _device;
   vk::PhysicalDevice _physicalDevice;
 

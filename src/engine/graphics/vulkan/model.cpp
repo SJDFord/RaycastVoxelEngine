@@ -134,8 +134,12 @@ void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipe
     engine::SimplePushConstantData push{};
     push.modelMatrix = modelMatrix;
     push.normalMatrix = normalMatrix;
-    push.textureIndex = component.textureIndex >= 0 ? component.textureIndex : 0;
 
+    push.textureIndex = component.textureIndex >= 0 ? component.textureIndex : 0;
+    if (_name == "helmet") {
+      //push.textureIndex = 2;
+      //std::println("Drawing component {} with texture {}", component.indexCount, push.textureIndex);
+    }
 
     commandBuffer.pushConstants(
       pipelineLayout, 
@@ -150,6 +154,10 @@ void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipe
       commandBuffer.draw(component.vertexCount, 1, 0, 0);
     }
   }
+}
+
+void Model::setName(std::string name) {
+  _name = name;
 }
 
 void Model::bind(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout) {

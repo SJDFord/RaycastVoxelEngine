@@ -85,7 +85,11 @@ Buffer::~Buffer() {
  */
 vk::Result Buffer::map(vk::DeviceSize size, vk::DeviceSize offset) {
   assert(_buffer && _memory && "Called map on buffer before create");
-  return _device.mapMemory(_memory, offset, size, {}, &_mapped);
+  auto result = _device.mapMemory(_memory, offset, size, {}, &_mapped);
+  if (result != vk::Result::eSuccess) {
+    throw std::runtime_error("Failed to map Buffer");
+  }
+  return result;
 }
 
 /**

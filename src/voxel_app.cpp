@@ -116,7 +116,7 @@ void VoxelApp::run() {
   std::vector<vk::DescriptorSetLayoutBinding> bindings = engine::DescriptorSetLayoutBindingsBuilder()
     .addBinding(vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
     .addBinding(vk::DescriptorType::eSampler, 1, vk::ShaderStageFlagBits::eFragment)
-    .addBinding(vk::DescriptorType::eSampledImage, 8, vk::ShaderStageFlagBits::eFragment)
+    .addBinding(vk::DescriptorType::eSampledImage, MAX_TEXTURE_COUNT, vk::ShaderStageFlagBits::eFragment)
     //.addBinding(vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)
     .build();
     
@@ -176,24 +176,22 @@ void VoxelApp::run() {
   engine::GameObject::Map skyboxObjects;
   skyboxObjects.emplace(skyboxGameObject.getId(), std::move(skyboxGameObject));
 
-  //auto imageInfo = image->descriptorInfo();
-  engine::DemoData demoData;
+  vk::DescriptorImageInfo imageInfoDescriptors[MAX_TEXTURE_COUNT];
   
   for (uint32_t i = 0; i < globalImages.size(); ++i) {
-
-		demoData.descriptorImageInfos[i].sampler = nullptr;
-		demoData.descriptorImageInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    auto image = globalImages[i];
-    auto imagePtr = image.get();
-    std::println("Setting up image descriptor {}: {}", i, imagePtr == nullptr);
-    demoData.descriptorImageInfos[i].imageView = globalImages[i]->GetImageView();
+		imageInfoDescriptors[i].sampler = nullptr;
+		imageInfoDescriptors[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    imageInfoDescriptors[i].imageView = globalImages[i]->GetImageView();
   }
 
-  for (uint32_t i = globalImages.size(); i < 8; i++) {
+  
+  /*
+  for (uint32_t i = globalImages.size(); i < MAX_TEXTURE_COUNT; i++) {
 		demoData.descriptorImageInfos[i].sampler = nullptr;
 		demoData.descriptorImageInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		demoData.descriptorImageInfos[i].imageView = imageGrass->GetImageView();
   }
+  */
 
   /*
   for (uint32_t i = 0; i < 8; ++i)
@@ -243,7 +241,7 @@ void VoxelApp::run() {
     )
       .writeBuffer(0, &bufferInfo)
       .writeImage(1, &samplerInfo)
-      .writeImage(2, demoData.descriptorImageInfos, 8)
+      .writeImage(2, imageInfoDescriptors, MAX_TEXTURE_COUNT)
       .build();
   }
 
@@ -299,7 +297,7 @@ void VoxelApp::run() {
     camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
     float aspect = _renderer.getAspectRatio();
-    camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 100.f);
+    camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 500.f);
 
     _renderer.renderFrame(
       [&] (const vk::CommandBuffer& commandBuffer, int frameIndex) { 
@@ -378,13 +376,13 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   engine::Mesh test2Mesh = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
-  std::vector<std::pair<engine::Mesh, int>> pairs = {{test2Mesh, 1}};
+  std::vector<std::pair<engine::Mesh, int>> pairs = {{test2Mesh, 19}};
   std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, pairs);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;
   testGameObject2.transform.scale = {2.0f, 2.0f, 2.0f};
   gameObjects.emplace(testGameObject2.getId(), std::move(testGameObject2));
-
+  
   auto testGameObject3 = engine::GameObject::createGameObject();
   glm::vec3 position3 = {-20.0f, 1.0f, -10.0f};
   testGameObject3.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/chinesedragon.gltf", globalImages);
@@ -405,12 +403,14 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject5 = engine::GameObject::createGameObject();
   glm::vec3 position5 = {20.0f, 1.0f, -30.0f};
   testGameObject5.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/FlightHelmet/glTF/FlightHelmet.gltf", globalImages);
+  testGameObject5.model->setName("helmet");
   testGameObject5.transform.translation = position5;
   testGameObject5.transform.scale = {4.0f, 4.0f, 4.0f};
   testGameObject5.transform.rotation = {glm::pi<float>(), 0.0f, 0.0f};
   gameObjects.emplace(testGameObject5.getId(), std::move(testGameObject5));
 
 
+  /*
   auto testGameObject6 = engine::GameObject::createGameObject();
   glm::vec3 position6 = {0.0f, 1.0f, -30.0f};
   testGameObject6.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/deer.gltf", globalImages);
@@ -418,6 +418,17 @@ void VoxelApp::loadGameObjects() {
   testGameObject6.transform.scale = {4.0f, 4.0f, 4.0f};
   testGameObject6.transform.rotation = {glm::pi<float>(), 0.0f, 0.0f};
   gameObjects.emplace(testGameObject6.getId(), std::move(testGameObject6));
+  */
+
+  
+  auto testGameObject7 = engine::GameObject::createGameObject();
+  glm::vec3 position7 = {-20.0f, 2.0f, -30.0f};
+  testGameObject7.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/Sponza/glTF/Sponza.gltf", globalImages);
+  testGameObject7.transform.translation = position7;
+  testGameObject7.transform.scale = {0.25f, 0.25f, 0.25f};
+  testGameObject7.transform.rotation = {glm::pi<float>(), 0.0f, 0.0f};
+  gameObjects.emplace(testGameObject7.getId(), std::move(testGameObject7));
+  
 
   auto mainLight = engine::GameObject::makePointLight(10.0f);
   mainLight.color = {

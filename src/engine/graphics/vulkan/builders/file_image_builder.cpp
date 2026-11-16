@@ -15,6 +15,7 @@ FileImageBuilder::~FileImageBuilder() {
 }
 
 std::unique_ptr<engine::Image> FileImageBuilder::build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, bool isCubeMap) {
+  std::println("Loading image from file {}", filePath);
   if (filePath.ends_with(".ktx")) {
     ktxTexture    *ktx_texture;
 	KTX_error_code result = ktxTexture_CreateFromNamedFile(filePath.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktx_texture);

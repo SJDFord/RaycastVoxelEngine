@@ -19,7 +19,7 @@ DescriptorWriter &DescriptorWriter::writeBuffer(
 
   assert(
       bindingDescription.descriptorCount == descriptorCount &&
-      "Binding single descriptor info, but binding expects multiple");
+      "Binding descriptor count must match descriptor count");
 
   vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
     .setDescriptorType(bindingDescription.descriptorType)
@@ -40,7 +40,7 @@ DescriptorWriter &DescriptorWriter::writeImage(
 
   assert(
       bindingDescription.descriptorCount == descriptorCount &&
-      "Binding single descriptor info, but binding expects multiple");
+      "Binding descriptor count must match descriptor count");
 
 
   vk::WriteDescriptorSet write = vk::WriteDescriptorSet()

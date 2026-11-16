@@ -15,7 +15,7 @@ layout (location = 0) out vec4 outColor;
 //layout(set = 0, binding = 2) uniform texture2D textures[8];
 
 layout(set = 0, binding = 1) uniform sampler samp;
-layout(set = 0, binding = 2) uniform texture2D textures[8];
+layout(set = 0, binding = 2) uniform texture2D textures[128];
 
 // TODO: Validate
 struct PointLight {

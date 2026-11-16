@@ -14,10 +14,4 @@ struct PerModelPushConstantData {
   int textureIndex;
 };
 
-struct DemoData
-{
-	vk::Sampler						sampler;
-	vk::DescriptorImageInfo			descriptorImageInfos[8];
-};
-
 }

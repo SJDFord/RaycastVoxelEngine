@@ -5,6 +5,8 @@
 #include "../image.hpp"
 #include <map>
 #include "vulkan/vulkan.hpp"
+#include "file_image_builder.hpp"
+#include <filesystem>
 
 
 #include "stb/stb_image.h"
@@ -54,16 +56,23 @@ class FileModelBuilder {
   const vk::Device& _device;
   const vk::PhysicalDevice& _physicalDevice;
   std::string _modelName;
+  std::string _directory;
+  int _imageIndex = 0;
 
 
   std::vector<std::pair<Mesh, int>> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
   std::pair<Mesh, int> createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
   int createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
+  int createImage( 
+    fastgltf::sources::Array& array, 
+    OneTimeCommandSubmitter& oneTimeCommandSubmitter, 
+    std::vector<std::shared_ptr<Image>>& images
+  );
   std::string toString(fastgltf::AccessorType accessorType);
   std::string toString(fastgltf::ComponentType componentType);
   std::string toString(fastgltf::MimeType mimeType);
 
-  std::shared_ptr<engine::Image> readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success);
-  std::shared_ptr<engine::Image> readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success);
+  int readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
+  int readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
 };
 }  // namespace engine

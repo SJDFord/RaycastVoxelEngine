@@ -26,6 +26,7 @@ class VoxelApp {
   static constexpr int WIDTH = 1920;
   static constexpr int HEIGHT = 1080;
   static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr uint32_t MAX_TEXTURE_COUNT = 128;
 
   VoxelApp();
   ~VoxelApp();

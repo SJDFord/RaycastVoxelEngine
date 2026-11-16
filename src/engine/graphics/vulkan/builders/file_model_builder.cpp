@@ -18,7 +18,8 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     if (!filePath.ends_with(".gltf")) {
         throw std::format_error("File types other than GLTF are not supported");
     }
-
+    //std::filesystem::path p = filePath;
+    //std::string directory = p.has_parent_path() ? p.parent_path().string() : "";
     fastgltf::Parser parser;
 
     auto data = fastgltf::GltfDataBuffer::FromPath(filePath);
@@ -29,17 +30,19 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     // This loads the glTF file into the gltf object and parses the JSON.
     // It automatically detects whether this is a JSON-based or binary glTF.
     // If you know the type, you can also use loadGltfJson or loadGltfBinary.
+    // TODO: Use file system for this
     auto lastSlashIndex = filePath.find_last_of("/");
-    auto directory = filePath.substr(0, lastSlashIndex);
+    _directory = filePath.substr(0, lastSlashIndex);
     _modelName = filePath.substr(lastSlashIndex + 1);
     constexpr auto gltfOptions = 
       fastgltf::Options::DontRequireValidAssetMember | 
       //fastgltf::Options::AllowDouble | 
       fastgltf::Options::LoadGLBBuffers | 
-      fastgltf::Options::LoadExternalBuffers |
-      fastgltf::Options::LoadExternalImages;
+      // WARN: Don't use this option as fastgltf mistakes KTX images for JPEG or PNG 
+      fastgltf::Options::LoadExternalImages |
+      fastgltf::Options::LoadExternalBuffers;
   
-    auto assetResult = parser.loadGltf(data.get(), directory, gltfOptions);
+    auto assetResult = parser.loadGltf(data.get(), _directory, gltfOptions);
     if (auto error = assetResult.error(); error != fastgltf::Error::None) {
       throw std::format_error("Could not load gltf file");
     }
@@ -65,7 +68,14 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     std::map<int, int> imageToEngineImageMap;
     for (uint32_t i = 0; i < asset.images.size(); i++) {
       auto& image = asset.images[i];
-      std::println("Processing image {}", i);
+      //std::println("Processing image {}", i);
+      /*
+      if (filePath.contains("Sponza") && i > 10) {
+        continue;
+      }
+      */
+
+      //int engineImageIndex = 19;
       auto engineImageIndex = createImage(asset, image, oneTimeCommandSubmitter, images);
       if (engineImageIndex < 0) {
         continue;
@@ -80,7 +90,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     auto initial = fastgltf::math::fmat4x4();
 
     std::vector<std::vector<std::pair<Mesh, int>>> meshes;
-    std::println("Model {}: {} meshes", _modelName, asset.meshes.size());
+    //std::println("Model {}: {} meshes", _modelName, asset.meshes.size());
     meshes.resize(asset.meshes.size());
 
     auto processNode = [&](std::size_t nodeIndex, fastgltf::math::fmat4x4 nodeMatrix, auto& self) -> void {
@@ -117,7 +127,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
         auto modelImageIndex = materialToImageMap[modelMaterialIndex];
         auto engineImageIndex = imageToEngineImageMap[modelImageIndex];
         
-        std::println("Model {}: Mapped model material index {} to engine image index {}", _modelName, modelMaterialIndex, engineImageIndex);
+        //std::println("Model {}: Mapped model material index {} to engine image index {}", _modelName, modelMaterialIndex, engineImageIndex);
         flattenedMeshes.push_back({meshPair.first, engineImageIndex});
       }
     }
@@ -168,7 +178,7 @@ std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, 
   }
   */
   auto& positionAccessor = asset.accessors[positionAttribute->accessorIndex];
-  std::println("Model {}: Mesh {}: Primitive: {}: Vertices: {}", _modelName, mesh.name, "", positionAccessor.count);
+  //std::println("Model {}: Mesh {}: Primitive: {}: Vertices: {}", _modelName, mesh.name, "", positionAccessor.count);
   vertices.resize(positionAccessor.count);
   fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positionAccessor, [&](fastgltf::math::fvec3 pos, std::size_t idx) {
     glm::vec3 position = glm::vec3(pos.x(), pos.y(), pos.z());
@@ -181,7 +191,7 @@ std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, 
   }
 
   auto& normalAccessor = asset.accessors[normalAttribute->accessorIndex];
-  std::println("Model {}: Mesh {}: Primitive: {}: Normals: {}", _modelName, mesh.name, "", normalAccessor.count);
+  //std::println("Model {}: Mesh {}: Primitive: {}: Normals: {}", _modelName, mesh.name, "", normalAccessor.count);
   fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, normalAccessor, [&](fastgltf::math::fvec3 pos, std::size_t idx) {
     //std::println("Adding normal {}", idx);
     vertices[idx].normal = glm::vec3(pos.x(), pos.y(), pos.z());
@@ -194,7 +204,7 @@ std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, 
   }
 
   auto& texCoordAccessor = asset.accessors[textCoordAttribute->accessorIndex];
-  std::println("Model {}: Mesh {}: Primitive: {}: Tex Coords: {} {} {}", _modelName, mesh.name, "", texCoordAccessor.count, toString(texCoordAccessor.type), toString(texCoordAccessor.componentType));
+  //std::println("Model {}: Mesh {}: Primitive: {}: Tex Coords: {} {} {}", _modelName, mesh.name, "", texCoordAccessor.count, toString(texCoordAccessor.type), toString(texCoordAccessor.componentType));
   
   if (texCoordAccessor.componentType != fastgltf::ComponentType::Float) {
     throw std::format_error("Component type not supported");
@@ -219,7 +229,7 @@ std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, 
       throw std::format_error("Accessor type not supported");
   }
 
-  std::println("Reading indices");
+  //std::println("Reading indices");
 
   std::vector<std::uint32_t> indices;
   if (primitive.indicesAccessor.has_value()) {
@@ -274,8 +284,50 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
         fastgltf::visitor {
             [](auto& arg) {
             },
+            [&](fastgltf::sources::Array array) {
+              //std::println("Model {}: Image: {}: Array: {} ({})", _modelName, image.name, array.bytes.size(), toString(array.mimeType));
+              engineImageIndex = readPngStb(array.bytes.data(), array.bytes.size(), oneTimeCommandSubmitter, images);                 
+            },
+           [&](fastgltf::sources::CustomBuffer customBuffer) {
+              //std::println("Model {}: Image: {}: Custom Buffer: {} ({})", _modelName, image.name, customBuffer.id, toString(customBuffer.mimeType));
+                                    
+            },
+            [&](fastgltf::sources::ByteView byteView) {
+              //std::println("Model {}: Image: {}: Byte View: {} ({})", _modelName, image.name, byteView.bytes.size(), toString(byteView.mimeType));
+                                    
+            },
             [&](fastgltf::sources::URI filePath) {
-                std::println("Model {}: Image: {}: URI: {}", _modelName, image.name, filePath.uri.c_str());
+                //std::println("Model {}: Image: {}: URI: {}", _modelName, image.name, filePath.uri.c_str());
+                //FileImageBuilder fileImageBuilder(_device, _physicalDevice);
+
+    
+    
+    auto assetPath = _directory + "/" + filePath.uri.c_str();
+    int texWidth, texHeight, texChannels;
+    stbi_uc *pixels = stbi_load(assetPath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    vk::DeviceSize imageSize = texWidth * texHeight * 4;
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    std::shared_ptr<engine::Image> engineImage = std::make_shared<engine::Image>(
+        _device, 
+        _physicalDevice, 
+        oneTimeCommandSubmitter,
+        vk::Format::eR8G8B8A8Srgb,
+        pixels,
+        imageSize,
+        vk::Extent2D(texWidth, texHeight),
+        false
+    );
+
+    stbi_image_free(pixels);
+                //std::shared_ptr<Image> engineImage  = fileImageBuilder.build(oneTimeCommandSubmitter, _directory + "/" + filePath.uri.c_str());
+                //std::shared_ptr<Image> engineImage = uniqueIMage;
+                //std::unique_ptr<Image> engineImage = fileImageBuilder.build(oneTimeCommandSubmitter, _directory + "/" + filePath.uri.c_str())
+                //std::shared_ptr<Image> engineImage = fileImageBuilder.build(oneTimeCommandSubmitter, _directory + "/" + filePath.uri.c_str());
+                images.push_back(engineImage);
+                engineImageIndex = images.size() - 1;
                 /*
                 assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
                 assert(filePath.uri.isLocalPath()); // We're only capable of loading
@@ -298,7 +350,8 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
             },
             [&](fastgltf::sources::Vector vector) {
 
-                std::println("Model {}: Image: {}: Vector: {}", _modelName, image.name, vector.bytes.size());
+
+                //std::println("Model {}: Image: {}: Vector: {}", _modelName, image.name, vector.bytes.size());
                 /*
                 unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
                     &width, &height, &nrChannels, 4);
@@ -315,7 +368,7 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
                 */
             },
             [&](fastgltf::sources::BufferView view) {
-                std::println("Model {}: Image: {}: BufferViewIndex: {}", _modelName, image.name, view.bufferViewIndex);
+                //std::println("Model {}: Image: {}: BufferViewIndex: {}", _modelName, image.name, view.bufferViewIndex);
                 auto& bufferView = asset.bufferViews[view.bufferViewIndex];
                 auto& buffer = asset.buffers[bufferView.bufferIndex];
                 auto& dataSource = buffer.data;
@@ -324,83 +377,64 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
                     {
 
                       auto &array = std::get<fastgltf::sources::Array>(dataSource);
-                      std::println("Model {}: Image: {}: BufferViewIndex: {}: Bytes: {}", _modelName, image.name, view.bufferViewIndex, array.bytes.size());
+                      //std::println("Model {}: Image: {}: BufferViewIndex: {}: Bytes: {}", _modelName, image.name, view.bufferViewIndex, array.bytes.size());
                     }
                     catch (std::bad_variant_access const& ex)
                     {
-                      std::println("Model {}: Image: {}: Data is not Array", _modelName, image.name);
+                      //std::println("Model {}: Image: {}: Data is not Array", _modelName, image.name);
                     }
-                    
+                // std::monostate, sources::BufferView, sources::URI, sources::Array, sources::Vector, sources::CustomBuffer, sources::ByteView, sources::Fallback
+  
                 // TODO: Make sure LoadExternalBuffers is specified
                 std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
                                                // specify LoadExternalBuffers, meaning all buffers
                                                // are already loaded into a vector.
                                [](auto& arg) {},
-                               [&](fastgltf::sources::Vector vector) {
-                                   std::println("Reading BufferView: vector");
-                                   unsigned char* data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(vector.bytes.data() + bufferView.byteOffset),
-                                       static_cast<int>(bufferView.byteLength),
-                                       &width, &height, &nrChannels, 4);
-                                   if (data) {
 
-                                        std::println("Reading BufferView: vector (data found)");
-                                       VkExtent3D imagesize;
-                                       imagesize.width = width;
-                                       imagesize.height = height;
-                                       imagesize.depth = 1;
-                                       images.push_back(std::make_shared<engine::Image>(
-                                        _device, 
-                                        _physicalDevice, 
-                                        oneTimeCommandSubmitter,
-                                        vk::Format::eR8G8B8A8Srgb,
-                                        data,
-                                        bufferView.byteLength,
-                                        vk::Extent2D(width, height),
-                                        false
-                                       ));
-                               
-                                       //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-                                       //    VK_IMAGE_USAGE_SAMPLED_BIT,false);
-
-                                       stbi_image_free(data);
-                                       engineImageIndex = images.size() - 1;
-                                   }
+                               [&](fastgltf::sources::URI uri) {
+                                 //std::println("Model {}: Image: {}: BufferViewIndex: {}: URI: {} ({})", _modelName, image.name, view.bufferViewIndex, uri.uri.c_str(), toString(uri.mimeType));
+                                  
                                },
-                               [&](fastgltf::sources::Array array) {
-                                   
-                                   std::println("Model {}: Image: {}: BufferViewIndex: {}: Array Bytes: {} ({})", _modelName, image.name, view.bufferViewIndex, array.bytes.size(), toString(array.mimeType));
-                                       // write buffer to file
-                                    
-                                    std::string outputFileName = _modelName + "_" + image.name.c_str() + ".png";
-                                    if (std::FILE* f1 = std::fopen(outputFileName.c_str(), "wb"))
-                                    {
-                                        std::fwrite(array.bytes.data() + bufferView.byteOffset, 1, bufferView.byteLength, f1);
-                                        std::fclose(f1);
-                                    }
-                                    bool success = false;
-                                    auto engineImage = readPngStb(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, &success);
-                                    
-                                    // auto engineImage = readPngLibpng(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, &success);
-                                    if (success) {
-                                      images.push_back(engineImage);
-                                      engineImageIndex = images.size() - 1;
-                                   }
+                               [&](fastgltf::sources::Vector vector) {
+                                  //std::println("Model {}: Image: {}: BufferViewIndex: {}: Vector Bytes: {} ({})", _modelName, image.name, view.bufferViewIndex, vector.bytes.size(), toString(vector.mimeType));
+                                  engineImageIndex = readPngStb(vector.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, images);
+                               },
+                               [&](fastgltf::sources::Array array) { 
+                                  //std::println("Model {}: Image: {}: BufferViewIndex: {}: Array Bytes: {} ({}) Buffer View: {} (offset) {} (length)", _modelName, image.name, view.bufferViewIndex, array.bytes.size(), toString(array.mimeType), bufferView.byteOffset, bufferView.byteLength);
+                                  engineImageIndex = readPngStb(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, images);
                                } },
                     dataSource);
             },
         },
         image.data);
     
-    // if any of the attempts to load the data failed, we havent written the image
-    // so handle is null
-    /*
-    if (newImage.image == VK_NULL_HANDLE) {
-        return {};
-    } else {
-        return newImage;
-    }
-    */
    return engineImageIndex;
+}
+
+int FileModelBuilder::createImage(
+    fastgltf::sources::Array& array, 
+    OneTimeCommandSubmitter& oneTimeCommandSubmitter, 
+    std::vector<std::shared_ptr<Image>>& images) {
+             
+  bool success = false;
+  //auto engineImage = readPngStb(array.bytes.data(), array.bytes.size(), oneTimeCommandSubmitter, &success);
+  return -1;
+  /*
+  // auto engineImage = readPngLibpng(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, &success);
+  if (success) {
+    images.push_back(engineImage);
+    engineImageIndex = images.size() - 1;
+  } 
+
+  bool success = false;
+  auto engineImage = readPngStb(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, &success);
+
+  // auto engineImage = readPngLibpng(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, &success);
+  if (success) {
+    images.push_back(engineImage);
+    engineImageIndex = images.size() - 1;
+  }
+  */
 }
 
 std::string FileModelBuilder::toString(fastgltf::AccessorType accessorType) {
@@ -474,44 +508,46 @@ std::string FileModelBuilder::toString(fastgltf::MimeType mimeType) {
 }
 
 
-std::shared_ptr<engine::Image> FileModelBuilder::readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success) {
-  
-  std::println("Reading PNG using stb");
-  /*
-  std::string tempFileName = "temp.png";
-  if (std::FILE* f1 = std::fopen(tempFileName.c_str(), "wb"))
-  {
-      std::fwrite(data, 1, size, f1);
-      std::fclose(f1);
-  }
-  
-  std::println("Loading PNG using STB");
-  */
+int FileModelBuilder::readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images) {  
   int width, height, nrChannels; 
+  int engineImageIndex = -1;
   //stbi_uc *pixelData = stbi_load(tempFileName.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
-  
   
   unsigned char* pixelData = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(data),
     static_cast<int>(size),
-    &width, &height, &nrChannels, 4);
+    &width, &height, &nrChannels, STBI_rgb_alpha);
+
+  //if (nrChannels == 4) {
+    for (int i = 0; i < width * height; i++) {
+      //pixelData[i*4] = 255;
+      //pixelData[(i*4) + 3] = 255;
+      /*
+      pixelData[i + 1] = 128;
+      pixelData[i + 2] = 128;
+      pixelData[i + 3] = 128;
+      */
+    }
+  //}
+  auto sampleR = static_cast<int>(pixelData[0]);
+  auto sampleG = static_cast<int>(pixelData[1]);
+  auto sampleB = static_cast<int>(pixelData[2]);
+  auto sampleA = static_cast<int>(pixelData[3]);
+
+  //std::println("readpngstb {}x{} ({}) Sample: {} {} {} {}", width, height, nrChannels, sampleR, sampleG, sampleB, sampleA);
   
-  std::shared_ptr<engine::Image> engineImage;
   if (pixelData) {
-    VkExtent3D imagesize;
-    imagesize.width = width;
-    imagesize.height = height;
-    imagesize.depth = 1;
-    engineImage = std::make_shared<engine::Image>(
+    auto engineImage = std::make_shared<engine::Image>(
       _device, 
       _physicalDevice, 
       oneTimeCommandSubmitter,
       vk::Format::eR8G8B8A8Srgb,
       pixelData,
-      width * height * nrChannels,
+      width * height * STBI_rgb_alpha,
       vk::Extent2D(width, height),
       false
     );
-    *success = true;
+    images.push_back(engineImage);
+    engineImageIndex = images.size() - 1;
   }
 
   //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
@@ -519,7 +555,7 @@ std::shared_ptr<engine::Image> FileModelBuilder::readPngStb(std::byte *data, std
 
   stbi_image_free(pixelData);
 
-  return engineImage;
+  return engineImageIndex;
 }
 
 static int
@@ -545,10 +581,11 @@ memcpy(raw_data, png_src, read_length);
 handle->offset += read_length;
 }
 
-std::shared_ptr<engine::Image> FileModelBuilder::readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, bool* success) {
+int FileModelBuilder::readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images) {
   
   std::println("Reading PNG using libpng");
   int width, height, nrChannels; 
+  int engineImageIndex = -1;
   png_byte magic[PNG_SIG_BYTES]; /* (signature byte buffer) */
 png_structp png_ctx;
 png_infop info_ctx;
@@ -564,6 +601,7 @@ png_bytep *volatile row_data = NULL;
 if ((png_ctx = png_create_read_struct(
 PNG_LIBPNG_VER_STRING, NULL, NULL, NULL)) == NULL) {
   // TODO: Throw
+  return -1;
   //return (1); /* ENOMEM (?) */
 }
 
@@ -571,12 +609,14 @@ if ((info_ctx = png_create_info_struct(png_ctx)) == NULL)
 {
 png_destroy_read_struct(&png_ctx, NULL, NULL);
 //return (1); /* ENOMEM (?) */
+  return -1;
 }
 if (setjmp(png_jmpbuf(png_ctx)) != 0)
 {
 png_destroy_read_struct(&png_ctx, &info_ctx, NULL);
 free(img_data); free(row_data);
 //return (1); /* libpng feedback (?) */
+  return -1;
 }
 
 /* check PNG file signature: */
@@ -650,7 +690,6 @@ width = img_width;
 height = img_height;
 //*buf = img_data; /* (asserts png_byte is an unsigned char) */
 
-  std::shared_ptr<engine::Image> engineImage;
   //if (pixelData) {
     
   VkExtent3D imagesize;
@@ -658,7 +697,7 @@ height = img_height;
     imagesize.height = height;
     imagesize.depth = 1;
 
-    engineImage = std::make_shared<engine::Image>(
+    auto engineImage = std::make_shared<engine::Image>(
       _device, 
       _physicalDevice, 
       oneTimeCommandSubmitter,
@@ -671,10 +710,11 @@ height = img_height;
     /*
     *success = true;
     */
+    images.push_back(engineImage);
+    engineImageIndex = images.size() - 1;
 
-    *success = true;
   //}
-  return engineImage;
+  return engineImageIndex;
 
 }
 
