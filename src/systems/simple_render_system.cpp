@@ -73,7 +73,7 @@ void SimpleRenderSystem::renderGameObjects(engine::FrameInfo& frameInfo) const {
     auto& obj = kv.second;
     if (obj.model == nullptr) continue;
     obj.model->bind(frameInfo.commandBuffer, _pipelineLayout);
-    obj.model->draw(frameInfo.commandBuffer, _pipelineLayout, obj.transform.mat4(), obj.transform.normalMatrix());
+    obj.model->draw(frameInfo.commandBuffer, _pipelineLayout, obj.transform.mat4());
   }
 }
 

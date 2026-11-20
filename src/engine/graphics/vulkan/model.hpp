@@ -3,6 +3,7 @@
 #include "buffer.hpp"
 #include "../vertex.hpp"
 #include "../mesh.hpp"
+#include <glm/gtx/string_cast.hpp>
 #include "one_time_command_submitter.hpp"
 
 // libs
@@ -36,7 +37,7 @@ class Model {
 */
 
   void bind(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout);
-  void draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix);
+  void draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout, glm::mat4 modelMatrix);
   void setName(std::string name);
 
  private:

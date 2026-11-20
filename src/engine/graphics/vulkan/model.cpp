@@ -123,7 +123,7 @@ std::unique_ptr<engine::Buffer> Model::createIndexBuffer(engine::OneTimeCommandS
   return indexBuffer;
 }
 
-void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix) {
+void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipelineLayout, glm::mat4 modelMatrix) {
   for (auto& component : _components) {
     _vertexBuffers[component.vertexBufferIndex]->bindVertex(commandBuffer, 0, {0});
 
@@ -131,9 +131,11 @@ void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipe
       _indexBuffers[component.indexBufferIndex]->bindIndex(commandBuffer, 0, vk::IndexType::eUint32);
     }
 
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
+
     engine::SimplePushConstantData push{};
     push.modelMatrix = modelMatrix;
-    push.normalMatrix = normalMatrix;
+    push.normalMatrix = glm::mat4(normalMatrix); // GLM Mat 3 doesn't align correctly in Shader Push Constants for whatever reason
 
     push.textureIndex = component.textureIndex >= 0 ? component.textureIndex : 0;
     if (_name == "helmet") {
