@@ -376,7 +376,11 @@ void VoxelApp::loadGameObjects() {
   auto testGameObject2 = engine::GameObject::createGameObject();
   glm::vec3 position2 = {2.0f, 1.0f, 1.0f};
   engine::Mesh test2Mesh = engine::createCubeMesh(position2, {1.0f, 0.65f, 0.0f}, true, true, true, true, true, true);
-  std::vector<std::pair<engine::Mesh, int>> pairs = {{test2Mesh, 19}};
+  engine::ModelMesh mm2;
+  mm2.mesh = test2Mesh;
+  mm2.textureIndex = 19;
+  mm2.meshMatrix = glm::mat4(1.0f);
+  std::vector<engine::ModelMesh> pairs = {mm2};
   std::shared_ptr<engine::Model> testModel2 = std::make_shared<engine::Model>(_device, _physicalDevice, _oneTimeCommandSubmitter, pairs);
   testGameObject2.model = testModel2;
   testGameObject2.transform.translation = position2;

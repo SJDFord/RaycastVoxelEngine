@@ -115,7 +115,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
       processNode(sceneNode, initial, processNode);
     }
 
-    std::vector<std::pair<Mesh, int>> flattenedMeshes;
+    std::vector<ModelMesh> flattenedMeshes;
 
     for (auto& meshList : meshes) {
       for (auto &meshPair : meshList) {
@@ -128,7 +128,11 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
         auto engineImageIndex = imageToEngineImageMap[modelImageIndex];
         
         //std::println("Model {}: Mapped model material index {} to engine image index {}", _modelName, modelMaterialIndex, engineImageIndex);
-        flattenedMeshes.push_back({meshPair.first, engineImageIndex});
+        ModelMesh mm;
+        mm.mesh = meshPair.first;
+        mm.textureIndex = engineImageIndex;
+        mm.meshMatrix = glm::mat4(1.0f);
+        flattenedMeshes.push_back(mm);
       }
     }
 

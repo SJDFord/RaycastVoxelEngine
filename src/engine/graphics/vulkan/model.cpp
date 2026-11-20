@@ -15,17 +15,13 @@
 namespace engine {
 
 Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTimeCommandSubmitter& commandSubmitter, 
-    const std::vector<std::pair<Mesh, int>>& meshTexturePairs) : _device{device}, _physicalDevice{physicalDevice} {
+    const std::vector<ModelMesh>& meshes) : _device{device}, _physicalDevice{physicalDevice} {
   //std::vector<Vertex> vertices;
   //std::vector<uint32_t> indices;
 
-  for (auto& meshTexturePair : meshTexturePairs) {
-    std::println("Building vertex list");
-    //vertices.insert(vertices.end(), mesh.Vertices.begin(), mesh.Vertices.end());
-    //indices.insert(indices.end(), mesh.Indices.begin(), mesh.Indices.end());
+  for (auto& modelMesh : meshes) {
     ModelComponent component{};
-    auto& mesh = meshTexturePair.first;
-    std::println("Loading model: {} vertices", mesh.Vertices.size());
+    auto& mesh = modelMesh.mesh;
     _vertexBuffers.emplace_back(createVertexBuffer(commandSubmitter, mesh.Vertices));
     component.vertexBufferIndex = _vertexBuffers.size() - 1;
     component.vertexCount = mesh.Vertices.size();
@@ -36,7 +32,8 @@ Model::Model(vk::Device device, vk::PhysicalDevice physicalDevice, engine::OneTi
       component.indexBufferIndex = _indexBuffers.size() - 1;
       component.indexCount = indexCount;
     }
-    component.textureIndex = meshTexturePair.second;
+    component.textureIndex = modelMesh.textureIndex;
+    component.meshMatrix = modelMesh.meshMatrix;
     _components.push_back(component);
     
     /*
@@ -134,7 +131,7 @@ void Model::draw(vk::CommandBuffer commandBuffer, const vk::PipelineLayout& pipe
     glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
 
     engine::SimplePushConstantData push{};
-    push.modelMatrix = modelMatrix;
+    push.modelMatrix = modelMatrix * component.meshMatrix;
     push.normalMatrix = glm::mat4(normalMatrix); // GLM Mat 3 doesn't align correctly in Shader Push Constants for whatever reason
 
     push.textureIndex = component.textureIndex >= 0 ? component.textureIndex : 0;

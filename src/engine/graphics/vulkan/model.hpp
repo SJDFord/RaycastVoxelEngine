@@ -18,13 +18,19 @@
 #include <utility>
 
 namespace engine {
+struct ModelMesh {
+  Mesh mesh;
+  glm::mat4 meshMatrix;
+  int textureIndex;
+};
+
 class Model {
  public:
   Model(
     vk::Device device, 
     vk::PhysicalDevice physicalDevice, 
     engine::OneTimeCommandSubmitter& commandSubmitter,
-    const std::vector<std::pair<Mesh, int>>& meshTexturePairs
+    const std::vector<ModelMesh>& meshes
   );
   ~Model();
 
@@ -57,6 +63,7 @@ class Model {
     int vertexBufferIndex;
     int indexBufferIndex;
     int textureIndex;
+    glm::mat4 meshMatrix;
   };
 
   std::vector<ModelComponent> _components;
