@@ -89,7 +89,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
 
     auto initial = fastgltf::math::fmat4x4();
 
-    std::vector<std::vector<std::pair<Mesh, int>>> meshes;
+    std::vector<std::vector<ModelMesh>> meshes;
     //std::println("Model {}: {} meshes", _modelName, asset.meshes.size());
     meshes.resize(asset.meshes.size());
 
@@ -102,7 +102,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
       if (node.meshIndex.has_value()) {
           std::size_t meshIndex = node.meshIndex.value();
           fastgltf::Mesh& mesh = asset.meshes[meshIndex];
-          std::vector<std::pair<Mesh, int>> engineMeshes = createMeshes(asset, mesh, oneTimeCommandSubmitter);
+          std::vector<ModelMesh> engineMeshes = createMeshes(asset, nodeMatrix, mesh, oneTimeCommandSubmitter);
           meshes.push_back(engineMeshes);
       }
 
@@ -118,43 +118,39 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
     std::vector<ModelMesh> flattenedMeshes;
 
     for (auto& meshList : meshes) {
-      for (auto &meshPair : meshList) {
-        if (meshPair.first.Vertices.size() < 1) {
+      for (auto &modelMesh : meshList) {
+        if (modelMesh.mesh.Vertices.size() < 1) {
           continue;
         }
 
-        auto modelMaterialIndex = meshPair.second;
+        auto modelMaterialIndex = modelMesh.textureIndex;
         auto modelImageIndex = materialToImageMap[modelMaterialIndex];
         auto engineImageIndex = imageToEngineImageMap[modelImageIndex];
         
-        //std::println("Model {}: Mapped model material index {} to engine image index {}", _modelName, modelMaterialIndex, engineImageIndex);
-        ModelMesh mm;
-        mm.mesh = meshPair.first;
-        mm.textureIndex = engineImageIndex;
-        mm.meshMatrix = glm::mat4(1.0f);
-        flattenedMeshes.push_back(mm);
+        modelMesh.textureIndex = engineImageIndex;
+        flattenedMeshes.push_back(modelMesh);
       }
     }
 
     return std::make_unique<engine::Model>(_device, _physicalDevice, oneTimeCommandSubmitter, flattenedMeshes);
 }
 
-std::vector<std::pair<Mesh, int>> FileModelBuilder::createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter) {
+std::vector<ModelMesh> FileModelBuilder::createMeshes(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter) {
   auto& primitives = mesh.primitives;
   std::println("Model {}: Mesh {}: {} primitives, {} textures, {} images, {} materials", _modelName, mesh.name, primitives.size(), asset.textures.size(), asset.images.size(), asset.materials.size());
 
-  std::vector<std::pair<Mesh, int>> meshes;
+  std::vector<ModelMesh> meshes;
   meshes.resize(primitives.size());
   
   for (const fastgltf::Primitive& primitive : primitives) {
-    meshes.push_back(createMesh(asset, mesh, primitive, oneTimeCommandSubmitter));
+    meshes.push_back(createMesh(asset, nodeMatrix, mesh, primitive, oneTimeCommandSubmitter));
   }
 
   return meshes;
 }
 
 
-std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter) {
+ModelMesh FileModelBuilder::createMesh(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter) {
   std::println("Model {}: Mesh {}: Primitive: {}", _modelName, mesh.name, "");
   std::vector<Vertex> vertices;
   if (primitive.type != fastgltf::PrimitiveType::Triangles) {
@@ -260,7 +256,12 @@ std::pair<Mesh, int> FileModelBuilder::createMesh(const fastgltf::Asset& asset, 
   if (primitive.materialIndex.has_value()) {
     materialIndex = primitive.materialIndex.value();
   }
-  return {engineMesh, materialIndex};
+  ModelMesh modelMesh;
+  modelMesh.mesh = engineMesh;
+  modelMesh.textureIndex = materialIndex;
+  modelMesh.meshMatrix = glm::make_mat4x4(nodeMatrix.data());
+  
+  return modelMesh;
 }
 
 

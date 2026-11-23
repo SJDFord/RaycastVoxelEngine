@@ -392,7 +392,7 @@ void VoxelApp::loadGameObjects() {
   testGameObject3.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/chinesedragon.gltf", globalImages);
   testGameObject3.transform.translation = position3;
   testGameObject3.transform.scale = {1.0f, 1.0f, 1.0f};
-  testGameObject3.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
+  testGameObject3.transform.rotation = {-glm::pi<float>(), 0.0f, 0.0f};
   gameObjects.emplace(testGameObject3.getId(), std::move(testGameObject3));
   
 
@@ -401,7 +401,7 @@ void VoxelApp::loadGameObjects() {
   testGameObject4.model = engine::FileModelBuilder(_device, _physicalDevice).build(_oneTimeCommandSubmitter, "../models/oaktree.gltf", globalImages);
   testGameObject4.transform.translation = position4;
   testGameObject4.transform.scale = {10.0f, 10.0f, 10.0f};
-  testGameObject4.transform.rotation = {-glm::pi<float>() / 2.0f, 0.0f, 0.0f};
+  testGameObject4.transform.rotation = {-glm::pi<float>(), 0.0f, 0.0f};
   gameObjects.emplace(testGameObject4.getId(), std::move(testGameObject4));
 
   auto testGameObject5 = engine::GameObject::createGameObject();

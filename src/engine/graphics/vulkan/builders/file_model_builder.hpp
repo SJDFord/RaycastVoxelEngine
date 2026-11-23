@@ -60,8 +60,8 @@ class FileModelBuilder {
   int _imageIndex = 0;
 
 
-  std::vector<std::pair<Mesh, int>> createMeshes(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
-  std::pair<Mesh, int> createMesh(const fastgltf::Asset& asset, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
+  std::vector<ModelMesh> createMeshes(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
+  ModelMesh createMesh(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
   int createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
   int createImage( 
     fastgltf::sources::Array& array, 
