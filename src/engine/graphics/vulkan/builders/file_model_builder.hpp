@@ -3,10 +3,12 @@
 #include "../one_time_command_submitter.hpp"
 #include "../model.hpp"
 #include "../image.hpp"
+#include "../image_registry.hpp"
 #include <map>
 #include "vulkan/vulkan.hpp"
 #include "file_image_builder.hpp"
 #include <filesystem>
+
 
 
 #include "stb/stb_image.h"
@@ -50,7 +52,7 @@ class FileModelBuilder {
   FileModelBuilder(const FileModelBuilder&) = delete;
   FileModelBuilder& operator=(const FileModelBuilder&) = delete;
 
-  std::unique_ptr<engine::Model> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, std::vector<std::shared_ptr<Image>>& images);
+  std::unique_ptr<engine::Model> build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, ImageRegistry& imageRegistry);
 
  private:
   const vk::Device& _device;
@@ -62,17 +64,17 @@ class FileModelBuilder {
 
   std::vector<ModelMesh> createMeshes(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
   ModelMesh createMesh(const fastgltf::Asset& asset, fastgltf::math::fmat4x4 nodeMatrix, const fastgltf::Mesh& mesh, const fastgltf::Primitive& primitive, OneTimeCommandSubmitter& oneTimeCommandSubmitter);
-  int createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
+  int createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry);
   int createImage( 
     fastgltf::sources::Array& array, 
     OneTimeCommandSubmitter& oneTimeCommandSubmitter, 
-    std::vector<std::shared_ptr<Image>>& images
+    ImageRegistry& imageRegistry
   );
   std::string toString(fastgltf::AccessorType accessorType);
   std::string toString(fastgltf::ComponentType componentType);
   std::string toString(fastgltf::MimeType mimeType);
 
-  int readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
-  int readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images);
+  int readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry);
+  int readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry);
 };
 }  // namespace engine

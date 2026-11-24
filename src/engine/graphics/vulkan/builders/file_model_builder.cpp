@@ -14,7 +14,7 @@ FileModelBuilder::~FileModelBuilder() {
 }
 
 
-std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, std::vector<std::shared_ptr<Image>>& images) {
+std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::string filePath, ImageRegistry& imageRegistry) {
     if (!filePath.ends_with(".gltf")) {
         throw std::format_error("File types other than GLTF are not supported");
     }
@@ -76,7 +76,7 @@ std::unique_ptr<engine::Model> FileModelBuilder::build(OneTimeCommandSubmitter& 
       */
 
       //int engineImageIndex = 19;
-      auto engineImageIndex = createImage(asset, image, oneTimeCommandSubmitter, images);
+      auto engineImageIndex = createImage(asset, image, oneTimeCommandSubmitter, imageRegistry);
       if (engineImageIndex < 0) {
         continue;
       }
@@ -265,7 +265,7 @@ ModelMesh FileModelBuilder::createMesh(const fastgltf::Asset& asset, fastgltf::m
 }
 
 
-int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images) {
+int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::Image& image, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry) {
     int width, height, nrChannels;
    
     int engineImageIndex = -1;
@@ -291,7 +291,7 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
             },
             [&](fastgltf::sources::Array array) {
               //std::println("Model {}: Image: {}: Array: {} ({})", _modelName, image.name, array.bytes.size(), toString(array.mimeType));
-              engineImageIndex = readPngStb(array.bytes.data(), array.bytes.size(), oneTimeCommandSubmitter, images);                 
+              engineImageIndex = readPngStb(array.bytes.data(), array.bytes.size(), oneTimeCommandSubmitter, imageRegistry);                 
             },
            [&](fastgltf::sources::CustomBuffer customBuffer) {
               //std::println("Model {}: Image: {}: Custom Buffer: {} ({})", _modelName, image.name, customBuffer.id, toString(customBuffer.mimeType));
@@ -331,8 +331,7 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
                 //std::shared_ptr<Image> engineImage = uniqueIMage;
                 //std::unique_ptr<Image> engineImage = fileImageBuilder.build(oneTimeCommandSubmitter, _directory + "/" + filePath.uri.c_str())
                 //std::shared_ptr<Image> engineImage = fileImageBuilder.build(oneTimeCommandSubmitter, _directory + "/" + filePath.uri.c_str());
-                images.push_back(engineImage);
-                engineImageIndex = images.size() - 1;
+                engineImageIndex = imageRegistry.addImage(engineImage);
                 /*
                 assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
                 assert(filePath.uri.isLocalPath()); // We're only capable of loading
@@ -402,11 +401,11 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
                                },
                                [&](fastgltf::sources::Vector vector) {
                                   //std::println("Model {}: Image: {}: BufferViewIndex: {}: Vector Bytes: {} ({})", _modelName, image.name, view.bufferViewIndex, vector.bytes.size(), toString(vector.mimeType));
-                                  engineImageIndex = readPngStb(vector.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, images);
+                                  engineImageIndex = readPngStb(vector.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, imageRegistry);
                                },
                                [&](fastgltf::sources::Array array) { 
                                   //std::println("Model {}: Image: {}: BufferViewIndex: {}: Array Bytes: {} ({}) Buffer View: {} (offset) {} (length)", _modelName, image.name, view.bufferViewIndex, array.bytes.size(), toString(array.mimeType), bufferView.byteOffset, bufferView.byteLength);
-                                  engineImageIndex = readPngStb(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, images);
+                                  engineImageIndex = readPngStb(array.bytes.data() + bufferView.byteOffset, bufferView.byteLength, oneTimeCommandSubmitter, imageRegistry);
                                } },
                     dataSource);
             },
@@ -419,7 +418,7 @@ int FileModelBuilder::createImage(const fastgltf::Asset& asset, const fastgltf::
 int FileModelBuilder::createImage(
     fastgltf::sources::Array& array, 
     OneTimeCommandSubmitter& oneTimeCommandSubmitter, 
-    std::vector<std::shared_ptr<Image>>& images) {
+    ImageRegistry& imageRegistry) {
              
   bool success = false;
   //auto engineImage = readPngStb(array.bytes.data(), array.bytes.size(), oneTimeCommandSubmitter, &success);
@@ -513,7 +512,7 @@ std::string FileModelBuilder::toString(fastgltf::MimeType mimeType) {
 }
 
 
-int FileModelBuilder::readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images) {  
+int FileModelBuilder::readPngStb(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry) {  
   int width, height, nrChannels; 
   int engineImageIndex = -1;
   //stbi_uc *pixelData = stbi_load(tempFileName.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
@@ -551,8 +550,7 @@ int FileModelBuilder::readPngStb(std::byte *data, std::size_t size, OneTimeComma
       vk::Extent2D(width, height),
       false
     );
-    images.push_back(engineImage);
-    engineImageIndex = images.size() - 1;
+    engineImageIndex = imageRegistry.addImage(engineImage);
   }
 
   //newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
@@ -586,7 +584,7 @@ memcpy(raw_data, png_src, read_length);
 handle->offset += read_length;
 }
 
-int FileModelBuilder::readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, std::vector<std::shared_ptr<Image>>& images) {
+int FileModelBuilder::readPngLibpng(std::byte *data, std::size_t size, OneTimeCommandSubmitter& oneTimeCommandSubmitter, ImageRegistry& imageRegistry) {
   
   std::println("Reading PNG using libpng");
   int width, height, nrChannels; 
@@ -715,8 +713,8 @@ height = img_height;
     /*
     *success = true;
     */
-    images.push_back(engineImage);
-    engineImageIndex = images.size() - 1;
+
+    engineImageIndex = imageRegistry.addImage(engineImage);
 
   //}
   return engineImageIndex;
