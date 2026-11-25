@@ -16,6 +16,8 @@ class DescriptorWriter {
   DescriptorWriter &writeBuffer(uint32_t binding, vk::DescriptorBufferInfo* bufferInfo, uint32_t descriptorCount = 1);
   DescriptorWriter &writeImage(uint32_t binding, vk::DescriptorImageInfo* imageInfo, uint32_t descriptorCount = 1);
 
+  DescriptorWriter &writeImages(uint32_t binding, std::vector<vk::DescriptorImageInfo> images);
+
   vk::DescriptorSet build();
   void overwrite(vk::DescriptorSet &set);
 

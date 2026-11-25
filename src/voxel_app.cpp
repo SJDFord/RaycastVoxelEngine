@@ -173,15 +173,6 @@ void VoxelApp::run() {
   skyboxGameObject.transform.scale = {10.0f, 10.0f, 10.0f};
   engine::GameObject::Map skyboxObjects;
   skyboxObjects.emplace(skyboxGameObject.getId(), std::move(skyboxGameObject));
-
-  vk::DescriptorImageInfo imageInfoDescriptors[MAX_TEXTURE_COUNT];
-  auto images = _imageRegistry.getImages();
-  for (uint32_t i = 0; i < images.size(); ++i) {
-		imageInfoDescriptors[i].sampler = nullptr;
-		imageInfoDescriptors[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    imageInfoDescriptors[i].imageView = images[i]->GetImageView();
-  }
-
   
   /*
   for (uint32_t i = globalImages.size(); i < MAX_TEXTURE_COUNT; i++) {
@@ -228,6 +219,7 @@ void VoxelApp::run() {
   
   vk::DescriptorImageInfo samplerInfo = {};
 	samplerInfo.sampler = globalSampler;
+  auto imageInfoDescriptors = _imageRegistry.getDescriptors();
   std::vector<vk::DescriptorSet> globalDescriptorSets(MAX_FRAMES_IN_FLIGHT);
   for (int i = 0; i < globalDescriptorSets.size(); i++) {
     auto bufferInfo = uboBuffers[i]->descriptorInfo();
@@ -239,7 +231,7 @@ void VoxelApp::run() {
     )
       .writeBuffer(0, &bufferInfo)
       .writeImage(1, &samplerInfo)
-      .writeImage(2, imageInfoDescriptors, MAX_TEXTURE_COUNT)
+      .writeImages(2, imageInfoDescriptors)
       .build();
   }
 

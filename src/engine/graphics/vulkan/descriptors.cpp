@@ -53,6 +53,28 @@ DescriptorWriter &DescriptorWriter::writeImage(
   return *this;
 }
 
+
+DescriptorWriter &DescriptorWriter::writeImages(uint32_t binding, std::vector<vk::DescriptorImageInfo> images) {
+  assert(_bindings.size() > binding && "Layout does not contain specified binding");
+
+  auto &bindingDescription = _bindings[binding];
+  auto descriptorCount = images.size();
+
+  assert(
+      bindingDescription.descriptorCount == descriptorCount &&
+      "Binding descriptor count must match descriptor count");
+
+  vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
+    .setDescriptorType(bindingDescription.descriptorType)
+    .setDstBinding(binding)
+    .setPImageInfo(images.data())
+    .setDescriptorCount(descriptorCount);
+
+  _writes.push_back(write);
+  
+  return *this;
+}
+
 /*
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

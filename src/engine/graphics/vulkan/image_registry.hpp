@@ -16,7 +16,8 @@ public:
     ImageRegistry &operator=(const ImageRegistry &) = delete;
 
     uint32_t addImage(std::shared_ptr<Image> image);
-    std::vector<std::shared_ptr<Image>>& getImages();
+
+    std::vector<vk::DescriptorImageInfo> getDescriptors();
 private:
     size_t _maxImageCount;
     std::vector<std::shared_ptr<Image>> _images; 
