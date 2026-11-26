@@ -1,4 +1,4 @@
-#include "descriptors.hpp"
+#include "descriptor_writer.hpp"
 
 // std
 #include <cassert>
@@ -11,11 +11,11 @@ namespace engine {
 DescriptorWriter::DescriptorWriter(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout setLayout, std::vector<vk::DescriptorSetLayoutBinding> bindings)
     : _device{device}, _pool{pool}, _setLayout{setLayout}, _bindings{bindings}, _writes{} {}
 
-DescriptorWriter &DescriptorWriter::writeBuffer(
-    uint32_t binding, vk::DescriptorBufferInfo* bufferInfo, uint32_t descriptorCount) {
+DescriptorWriter &DescriptorWriter::writeBuffers(uint32_t binding, std::vector<vk::DescriptorBufferInfo> buffers) {
   assert(_bindings.size() > binding && "Layout does not contain specified binding");
 
   auto &bindingDescription = _bindings[binding];
+  auto descriptorCount = buffers.size();
 
   assert(
       bindingDescription.descriptorCount == descriptorCount &&
@@ -24,35 +24,13 @@ DescriptorWriter &DescriptorWriter::writeBuffer(
   vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
     .setDescriptorType(bindingDescription.descriptorType)
     .setDstBinding(binding)
-    .setPBufferInfo(bufferInfo)
+    .setPBufferInfo(buffers.data())
     .setDescriptorCount(descriptorCount);
 
   _writes.push_back(write);
 
   return *this;
 }
-
-DescriptorWriter &DescriptorWriter::writeImage(
-    uint32_t binding, vk::DescriptorImageInfo* imageInfo, uint32_t descriptorCount) {
-  assert(_bindings.size() > binding && "Layout does not contain specified binding");
-
-  auto &bindingDescription = _bindings[binding];
-
-  assert(
-      bindingDescription.descriptorCount == descriptorCount &&
-      "Binding descriptor count must match descriptor count");
-
-
-  vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
-    .setDescriptorType(bindingDescription.descriptorType)
-    .setDstBinding(binding)
-    .setPImageInfo(imageInfo)
-    .setDescriptorCount(descriptorCount);
-
-  _writes.push_back(write);
-  return *this;
-}
-
 
 DescriptorWriter &DescriptorWriter::writeImages(uint32_t binding, std::vector<vk::DescriptorImageInfo> images) {
   assert(_bindings.size() > binding && "Layout does not contain specified binding");

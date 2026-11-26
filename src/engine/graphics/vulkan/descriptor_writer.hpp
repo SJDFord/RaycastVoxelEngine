@@ -13,9 +13,7 @@ class DescriptorWriter {
  public:
   DescriptorWriter(vk::Device device, vk::DescriptorPool pool, vk::DescriptorSetLayout setLayout, std::vector<vk::DescriptorSetLayoutBinding> bindings);
 
-  DescriptorWriter &writeBuffer(uint32_t binding, vk::DescriptorBufferInfo* bufferInfo, uint32_t descriptorCount = 1);
-  DescriptorWriter &writeImage(uint32_t binding, vk::DescriptorImageInfo* imageInfo, uint32_t descriptorCount = 1);
-
+  DescriptorWriter &writeBuffers(uint32_t binding, std::vector<vk::DescriptorBufferInfo> buffers);
   DescriptorWriter &writeImages(uint32_t binding, std::vector<vk::DescriptorImageInfo> images);
 
   vk::DescriptorSet build();

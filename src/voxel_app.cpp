@@ -1,7 +1,7 @@
 #include "voxel_app.hpp"
 #include "./engine/utils.hpp"
 #include "./engine/graphics/vulkan/buffer.hpp"
-#include "./engine/graphics/vulkan/descriptors.hpp"
+#include "./engine/graphics/vulkan/descriptor_writer.hpp"
 #include "./engine/graphics/vulkan/model.hpp"
 
 #include "./engine/graphics/vulkan/builders/descriptor_set_layout_bindings_builder.hpp"
@@ -212,8 +212,8 @@ void VoxelApp::run() {
       skyboxSetLayout,
       skyboxBindings
     )
-      .writeBuffer(0, &bufferInfo)
-      .writeImage(1, &skyboxCubeMapInfo)
+      .writeBuffers(0, {bufferInfo})
+      .writeImages(1, {skyboxCubeMapInfo})
       .build();
   }
   
@@ -229,8 +229,8 @@ void VoxelApp::run() {
       globalSetLayout,
       bindings
     )
-      .writeBuffer(0, &bufferInfo)
-      .writeImage(1, &samplerInfo)
+      .writeBuffers(0, {bufferInfo})
+      .writeImages(1, {samplerInfo})
       .writeImages(2, imageInfoDescriptors)
       .build();
   }
